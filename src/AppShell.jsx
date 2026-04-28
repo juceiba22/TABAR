@@ -1,21 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { RoleProvider, useRole } from "./modules/roles/RoleContext.jsx";
-import AppLayout from "./modules/layout/AppLayout.jsx";
+import { RoleProvider, useRole } from "./modules/roles/RoleContext";
+import AppLayout from "./modules/layout/AppLayout";
 
 // Pages
-import LandingRole      from "./pages/LandingRole.jsx";
-import CampaignPage     from "./pages/campaign/index.jsx";
-import AdminDashboard   from "./pages/admin/dashboard.jsx";
-import AdminControl     from "./pages/admin/control.jsx";
-import IndustryDashboard from "./pages/industry/dashboard.jsx";
-import IndustryBuy      from "./pages/industry/buy.jsx";
-import IndustryPosition from "./pages/industry/position.jsx";
-import StateDashboard   from "./pages/state/dashboard.jsx";
-import StateInvest      from "./pages/state/invest.jsx";
-import StateReturns     from "./pages/state/returns.jsx";
-import DealerDashboard  from "./pages/dealer/dashboard.jsx";
-import DealerTrade      from "./pages/dealer/trade.jsx";
-import DealerMarkets    from "./pages/dealer/markets.jsx";
+import LandingRole      from "./pages/LandingRole";
+import CampaignPage     from "./pages/campaign/index";
+import AdminDashboard   from "./pages/admin/dashboard";
+import AdminControl     from "./pages/admin/control";
+import IndustryDashboard from "./pages/industry/dashboard";
+import IndustryBuy      from "./pages/industry/buy";
+import IndustryPosition from "./pages/industry/position";
+import StateDashboard   from "./pages/state/dashboard";
+import StateInvest      from "./pages/state/invest";
+import StateReturns     from "./pages/state/returns";
+import DealerDashboard  from "./pages/dealer/dashboard";
+import DealerTrade      from "./pages/dealer/trade";
+import DealerMarkets    from "./pages/dealer/markets";
 
 function AppRoutes() {
   const { role } = useRole();

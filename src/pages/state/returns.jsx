@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext.jsx";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar.js";
+import { useRole } from "../../modules/roles/RoleContext";
+import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
 import { privateKeyToAccount } from "viem/accounts";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };

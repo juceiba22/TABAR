@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext.jsx";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar.js";
+import { useRole } from "../../modules/roles/RoleContext";
+import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
 import { privateKeyToAccount } from "viem/accounts";
-import CampaignStats from "../../modules/dashboard/CampaignStats.jsx";
+import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRole, ROLE_LABELS } from "../roles/RoleContext.jsx";
+import { useRole, ROLE_LABELS } from "../roles/RoleContext";
 import { NavLink, useNavigate } from "react-router-dom";
 
 const ROLE_PALETTE = {

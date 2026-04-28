@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext.jsx";
+import { useRole } from "../../modules/roles/RoleContext";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
 

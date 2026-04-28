@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRole } from "../modules/roles/RoleContext.jsx";
-import { CUENTAS, ROL_A_CUENTA } from "../modules/blockchain/useTabar.js";
+import { useRole } from "../modules/roles/RoleContext";
+import { CUENTAS, ROL_A_CUENTA } from "../modules/blockchain/useTabar";
 import { privateKeyToAccount } from "viem/accounts";
 
 const ROLE_PALETTE = {

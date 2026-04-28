@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useTabar } from "../blockchain/useTabar.js";
+import { useTabar } from "../blockchain/useTabar";
 
 export default function CampaignStats({ contractAddress }) {
   const { leerCampana, campana } = useTabar(contractAddress);

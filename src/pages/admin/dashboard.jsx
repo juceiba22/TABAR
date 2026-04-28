@@ -1,5 +1,5 @@
-import { useRole } from "../../modules/roles/RoleContext.jsx";
-import CampaignStats from "../../modules/dashboard/CampaignStats.jsx";
+import { useRole } from "../../modules/roles/RoleContext";
+import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useRole } from "../../modules/roles/RoleContext.jsx";
-import { useTabar } from "../../modules/blockchain/useTabar.js";
+import { useRole } from "../../modules/roles/RoleContext";
+import { useTabar } from "../../modules/blockchain/useTabar";
 
 const KG_POR_FARDO = 200;
 

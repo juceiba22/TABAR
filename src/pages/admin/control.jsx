@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext.jsx";
-import { useTabar } from "../../modules/blockchain/useTabar.js";
+import { useRole } from "../../modules/roles/RoleContext";
+import { useTabar } from "../../modules/blockchain/useTabar";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 

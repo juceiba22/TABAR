@@ -2,7 +2,7 @@ import { createPublicClient, http } from "viem";
 import { hardhat } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { useState, useCallback } from "react";
-import TabarABI from "/Config/TabarToken.json";
+import TabarABI from "../../Config/TabarToken.json";
 
 // ─── Cliente blockchain compartido (mismo que App.jsx) ───────────────────────
 export const publicClient = createPublicClient({
