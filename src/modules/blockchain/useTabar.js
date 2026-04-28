@@ -2,7 +2,7 @@ import { createPublicClient, http } from "viem";
 import { hardhat } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { useState, useCallback } from "react";
-import TabarABI from "../../config/TabarToken.json";
+import TabarABI from "/Config/TabarToken.json";
 
 // ─── Cliente blockchain compartido (mismo que App.jsx) ───────────────────────
 export const publicClient = createPublicClient({
@@ -12,20 +12,20 @@ export const publicClient = createPublicClient({
 
 // ─── Cuentas del sistema (mismo objeto que App.jsx, solo lectura) ─────────────
 export const CUENTAS = {
-  admin:         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-  fideicomiso:   "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-  acopiador:     "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-  exportador:    "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
-  dealer:        "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926b",
-  estadoNacional:"0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
+  admin: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  fideicomiso: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+  acopiador: "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+  exportador: "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+  dealer: "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926b",
+  estadoNacional: "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
 };
 
 // Mapa rol → clave en CUENTAS para simular wallet conectada
 export const ROL_A_CUENTA = {
-  admin:    "admin",
+  admin: "admin",
   industry: "exportador",
-  state:    "estadoNacional",
-  dealer:   "dealer",
+  state: "estadoNacional",
+  dealer: "dealer",
 };
 
 /**
@@ -51,11 +51,11 @@ export function useTabar(contractAddress) {
       });
       // res = [activa, totalEmitidos, enCirculacion, inicio, fin]
       setCampana({
-        activa:         res[0],
-        totalEmitidos:  Number(res[1]),
-        enCirculacion:  Number(res[2]),
-        inicio:         Number(res[3]),
-        fin:            Number(res[4]),
+        activa: res[0],
+        totalEmitidos: Number(res[1]),
+        enCirculacion: Number(res[2]),
+        inicio: Number(res[3]),
+        fin: Number(res[4]),
       });
     } catch (e) {
       setError(e.message);
