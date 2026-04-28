@@ -50,7 +50,7 @@ export default function AdminControl() {
   const handleRefreshBalances = async () => {
     try {
       const cuentas = await import("../../modules/blockchain/useTabar.js").then(m => m.CUENTAS);
-      const pvka = (await import("viem")).privateKeyToAccount;
+      const pvka = (await import("viem/accounts")).privateKeyToAccount;
       const keys = Object.values(cuentas);
       const results = {};
       for (const k of keys) {
