@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABAR Design System — Fintech Dark Luxury
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --tb-bg:         #080C10;
+  --tb-surface-1:  #0D1117;
+  --tb-surface-2:  #161B22;
+  --tb-surface-3:  #1C2330;
+  --tb-border:     rgba(255,255,255,0.07);
+  --tb-border-hover: rgba(255,255,255,0.14);
+  --tb-text:       #F0F6FC;
+  --tb-text-2:     #8B949E;
+  --tb-text-3:     #484F58;
+  --tb-accent:     #E3B64F;
+  --tb-accent-dim: rgba(227,182,79,0.10);
+  --tb-green:      #3FB950;
+  --tb-blue:       #58A6FF;
+  --tb-orange:     #F0883E;
+  --tb-purple:     #BC8CFF;
+  --tb-red:        #F85149;
+  --tb-font:       'DM Sans', system-ui, sans-serif;
+  --tb-mono:       'DM Mono', monospace;
+
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--tb-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tb-text);
+  background: var(--tb-bg);
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  border: none;
+  text-align: left;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--tb-font);
+  font-weight: 600;
+  color: var(--tb-text);
+  letter-spacing: -0.3px;
+}
+
+p { margin: 0; }
+
+code {
+  font-family: var(--tb-mono);
+  font-size: 13px;
+}
+
+a { color: var(--tb-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--tb-surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--tb-text-3); }
+
+/* Selection */
+::selection { background: rgba(227,182,79,0.25); color: #fff; }
