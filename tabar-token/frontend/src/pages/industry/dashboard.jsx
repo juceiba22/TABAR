@@ -4,6 +4,7 @@ import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTab
 import { privateKeyToAccount } from "viem/accounts";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
+import { useRequests } from "../../modules/requests/RequestContext";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
@@ -11,6 +12,12 @@ export default function IndustryDashboard() {
   const { contractAddress } = useRole();
   const { leerCampana, leerBalance } = useTabar(contractAddress);
   const [myBalance, setMyBalance] = useState(0);
+  const { requests, addRequest } = useRequests();
+
+  const handleCreateRequest = () => {
+    addRequest("industry", "admin", "Financiamiento", { fardos: 5000, desc: "Solicitud de liquidez" });
+    alert("Solicitud enviada a Fideicomiso");
+  };
 
   const myPK = CUENTAS[ROL_A_CUENTA["industry"]];
   const myAccount = privateKeyToAccount(myPK);
@@ -44,6 +51,36 @@ export default function IndustryDashboard() {
 
       <div className="tabar-section">
         <CampaignStats contractAddress={contractAddress} />
+      </div>
+
+      <div className="tabar-section">
+        <h3 className="tabar-section-label">Flujo de Trabajo (Workflow)</h3>
+        <div className="tabar-card" style={{ marginBottom: "20px", background: "#0D1117", border: "1px solid #30363D" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <h4 style={{ margin: 0, color: "#F0F6FC" }}>Bandeja Industria</h4>
+            <button onClick={handleCreateRequest} className="tabar-btn tabar-btn-primary">
+              Crear Solicitud Financiamiento
+            </button>
+          </div>
+          <div className="tabar-table-wrap">
+            <table className="tabar-table">
+              <thead><tr><th>ID</th><th>De</th><th>Tipo</th><th>Estado</th></tr></thead>
+              <tbody>
+                {requests.filter(r => r.to_role === "industry").length === 0 && (
+                  <tr><td colSpan="4" style={{ textAlign: "center", color: "#8B949E" }}>No hay requests entrantes</td></tr>
+                )}
+                {requests.filter(r => r.to_role === "industry").map(r => (
+                  <tr key={r.id}>
+                    <td className="mono">{r.id}</td>
+                    <td>{r.from_role}</td>
+                    <td>{r.type}</td>
+                    <td><span style={{ color: r.status === 'pending' ? '#E3B64F' : '#3FB950' }}>{r.status.toUpperCase()}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div className="tabar-section">

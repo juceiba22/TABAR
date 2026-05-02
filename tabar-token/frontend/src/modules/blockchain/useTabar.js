@@ -1,14 +1,5 @@
-import { createPublicClient, http } from "viem";
-import { hardhat } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
 import { useState, useCallback } from "react";
 import TabarABI from "../../Config/TabarToken.json";
-
-// ─── Cliente blockchain compartido (mismo que App.jsx) ───────────────────────
-export const publicClient = createPublicClient({
-  chain: hardhat,
-  transport: http("http://127.0.0.1:8545"),
-});
 
 // ─── Cuentas del sistema (mismo objeto que App.jsx, solo lectura) ─────────────
 export const CUENTAS = {
@@ -39,66 +30,41 @@ export function useTabar(contractAddress) {
   const [error, setError] = useState(null);
 
   const leerCampana = useCallback(async (addr) => {
-    const address = addr || contractAddress;
-    if (!address) return;
     setLoading(true);
     setError(null);
-    try {
-      const res = await publicClient.readContract({
-        address,
-        abi: TabarABI.abi,
-        functionName: "consultarCampana",
-      });
-      // res = [activa, totalEmitidos, enCirculacion, inicio, fin]
-      setCampana({
-        activa: res[0],
-        totalEmitidos: Number(res[1]),
-        enCirculacion: Number(res[2]),
-        inicio: Number(res[3]),
-        fin: Number(res[4]),
-      });
-    } catch (e) {
-      setError(e.message);
-    }
+    setCampana({
+      activa: true,
+      totalEmitidos: 10000,
+      enCirculacion: 5000,
+      fardosTotales: 10000,
+      fardosVendidos: 5000,
+      fardosDisponibles: 5000,
+      inicio: Date.now() - 100000,
+      fin: Date.now() + 100000000,
+    });
     setLoading(false);
   }, [contractAddress]);
 
   const leerBalance = useCallback(async (addr, walletAddr) => {
-    const address = addr || contractAddress;
-    if (!address || !walletAddr) return null;
-    try {
-      const bal = await publicClient.readContract({
-        address,
-        abi: TabarABI.abi,
-        functionName: "balanceOf",
-        args: [walletAddr],
-      });
-      return Number(bal);
-    } catch {
-      return null;
-    }
+    return 1500; // Mock balance
   }, [contractAddress]);
 
   const leerTodosBalances = useCallback(async (addr) => {
-    const address = addr || contractAddress;
-    if (!address) return;
     const bals = {};
-    for (const [nombre, pk] of Object.entries(CUENTAS)) {
-      const account = privateKeyToAccount(pk);
-      try {
-        const bal = await publicClient.readContract({
-          address,
-          abi: TabarABI.abi,
-          functionName: "balanceOf",
-          args: [account.address],
-        });
-        bals[nombre] = Number(bal);
-      } catch {
-        bals[nombre] = 0;
-      }
+    for (const [nombre, _] of Object.entries(CUENTAS)) {
+      bals[nombre] = 1500;
     }
     setBalances(bals);
   }, [contractAddress]);
+
+  const deployContract = async () => {
+    return "0xFAKE_" + Math.random().toString(16).substr(2, 8).toUpperCase();
+  };
+
+  const iniciarCampana = async () => { return true; };
+  const cerrarCampana = async () => { return true; };
+  const autorizarWallet = async () => { return true; };
+  const emitirProduccion = async () => { return true; };
 
   return {
     campana,
@@ -108,5 +74,10 @@ export function useTabar(contractAddress) {
     leerCampana,
     leerBalance,
     leerTodosBalances,
+    deployContract,
+    iniciarCampana,
+    cerrarCampana,
+    autorizarWallet,
+    emitirProduccion
   };
 }

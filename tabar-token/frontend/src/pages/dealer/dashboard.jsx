@@ -4,6 +4,7 @@ import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTab
 import { privateKeyToAccount } from "viem/accounts";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
+import { useRequests } from "../../modules/requests/RequestContext";
 
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
@@ -11,6 +12,13 @@ export default function DealerDashboard() {
   const { contractAddress } = useRole();
   const { leerBalance } = useTabar(contractAddress);
   const [myBalance, setMyBalance] = useState(0);
+  const { requests, updateRequestStatus, addRequest } = useRequests();
+  const myRequests = requests.filter(r => r.to_role === "dealer");
+
+  const handleEntregar = (id) => {
+    updateRequestStatus(id, "approved");
+    addRequest("dealer", "state", "CierreCiclo", { desc: "Producción entregada al estado" });
+  };
 
   const myPK = CUENTAS[ROL_A_CUENTA["dealer"]];
   const myAccount = privateKeyToAccount(myPK);
@@ -41,6 +49,36 @@ export default function DealerDashboard() {
 
       <div className="tabar-section">
         <CampaignStats contractAddress={contractAddress} />
+      </div>
+
+      <div className="tabar-section">
+        <h3 className="tabar-section-label">Flujo de Trabajo (Workflow)</h3>
+        <div className="tabar-card" style={{ marginBottom: "20px", background: "#0D1117", border: "1px solid #30363D" }}>
+          <h4 style={{ margin: "0 0 16px", color: "#F0F6FC" }}>Bandeja Dealer</h4>
+          <div className="tabar-table-wrap">
+            <table className="tabar-table">
+              <thead><tr><th>ID</th><th>De</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr></thead>
+              <tbody>
+                {myRequests.length === 0 && (
+                  <tr><td colSpan="5" style={{ textAlign: "center", color: "#8B949E" }}>No hay requests pendientes</td></tr>
+                )}
+                {myRequests.map(r => (
+                  <tr key={r.id}>
+                    <td className="mono">{r.id}</td>
+                    <td>{r.from_role}</td>
+                    <td>{r.type}</td>
+                    <td><span style={{ color: r.status === 'pending' ? '#E3B64F' : '#3FB950' }}>{r.status.toUpperCase()}</span></td>
+                    <td>
+                      {r.status === 'pending' && (
+                        <button onClick={() => handleEntregar(r.id)} className="tabar-btn tabar-btn-primary" style={{ padding: "4px 8px", fontSize: "11px" }}>Entregar</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div className="tabar-section">

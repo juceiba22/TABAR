@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole } from "./modules/roles/RoleContext";
 import AppLayout from "./modules/layout/AppLayout";
+import { RequestProvider } from "./modules/requests/RequestContext";
 
 // Pages
 import LandingRole      from "./pages/LandingRole";
@@ -67,7 +68,9 @@ export default function AppShell() {
   return (
     <BrowserRouter>
       <RoleProvider>
-        <AppRoutes />
+        <RequestProvider>
+          <AppRoutes />
+        </RequestProvider>
       </RoleProvider>
     </BrowserRouter>
   );
