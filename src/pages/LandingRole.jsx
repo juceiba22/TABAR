@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
-import { ROLES, ROLE_PALETTE, ROLES_INFO } from "./AuthConstants"; // Let's create an AuthConstants file or just inline it
+// Role palette and info managed inline for the MVP
 
 const ROLE_PALETTE_INLINE = {
   admin:    { color: "#E3B64F", dim: "rgba(227,182,79,0.10)" },
