@@ -1,27 +1,12 @@
-import { useEffect, useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
 export default function IndustryDashboard() {
-  const { contractAddress } = useRole();
-  const { leerCampana, leerBalance } = useTabar(contractAddress);
-  const [myBalance, setMyBalance] = useState(0);
-
-  const myPK = CUENTAS[ROL_A_CUENTA["industry"]];
-  const myAccount = privateKeyToAccount(myPK);
-
-  useEffect(() => {
-    if (!contractAddress) return;
-    leerCampana(contractAddress);
-    leerBalance(contractAddress, myAccount.address).then((b) => {
-      if (b !== null) setMyBalance(b);
-    });
-  }, [contractAddress]);
+  const { balances } = useData();
+  const myBalance = balances?.industry || 0;
 
   const kgEquivalente = myBalance * 200;
 
@@ -43,7 +28,7 @@ export default function IndustryDashboard() {
       </div>
 
       <div className="tabar-section">
-        <CampaignStats contractAddress={contractAddress} />
+        <CampaignStats />
       </div>
 
       <div className="tabar-section">

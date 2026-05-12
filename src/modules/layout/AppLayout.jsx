@@ -36,7 +36,7 @@ const NAV_LINKS = {
 };
 
 export default function AppLayout({ children }) {
-  const { role, walletAddress, logout, contractAddress } = useRole();
+  const { role, user, profile, logout } = useRole();
   const navigate = useNavigate();
   const links = NAV_LINKS[role] || [];
   const palette = ROLE_PALETTE[role] || ROLE_PALETTE.admin;
@@ -45,9 +45,7 @@ export default function AppLayout({ children }) {
   const handleLogout = () => { logout(); navigate("/"); };
   const handleNavClick = () => setNavOpen(false);
 
-  const shortAddr = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-    : "—";
+  const displayName = profile?.displayName || user?.email || "Usuario";
 
   return (
     <div className="tabar-shell">
@@ -101,14 +99,6 @@ export default function AppLayout({ children }) {
           </nav>
 
           <div className="tabar-sidebar-bottom">
-            {contractAddress && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginBottom: "10px" }}>
-                <span style={{ color: "var(--tb-green)", fontSize: "10px", fontWeight: 500 }}>● Contrato</span>
-                <span style={{ fontFamily: "var(--tb-mono)", fontSize: "11px", color: "var(--tb-text-3)", wordBreak: "break-all" }}>
-                  {contractAddress.slice(0, 14)}...
-                </span>
-              </div>
-            )}
             <div style={{
               background: "var(--tb-surface-2)",
               border: "1px solid var(--tb-border)",
@@ -120,7 +110,7 @@ export default function AppLayout({ children }) {
               marginBottom: "8px",
             }}>
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--tb-mono)", fontSize: "11px", color: "var(--tb-text-2)" }}>{shortAddr}</span>
+              <span style={{ fontFamily: "var(--tb-mono)", fontSize: "11px", color: "var(--tb-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
             </div>
             <button onClick={handleLogout} style={{
               width: "100%", background: "transparent",
@@ -129,7 +119,7 @@ export default function AppLayout({ children }) {
               cursor: "pointer", fontFamily: "var(--tb-font)",
               fontSize: "12px", borderRadius: "6px",
             }}>
-              Cambiar rol
+              Cerrar sesión
             </button>
           </div>
         </div>

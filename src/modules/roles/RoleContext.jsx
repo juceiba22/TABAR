@@ -1,4 +1,7 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../../config/firebase";
 
 const RoleContext = createContext(null);
 
@@ -24,24 +27,58 @@ export const ROLE_COLORS = {
 };
 
 export function RoleProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
-  const [walletAddress, setWalletAddress] = useState(null);
-  const [contractAddress, setContractAddress] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const logout = () => {
-    setRole(null);
-    setWalletAddress(null);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        // Fetch user profile to get role
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setProfile(data);
+            setRole(data.role || null);
+          } else {
+            console.warn("User document not found for uid:", currentUser.uid);
+            setProfile(null);
+            setRole(null);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          setProfile(null);
+          setRole(null);
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+        setRole(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
     <RoleContext.Provider
       value={{
+        user,
         role,
-        setRole,
-        walletAddress,
-        setWalletAddress,
-        contractAddress,
-        setContractAddress,
+        profile,
+        loading,
         logout,
       }}
     >

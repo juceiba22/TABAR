@@ -1,4 +1,4 @@
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
@@ -6,7 +6,7 @@ const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 const WALLET = "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc";
 
 export default function StateDashboard() {
-  const { balances } = useDemo();
+  const { balances } = useData();
   const myBalance = balances.state;
   const tasa = 8.5;
   const rendimiento = myBalance * 0.085;

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole } from "./modules/roles/RoleContext";
-import { DemoProvider } from "./modules/roles/DemoContext";
+import { DataProvider } from "./modules/roles/DataContext";
 import AppLayout from "./modules/layout/AppLayout";
 
 import LandingRole      from "./pages/LandingRole";
@@ -18,7 +18,15 @@ import DealerTrade      from "./pages/dealer/trade";
 import DealerMarkets    from "./pages/dealer/markets";
 
 function AppRoutes() {
-  const { role } = useRole();
+  const { role, loading } = useRole();
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080c10", color: "#E3B64F" }}>
+        Cargando sistema...
+      </div>
+    );
+  }
 
   if (!role) {
     return (
@@ -54,9 +62,9 @@ export default function AppShell() {
   return (
     <BrowserRouter>
       <RoleProvider>
-        <DemoProvider>
+        <DataProvider>
           <AppRoutes />
-        </DemoProvider>
+        </DataProvider>
       </RoleProvider>
     </BrowserRouter>
   );

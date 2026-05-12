@@ -1,11 +1,11 @@
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 const TASA = 8.5;
 
 export default function StateReturns() {
-  const { balances, campana } = useDemo();
+  const { balances, campana } = useData();
   const myBalance = balances.state;
 
   const rendimiento        = (myBalance * TASA) / 100;

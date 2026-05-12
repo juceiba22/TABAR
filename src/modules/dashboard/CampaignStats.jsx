@@ -1,7 +1,7 @@
-import { useDemo } from "../roles/DemoContext";
+import { useData } from "../roles/DataContext";
 
 export default function CampaignStats() {
-  const { campana } = useDemo();
+  const { campana } = useData();
 
   const { activa, fardosTotales, fardosVendidos, fardosDisponibles } = campana;
   const pct = fardosTotales > 0 ? ((fardosVendidos / fardosTotales) * 100).toFixed(1) : "0";

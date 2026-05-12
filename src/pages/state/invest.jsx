@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 export default function StateInvest() {
-  const { contractAddress } = useRole();
+  const { user } = useRole();
+  const { invertirState } = useData();
   const [monto, setMonto] = useState("");
   const [step, setStep] = useState("form");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const tokensEstimados = monto ? parseInt(monto) : 0;
   const rendimientoAnual = (tokensEstimados * 0.085).toFixed(1);
   const kgEquivalente = tokensEstimados * 200;
 
   const handleConfirm = () => setStep("confirm");
-  const handleSubmit = () => setStep("done");
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    const res = await invertirState(parseInt(monto));
+    setLoading(false);
+    if (res.ok) {
+      setStep("done");
+    } else {
+      setError(res.error);
+    }
+  };
 
   return (
     <div>
@@ -71,9 +85,12 @@ export default function StateInvest() {
           <InfoRow label="TABAR a adquirir" value={`${tokensEstimados.toLocaleString("es-AR")}`} />
           <InfoRow label="Producción equivalente" value={`${(kgEquivalente / 1000).toFixed(1)} ton`} />
           <InfoRow label="Rendimiento anual estimado" value={`${rendimientoAnual} TABAR`} valueColor="#3FB950" />
+          {error && <div className="tabar-notice" style={{ color: "#F85149", borderColor: "rgba(248,81,73,0.3)", marginTop: "16px" }}>{error}</div>}
           <div className="tabar-btn-row" style={{ marginTop: "20px" }}>
-            <button onClick={handleSubmit} className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ background: C.accent, borderColor: C.accent, color: "#080C10" }}>Confirmar inversión</button>
-            <button onClick={() => setStep("form")} className="tabar-btn tabar-btn-ghost">Volver</button>
+            <button onClick={handleSubmit} disabled={loading} className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ background: C.accent, borderColor: C.accent, color: "#080C10" }}>
+              {loading ? "Procesando..." : "Confirmar inversión"}
+            </button>
+            <button onClick={() => setStep("form")} disabled={loading} className="tabar-btn tabar-btn-ghost">Volver</button>
           </div>
         </div>
       )}

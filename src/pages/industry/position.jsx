@@ -1,24 +1,12 @@
-import { useEffect, useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
 export default function IndustryPosition() {
-  const { contractAddress } = useRole();
-  const { leerBalance } = useTabar(contractAddress);
-  const [myBalance, setMyBalance] = useState(0);
-
-  const myPK = CUENTAS[ROL_A_CUENTA["industry"]];
-  const myAccount = privateKeyToAccount(myPK);
-
-  useEffect(() => {
-    if (!contractAddress) return;
-    leerBalance(contractAddress, myAccount.address).then((b) => {
-      if (b !== null) setMyBalance(b);
-    });
-  }, [contractAddress]);
+  const { user } = useRole();
+  const { balances } = useData();
+  const myBalance = balances?.industry || 0;
 
   const KG_POR_FARDO = 200;
   const PRECIO_SPOT = 96.5;
@@ -38,8 +26,6 @@ export default function IndustryPosition() {
         </div>
         <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Detalle de tu tenencia y equivalentes de producción</p>
       </div>
-
-      {!contractAddress && <div className="tabar-notice">Conectate a un contrato para ver tu posición real en tiempo real.</div>}
 
       <div className="tabar-grid-4">
         <div className="tabar-metric-card">
@@ -84,8 +70,8 @@ export default function IndustryPosition() {
       </div>
 
       <div className="tabar-wallet-box" style={{ marginTop: "16px" }}>
-        <span style={{ color: "#484F58", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.8px" }}>Wallet asociada</span>
-        <span>{myAccount.address}</span>
+        <span style={{ color: "#484F58", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.8px" }}>Cuenta asociada</span>
+        <span>{user?.email || "Usuario no autenticado"}</span>
       </div>
     </div>
   );

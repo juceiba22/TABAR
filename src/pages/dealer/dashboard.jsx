@@ -1,26 +1,12 @@
-import { useEffect, useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
 export default function DealerDashboard() {
-  const { contractAddress } = useRole();
-  const { leerBalance } = useTabar(contractAddress);
-  const [myBalance, setMyBalance] = useState(0);
-
-  const myPK = CUENTAS[ROL_A_CUENTA["dealer"]];
-  const myAccount = privateKeyToAccount(myPK);
-
-  useEffect(() => {
-    if (!contractAddress) return;
-    leerBalance(contractAddress, myAccount.address).then((b) => {
-      if (b !== null) setMyBalance(b);
-    });
-  }, [contractAddress]);
+  const { balances } = useData();
+  const myBalance = balances?.dealer || 0;
 
   return (
     <div>
@@ -40,7 +26,7 @@ export default function DealerDashboard() {
       </div>
 
       <div className="tabar-section">
-        <CampaignStats contractAddress={contractAddress} />
+        <CampaignStats />
       </div>
 
       <div className="tabar-section">

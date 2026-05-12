@@ -1,103 +1,69 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRole } from "../modules/roles/RoleContext";
-import { CUENTAS, ROL_A_CUENTA } from "../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
+import { ROLES, ROLE_PALETTE, ROLES_INFO } from "./AuthConstants"; // Let's create an AuthConstants file or just inline it
 
-const ROLE_PALETTE = {
+const ROLE_PALETTE_INLINE = {
   admin:    { color: "#E3B64F", dim: "rgba(227,182,79,0.10)" },
   industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)" },
   state:    { color: "#F0883E", dim: "rgba(240,136,62,0.10)" },
   dealer:   { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)" },
 };
 
-const ROLES_INFO = [
-  {
-    id: "admin",
-    glyph: "◈",
-    title: "Fideicomiso",
-    subtitle: "Admin",
-    desc: "Control total del sistema. Campañas, autorizaciones y emisión.",
-    features: ["Iniciar campaña", "Autorizar participantes", "Emitir producción", "Control del sistema"],
-  },
-  {
-    id: "industry",
-    glyph: "⬡",
-    title: "Industria",
-    subtitle: "Exportador",
-    desc: "Compra de producción tabacalera anticipada con descuento.",
-    features: ["Comprar TABAR", "Ver posición", "Transferir", "Campaña"],
-  },
-  {
-    id: "state",
-    glyph: "◉",
-    title: "Estado Nacional",
-    subtitle: "FET",
-    desc: "Participación institucional con rendimiento garantizado.",
-    features: ["Invertir vía FET", "Rendimientos", "Proyecciones", "Reportes"],
-  },
-  {
-    id: "dealer",
-    glyph: "◇",
-    title: "Dealer",
-    subtitle: "Revendedor",
-    desc: "Mercado secundario. Arbitraje y oportunidades de posición.",
-    features: ["Operar TABAR", "Mercados", "Arbitraje", "Posiciones"],
-  },
+const ROLES_INFO_INLINE = [
+  { id: "admin", glyph: "◈", title: "Fideicomiso", subtitle: "Admin" },
+  { id: "industry", glyph: "⬡", title: "Industria", subtitle: "Exportador" },
+  { id: "state", glyph: "◉", title: "Estado Nacional", subtitle: "FET" },
+  { id: "dealer", glyph: "◇", title: "Dealer", subtitle: "Revendedor" },
 ];
 
-const ROUTE_MAP = { admin: "/admin", industry: "/industry", state: "/state", dealer: "/dealer" };
-
 export default function LandingRole() {
-  const { setRole, setWalletAddress, setContractAddress } = useRole();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("select");
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [contractInput, setContractInput] = useState("");
-  const [contractError, setContractError] = useState("");
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [selectedRole, setSelectedRole] = useState("industry");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSelectRole = (roleId) => {
-    setSelectedRole(roleId);
-    setStep("connecting");
-    setTimeout(() => {
-      const cuentaKey = ROL_A_CUENTA[roleId];
-      const pk = CUENTAS[cuentaKey];
-      const account = privateKeyToAccount(pk);
-      setWalletAddress(account.address);
-      setRole(roleId);
-      setStep("input_contract");
-    }, 1200);
-  };
-
-  const handleContractSubmit = (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
-    const addr = contractInput.trim();
-    if (addr && !addr.match(/^0x[0-9a-fA-F]{40}$/)) {
-      setContractError("Dirección inválida. Debe ser 0x seguido de 40 caracteres hex.");
-      return;
+    setError("");
+    setLoading(true);
+
+    try {
+      if (mode === "login") {
+        await signInWithEmailAndPassword(auth, email, password);
+        // RoleContext will handle redirect automatically based on user role
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        // Save user profile in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email,
+          displayName,
+          companyName,
+          role: selectedRole,
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setContractAddress(addr);
-    navigate(ROUTE_MAP[selectedRole]);
   };
-
-  const handleSkipContract = () => {
-    setContractAddress("");
-    navigate(ROUTE_MAP[selectedRole]);
-  };
-
-  const palette = selectedRole ? ROLE_PALETTE[selectedRole] : ROLE_PALETTE.admin;
 
   return (
     <div className="tabar-landing">
       {/* Hero */}
-      <div className="tabar-hero">
-        <div style={{
-          position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)",
-          width: "60%", height: "100%",
-          background: "radial-gradient(ellipse 60% 50% at 50% -10%, rgba(227,182,79,0.08), transparent)",
-          pointerEvents: "none",
-        }} />
+      <div className="tabar-hero" style={{ paddingBottom: "20px" }}>
         <div style={{ position: "relative" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "14px", marginBottom: "16px" }}>
             <div style={{ width: "44px", height: "44px", borderRadius: "10px", background: "var(--tb-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -115,115 +81,89 @@ export default function LandingRole() {
             </div>
           </div>
           <p className="tabar-hero-desc">
-            Plataforma tokenizada de financiamiento tabacalero.<br />
-            Conectá tu wallet y seleccioná tu perfil de participante.
+            Plataforma institucional de financiamiento tabacalero.<br />
+            {mode === "login" ? "Ingresá a tu cuenta para operar." : "Registrá tu entidad para participar."}
           </p>
         </div>
       </div>
 
-      {/* Steps */}
-      <div className="tabar-landing-main">
+      <div className="tabar-landing-main" style={{ maxWidth: "400px", margin: "0 auto", marginTop: "20px" }}>
+        <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left", background: "#080c10", padding: "30px", borderRadius: "12px", border: "1px solid var(--tb-border)" }}>
+          {error && <div style={{ color: "var(--tb-red)", fontSize: "13px", padding: "10px", background: "rgba(255, 102, 68, 0.1)", borderRadius: "6px" }}>{error}</div>}
 
-        {step === "select" && (
-          <>
-            <h2 className="tabar-section-title">Seleccioná tu perfil</h2>
-            <div className="tabar-roles-grid">
-              {ROLES_INFO.map((r) => {
-                const p = ROLE_PALETTE[r.id];
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => handleSelectRole(r.id)}
-                    className="tabar-role-card"
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = p.color; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--tb-border)"; }}
-                  >
-                    <span className="tabar-role-arrow">↗</span>
-                    <div className="tabar-role-icon" style={{ background: p.dim, color: p.color }}>
-                      {r.glyph}
-                    </div>
-                    <h3 style={{ margin: "0 0 2px", fontSize: "15px", fontWeight: 600, color: "var(--tb-text)" }}>
-                      {r.title}
-                    </h3>
-                    <span style={{ fontSize: "11px", color: "var(--tb-text-3)", display: "block", marginBottom: "8px" }}>
-                      {r.subtitle}
-                    </span>
-                    <p style={{ margin: "0 0 14px", fontSize: "13px", color: "var(--tb-text-2)", lineHeight: 1.5 }}>
-                      {r.desc}
-                    </p>
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 16px", display: "flex", flexDirection: "column", gap: "3px" }}>
-                      {r.features.map((f) => (
-                        <li key={f} style={{ fontSize: "12px", color: "var(--tb-text-3)", display: "flex", gap: "6px", alignItems: "center" }}>
-                          <span style={{ color: p.color, fontSize: "10px" }}>●</span> {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <div style={{
-                      border: "1px solid var(--tb-border)", borderRadius: "6px",
-                      padding: "7px 14px", fontSize: "12px", fontWeight: 500,
-                      color: "var(--tb-text-2)", display: "inline-block",
-                    }}>
-                      Conectar →
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {step === "connecting" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", minHeight: "300px" }}>
-            <div style={{
-              width: "40px", height: "40px", borderRadius: "50%",
-              border: "2px solid var(--tb-surface-3)",
-              borderTopColor: palette.color,
-              animation: "spin 0.8s linear infinite",
-            }} />
-            <div style={{ textAlign: "center" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 6px", color: "var(--tb-text)" }}>Conectando wallet</h2>
-              <p style={{ color: "var(--tb-text-2)", fontSize: "13px", margin: 0 }}>
-                Simulando conexión para {ROLES_INFO.find(r => r.id === selectedRole)?.title}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {step === "input_contract" && (
-          <div className="tabar-contract-step">
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "24px", fontSize: "13px" }}>
-              <span style={{ color: "var(--tb-green)" }}>●</span>
-              <span style={{ color: "var(--tb-green)" }}>Wallet conectada</span>
-            </div>
-            <h2 className="tabar-section-title" style={{ marginBottom: "8px" }}>Dirección del contrato TABAR</h2>
-            <p style={{ color: "var(--tb-text-3)", fontSize: "13px", lineHeight: 1.6, margin: "0 0 20px" }}>
-              Ingresá la dirección del contrato deployado en tu red local, o salteá este paso.
-            </p>
-            <form onSubmit={handleContractSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", textAlign: "left" }}>
-              <input
-                type="text"
-                placeholder="0x..."
-                value={contractInput}
-                onChange={(e) => { setContractInput(e.target.value); setContractError(""); }}
-                className="tabar-input tabar-input-mono"
-                style={{ borderColor: contractError ? "var(--tb-red)" : undefined }}
-              />
-              {contractError && <p style={{ color: "var(--tb-red)", fontSize: "12px", margin: 0 }}>{contractError}</p>}
-              <div className="tabar-contract-actions">
-                <button type="submit" className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ flex: 1 }}>
-                  Ingresar al sistema
-                </button>
-                <button type="button" onClick={handleSkipContract} className="tabar-btn tabar-btn-ghost">
-                  Saltear
-                </button>
+          {mode === "register" && (
+            <>
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--tb-text-2)", marginBottom: "6px", display: "block" }}>Nombre Completo</label>
+                <input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} type="text" className="tabar-input" placeholder="Ej. Juan Pérez" />
               </div>
-            </form>
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--tb-text-2)", marginBottom: "6px", display: "block" }}>Organización / Empresa</label>
+                <input required value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" className="tabar-input" placeholder="Ej. AgroTech SA" />
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--tb-text-2)", marginBottom: "6px", display: "block" }}>Tipo de Perfil</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {ROLES_INFO_INLINE.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedRole(r.id)}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: `1px solid ${selectedRole === r.id ? ROLE_PALETTE_INLINE[r.id].color : "var(--tb-border)"}`,
+                        background: selectedRole === r.id ? ROLE_PALETTE_INLINE[r.id].dim : "transparent",
+                        color: "var(--tb-text)",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        textAlign: "left"
+                      }}
+                    >
+                      <span style={{ color: ROLE_PALETTE_INLINE[r.id].color }}>{r.glyph}</span> {r.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label style={{ fontSize: "12px", color: "var(--tb-text-2)", marginBottom: "6px", display: "block" }}>Email</label>
+            <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="tabar-input" placeholder="institucional@email.com" />
           </div>
-        )}
+          <div>
+            <label style={{ fontSize: "12px", color: "var(--tb-text-2)", marginBottom: "6px", display: "block" }}>Contraseña</label>
+            <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="tabar-input" placeholder="••••••••" />
+          </div>
+
+          <button type="submit" disabled={loading} className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ marginTop: "10px" }}>
+            {loading ? "Procesando..." : (mode === "login" ? "Ingresar al Sistema" : "Crear Cuenta")}
+          </button>
+
+          <div style={{ textAlign: "center", marginTop: "10px", fontSize: "13px" }}>
+            <span style={{ color: "var(--tb-text-3)" }}>
+              {mode === "login" ? "¿No tenés cuenta?" : "¿Ya estás registrado?"}
+            </span>{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "login" ? "register" : "login");
+                setError("");
+              }}
+              style={{ background: "none", border: "none", color: "var(--tb-accent)", cursor: "pointer", fontWeight: 500 }}
+            >
+              {mode === "login" ? "Solicitar acceso" : "Iniciá sesión"}
+            </button>
+          </div>
+        </form>
       </div>
 
-      <footer className="tabar-footer">
-        AgroTabaco Labs · TABAR v1.0 · Red Hardhat Local
+      <footer className="tabar-footer" style={{ marginTop: "40px" }}>
+        AgroTabaco Labs · TABAR v1.0 MVP
       </footer>
     </div>
   );

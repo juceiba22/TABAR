@@ -1,42 +1,38 @@
-import { useEffect } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar } from "../../modules/blockchain/useTabar";
+import { useData } from "../../modules/roles/DataContext";
 
 const KG_POR_FARDO = 200;
 
 export default function CampaignPage() {
-  const { contractAddress } = useRole();
-  const { campana, loading, leerCampana } = useTabar(contractAddress);
+  const { user } = useRole();
+  const { campana } = useData();
 
-  useEffect(() => {
-    if (contractAddress) leerCampana(contractAddress);
-  }, [contractAddress]);
-
-  const pct = campana && campana.totalEmitidos > 0
-    ? Math.round((campana.enCirculacion / campana.totalEmitidos) * 100)
+  const pct = campana && campana.fardosTotales > 0
+    ? Math.round((campana.fardosVendidos / campana.fardosTotales) * 100)
     : 0;
 
-  const disponibles = campana ? campana.totalEmitidos - campana.enCirculacion : 0;
-  const kgTotal     = campana ? campana.totalEmitidos * KG_POR_FARDO : 0;
-  const kgDist      = campana ? campana.enCirculacion * KG_POR_FARDO : 0;
+  const disponibles = campana?.fardosDisponibles || 0;
+  const kgTotal     = (campana?.fardosTotales || 0) * KG_POR_FARDO;
+  const kgDist      = (campana?.fardosVendidos || 0) * KG_POR_FARDO;
 
-  const formatDate = (ts) =>
-    ts > 0 ? new Date(ts * 1000).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+  const formatDate = (isoString) =>
+    isoString ? new Date(isoString).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
   // Días restantes
-  const hoy = Math.floor(Date.now() / 1000);
-  const diasRestantes = campana && campana.fin > hoy ? Math.ceil((campana.fin - hoy) / 86400) : 0;
+  const diasTotales = campana?.diasTotales || 180;
+  let diasRestantes = 0;
+  let finIso = null;
+  if (campana?.inicio) {
+    const inicioDate = new Date(campana.inicio);
+    const finDate = new Date(inicioDate.getTime() + diasTotales * 24 * 60 * 60 * 1000);
+    finIso = finDate.toISOString();
+    const msDiff = finDate.getTime() - Date.now();
+    diasRestantes = Math.max(0, Math.ceil(msDiff / (1000 * 60 * 60 * 24)));
+  }
 
   return (
     <div>
       <PageHeader title="Estado de Campaña TABAR" desc="Progreso del financiamiento agroindustrial tabacalero" icon="🌿" color="#ccff66" />
-
-      {!contractAddress && (
-        <div style={styles.notice}>
-          ⚠️ Conectate a un contrato para ver datos en tiempo real.
-          Sin contrato, los datos mostrados son de ejemplo.
-        </div>
-      )}
 
       {/* Hero de progreso */}
       <div style={styles.heroCard}>
@@ -77,15 +73,15 @@ export default function CampaignPage() {
         </div>
 
         <div style={styles.bigBarLabels}>
-          <span>{campana?.enCirculacion || 0} TABAR distribuidos</span>
-          <span>{campana?.totalEmitidos || 0} TABAR totales</span>
+          <span>{campana?.fardosVendidos || 0} TABAR distribuidos</span>
+          <span>{campana?.fardosTotales || 0} TABAR totales</span>
         </div>
       </div>
 
       {/* Métricas */}
       <div style={styles.metricsGrid}>
-        <MetricCard label="Total emitidos" value={(campana?.totalEmitidos || 0).toLocaleString("es-AR")} unit="TABAR / fardos" color="#ccff66" icon="📦" />
-        <MetricCard label="Distribuidos" value={(campana?.enCirculacion || 0).toLocaleString("es-AR")} unit="TABAR" color="#44ff88" icon="✅" />
+        <MetricCard label="Total emitidos" value={(campana?.fardosTotales || 0).toLocaleString("es-AR")} unit="TABAR / fardos" color="#ccff66" icon="📦" />
+        <MetricCard label="Distribuidos" value={(campana?.fardosVendidos || 0).toLocaleString("es-AR")} unit="TABAR" color="#44ff88" icon="✅" />
         <MetricCard label="Disponibles" value={disponibles.toLocaleString("es-AR")} unit="TABAR" color="#44aaff" icon="🔓" />
         <MetricCard label="Toneladas de tabaco" value={((kgTotal / 1000) || 0).toFixed(1)} unit="toneladas" color="#ff9944" icon="🌿" />
       </div>
@@ -96,9 +92,9 @@ export default function CampaignPage() {
           <h3 style={styles.cardTitle}>Detalle de la campaña</h3>
           <DetailRow label="Estado" value={campana?.activa ? "🟢 Activa" : "🔴 Cerrada"} />
           <DetailRow label="Inicio" value={formatDate(campana?.inicio)} />
-          <DetailRow label="Vencimiento" value={formatDate(campana?.fin)} />
-          <DetailRow label="Duración" value="180 días" />
-          <DetailRow label="Tokens emitidos" value={`${(campana?.totalEmitidos || 0).toLocaleString("es-AR")} TABAR`} />
+          <DetailRow label="Vencimiento" value={formatDate(finIso)} />
+          <DetailRow label="Duración" value={`${diasTotales} días`} />
+          <DetailRow label="Tokens emitidos" value={`${(campana?.fardosTotales || 0).toLocaleString("es-AR")} TABAR`} />
           <DetailRow label="Kg totales campaña" value={`${kgTotal.toLocaleString("es-AR")} kg`} />
         </div>
 
@@ -113,12 +109,6 @@ export default function CampaignPage() {
           </p>
         </div>
       </div>
-
-      {contractAddress && (
-        <button onClick={() => leerCampana(contractAddress)} style={styles.refreshBtn}>
-          🔄 Actualizar datos del contrato
-        </button>
-      )}
     </div>
   );
 }

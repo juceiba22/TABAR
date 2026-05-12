@@ -4,7 +4,7 @@ import { useRole } from "../../modules/roles/RoleContext";
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
 export default function DealerMarkets() {
-  const { contractAddress } = useRole();
+  const { user } = useRole();
   const [tab, setTab] = useState("overview");
 
   const marketData = [

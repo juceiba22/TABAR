@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 export default function StateInvest() {
-  const { campana, invertirState } = useDemo();
+  const { campana, invertirState } = useData();
   const [monto, setMonto] = useState("");
   const [step, setStep] = useState("form");
   const [error, setError] = useState("");

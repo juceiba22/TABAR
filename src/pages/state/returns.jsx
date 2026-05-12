@@ -1,33 +1,29 @@
-import { useEffect, useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 export default function StateReturns() {
-  const { contractAddress } = useRole();
-  const { leerBalance } = useTabar(contractAddress);
-  const [myBalance, setMyBalance] = useState(0);
-
-  const myPK = CUENTAS[ROL_A_CUENTA["state"]];
-  const myAccount = privateKeyToAccount(myPK);
-
-  useEffect(() => {
-    if (!contractAddress) return;
-    leerBalance(contractAddress, myAccount.address).then((b) => {
-      if (b !== null) setMyBalance(b);
-    });
-  }, [contractAddress]);
+  const { user } = useRole();
+  const { balances, campana } = useData();
+  const myBalance = balances?.state || 0;
 
   const TASA = 8.5;
   const rendimiento = (myBalance * TASA) / 100;
   const totalConRendimiento = myBalance + rendimiento;
   const kgEquivOriginal = myBalance * 200;
   const kgEquivTotal = totalConRendimiento * 200;
-  const diasTranscurridos = 47;
-  const diasTotales = 180;
-  const rendDevengado = (rendimiento * diasTranscurridos) / diasTotales;
+  
+  const diasTotales = campana?.diasTotales || 180;
+  let diasTranscurridos = 0;
+  if (campana?.inicio) {
+    const inicioDate = new Date(campana.inicio);
+    const msDiff = Date.now() - inicioDate.getTime();
+    diasTranscurridos = Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
+    if (diasTranscurridos > diasTotales) diasTranscurridos = diasTotales;
+  }
+  
+  const rendDevengado = diasTotales > 0 ? (rendimiento * diasTranscurridos) / diasTotales : 0;
 
   return (
     <div>
@@ -38,8 +34,6 @@ export default function StateReturns() {
         </div>
         <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Proyección y detalle de rendimiento sobre tu inversión FET</p>
       </div>
-
-      {!contractAddress && <div className="tabar-notice">Conectate a un contrato para ver rendimientos reales.</div>}
 
       <div className="tabar-summary-grid">
         <div className="tabar-metric-card">

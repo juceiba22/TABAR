@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
 
 export default function IndustryBuy() {
-  const { contractAddress } = useRole();
+  const { user } = useRole();
+  const { comprarIndustry } = useData();
   const [cantidad, setCantidad] = useState("");
   const [step, setStep] = useState("form");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const kgEquivalente = cantidad ? parseInt(cantidad) * 200 : 0;
   const precioUnitario = 85;
   const totalUSD = cantidad ? parseInt(cantidad) * precioUnitario : 0;
 
   const handleConfirm = () => setStep("confirm");
-  const handleSubmit = () => setStep("done");
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    const res = await comprarIndustry(parseInt(cantidad));
+    setLoading(false);
+    if (res.ok) {
+      setStep("done");
+    } else {
+      setError(res.error);
+    }
+  };
 
   return (
     <div>
@@ -73,9 +87,12 @@ export default function IndustryBuy() {
             <InfoRow label="Equivalente" value={`${(kgEquivalente/1000).toFixed(1)} toneladas de tabaco`} />
             <InfoRow label="Total estimado" value={`USD ${totalUSD.toLocaleString("es-AR")}`} valueColor="#E3B64F" />
           </div>
+          {error && <div className="tabar-notice" style={{ color: "#F85149", borderColor: "rgba(248,81,73,0.3)", marginBottom: "16px" }}>{error}</div>}
           <div className="tabar-btn-row">
-            <button onClick={handleSubmit} className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ background: C.accent, borderColor: C.accent, color: "#080C10" }}>Confirmar solicitud</button>
-            <button onClick={() => setStep("form")} className="tabar-btn tabar-btn-ghost">Volver</button>
+            <button onClick={handleSubmit} disabled={loading} className="tabar-btn tabar-btn-primary tabar-btn-full" style={{ background: C.accent, borderColor: C.accent, color: "#080C10" }}>
+              {loading ? "Procesando..." : "Confirmar solicitud"}
+            </button>
+            <button onClick={() => setStep("form")} disabled={loading} className="tabar-btn tabar-btn-ghost">Volver</button>
           </div>
         </div>
       )}

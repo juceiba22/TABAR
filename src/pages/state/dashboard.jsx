@@ -1,26 +1,12 @@
-import { useEffect, useState } from "react";
-import { useRole } from "../../modules/roles/RoleContext";
-import { useTabar, CUENTAS, ROL_A_CUENTA } from "../../modules/blockchain/useTabar";
-import { privateKeyToAccount } from "viem/accounts";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 export default function StateDashboard() {
-  const { contractAddress } = useRole();
-  const { leerBalance } = useTabar(contractAddress);
-  const [myBalance, setMyBalance] = useState(0);
-
-  const myPK = CUENTAS[ROL_A_CUENTA["state"]];
-  const myAccount = privateKeyToAccount(myPK);
-
-  useEffect(() => {
-    if (!contractAddress) return;
-    leerBalance(contractAddress, myAccount.address).then((b) => {
-      if (b !== null) setMyBalance(b);
-    });
-  }, [contractAddress]);
+  const { balances } = useData();
+  const myBalance = balances?.state || 0;
 
   const tasa = 8.5;
   const rendimiento = myBalance * 0.085;
@@ -43,7 +29,7 @@ export default function StateDashboard() {
       </div>
 
       <div className="tabar-section">
-        <CampaignStats contractAddress={contractAddress} />
+        <CampaignStats />
       </div>
 
       <div className="tabar-section">

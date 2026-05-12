@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
 export default function DealerTrade() {
-  const { campana, balances, operarDealer } = useDemo();
+  const { campana, balances, operarDealer } = useData();
   const [tab, setTab]       = useState("buy");
   const [cantidad, setCantidad] = useState("");
   const [step, setStep]     = useState("form");

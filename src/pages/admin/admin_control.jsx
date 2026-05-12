@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function AdminControl() {
   const { contractAddress, setContractAddress } = useRole();
-  const { campana, balances, historial, iniciarCampana, cerrarCampana, resetDemo } = useDemo();
+  const { campana, balances, historial, iniciarCampana, cerrarCampana, resetDemo } = useData();
 
   const [tab, setTab] = useState("campana");
   const [fardosTotales, setFardosTotales] = useState("10000");

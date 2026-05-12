@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function AdminDashboard() {
-  const { contractAddress, walletAddress } = useRole();
+  const { user, profile } = useRole();
 
   return (
     <div>
@@ -14,31 +14,24 @@ export default function AdminDashboard() {
           <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>◈</div>
           <h1>Panel de Administración — Fideicomiso</h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Acceso completo al sistema. Las acciones tienen efecto directo en el contrato TABAR.</p>
+        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Acceso completo al sistema. Las acciones tienen efecto directo en la plataforma.</p>
       </div>
-
-      {!contractAddress && (
-        <div className="tabar-notice">
-          No hay contrato conectado. Ingresá la dirección del contrato desde la pantalla inicial para operar con datos reales.
-        </div>
-      )}
 
       <div className="tabar-grid-4" style={{ marginBottom: "20px" }}>
         <div className="tabar-metric-card">
           <div className="tabar-metric-icon" style={{ background: C.dim, color: C.accent }}>◈</div>
-          <div className="tabar-metric-label">Contrato</div>
-          <div style={{ fontSize: "13px", color: contractAddress ? "#3FB950" : "#484F58" }}>{contractAddress ? "Conectado" : "Sin deployar"}</div>
-          {contractAddress && <div style={{ fontSize: "11px", color: "#484F58", fontFamily: "var(--tb-mono)", marginTop: "4px", wordBreak: "break-all" }}>{contractAddress.slice(0, 14)}...</div>}
+          <div className="tabar-metric-label">Conexión</div>
+          <div style={{ fontSize: "13px", color: "#3FB950" }}>Firebase Activo</div>
         </div>
         <div className="tabar-metric-card">
           <div className="tabar-metric-icon" style={{ background: "rgba(63,185,80,0.10)", color: "#3FB950" }}>◉</div>
-          <div className="tabar-metric-label">Mi Wallet</div>
-          <div style={{ fontSize: "12px", color: "#8B949E", fontFamily: "var(--tb-mono)", wordBreak: "break-all" }}>{walletAddress ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-6)}` : "—"}</div>
+          <div className="tabar-metric-label">Mi Cuenta</div>
+          <div style={{ fontSize: "12px", color: "#8B949E", fontFamily: "var(--tb-mono)", wordBreak: "break-all", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.email || "—"}</div>
         </div>
         <div className="tabar-metric-card">
           <div className="tabar-metric-icon" style={{ background: "rgba(88,166,255,0.10)", color: "#58A6FF" }}>▣</div>
           <div className="tabar-metric-label">Red</div>
-          <div style={{ fontSize: "13px", color: "#58A6FF" }}>Hardhat Local</div>
+          <div style={{ fontSize: "13px", color: "#58A6FF" }}>Firestore</div>
         </div>
         <div className="tabar-metric-card">
           <div className="tabar-metric-icon" style={{ background: "rgba(188,140,255,0.10)", color: "#BC8CFF" }}>△</div>
@@ -48,7 +41,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="tabar-section">
-        <CampaignStats contractAddress={contractAddress} />
+        <CampaignStats />
       </div>
 
       <div className="tabar-section">

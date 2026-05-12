@@ -1,20 +1,34 @@
 import { useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
 export default function DealerTrade() {
-  const { contractAddress } = useRole();
+  const { user } = useRole();
+  const { operarDealer } = useData();
   const [tab, setTab] = useState("buy");
   const [cantidad, setCantidad] = useState("");
   const [step, setStep] = useState("form");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const precioCompra = 92;
   const precioVenta = 94.5;
   const spread = precioVenta - precioCompra;
   const total = cantidad ? parseInt(cantidad) * (tab === "buy" ? precioCompra : precioVenta) : 0;
 
-  const handleSubmit = () => setStep("done");
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    const res = await operarDealer(tab === "buy" ? "buy" : "sell", parseInt(cantidad));
+    setLoading(false);
+    if (res.ok) {
+      setStep("done");
+    } else {
+      setError(res.error);
+    }
+  };
 
   return (
     <div>
@@ -52,10 +66,11 @@ export default function DealerTrade() {
                   <CalcRow label="Total" value={`USD ${total.toLocaleString("es-AR")}`} highlight />
                 </div>
               )}
-              <button onClick={handleSubmit} disabled={!cantidad || parseInt(cantidad) <= 0}
+              {error && <div className="tabar-notice" style={{ color: "#F85149", borderColor: "rgba(248,81,73,0.3)", marginTop: "16px" }}>{error}</div>}
+              <button onClick={handleSubmit} disabled={!cantidad || parseInt(cantidad) <= 0 || loading}
                 className="tabar-btn tabar-btn-primary tabar-btn-full"
                 style={{ marginTop: "16px", background: tab === "buy" ? "#3FB950" : "#F85149", borderColor: tab === "buy" ? "#3FB950" : "#F85149", color: "#080C10" }}>
-                {tab === "buy" ? "Confirmar compra" : "Confirmar venta"}
+                {loading ? "Procesando..." : (tab === "buy" ? "Confirmar compra" : "Confirmar venta")}
               </button>
             </div>
           </div>

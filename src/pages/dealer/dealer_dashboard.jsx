@@ -1,11 +1,11 @@
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#BC8CFF", dim: "rgba(188,140,255,0.10)" };
 
 export default function DealerDashboard() {
-  const { balances } = useDemo();
+  const { balances } = useData();
   const myBalance = balances.dealer;
 
   return (

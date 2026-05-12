@@ -1,4 +1,4 @@
-import { useDemo } from "../../modules/roles/DemoContext";
+import { useData } from "../../modules/roles/DataContext";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 const WALLET = "0x90F79bf6EB2c4f870365E785982E1f101E93b906";
@@ -9,7 +9,7 @@ const DESCUENTO     = 0.12;
 const PRECIO_TABAR  = PRECIO_SPOT * (1 - DESCUENTO);
 
 export default function IndustryPosition() {
-  const { balances } = useDemo();
+  const { balances } = useData();
   const myBalance = balances.industry;
 
   const kgTotal      = myBalance * KG_POR_FARDO;
