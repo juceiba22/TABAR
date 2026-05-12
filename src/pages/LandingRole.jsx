@@ -6,14 +6,14 @@ import { auth, db } from "../config/firebase";
 // Role palette and info managed inline for the MVP
 
 const ROLE_PALETTE_INLINE = {
-  admin:    { color: "#E3B64F", dim: "rgba(227,182,79,0.10)" },
+  admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.10)" },
   industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)" },
-  state:    { color: "#F0883E", dim: "rgba(240,136,62,0.10)" },
-  dealer:   { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)" },
+  state: { color: "#F0883E", dim: "rgba(240,136,62,0.10)" },
+  dealer: { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)" },
 };
 
 const ROLES_INFO_INLINE = [
-  { id: "admin", glyph: "◈", title: "Fideicomiso", subtitle: "Admin" },
+  { id: "admin", glyph: "◈", title: "Administración", subtitle: "Acopiador" },
   { id: "industry", glyph: "⬡", title: "Industria", subtitle: "Exportador" },
   { id: "state", glyph: "◉", title: "Estado Nacional", subtitle: "FET" },
   { id: "dealer", glyph: "◇", title: "Dealer", subtitle: "Revendedor" },
