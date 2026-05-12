@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
 
@@ -41,8 +41,46 @@ export default function AdminControl() {
   const TABS = [
     { id: "campana", label: "Campaña" },
     { id: "estado", label: "Estado Global" },
+    { id: "solicitudes", label: "Solicitudes de Acceso" },
     { id: "auditoria", label: "Auditoría" },
   ];
+
+  // User management logic
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      // In a real app we would use Firestore collection query
+      // For the MVP context, we'll assume the DataContext or a direct fetch handles it
+      // But let's try to fetch directly from Firestore for accuracy
+      const { collection, getDocs, query, where, updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../../config/firebase");
+      
+      const q = query(collection(db, "users"), where("status", "==", "pending_approval"));
+      const snapshot = await getDocs(q);
+      const userList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setUsers(userList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleApprove = async (userId) => {
+    try {
+      const { updateDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../../config/firebase");
+      await updateDoc(doc(db, "users", userId), { status: "active" });
+      setUsers(users.filter(u => u.id !== userId));
+    } catch (error) {
+      console.error("Error approving user:", error);
+    }
+  };
+
+  useEffect(() => { if (tab === "solicitudes") fetchUsers(); }, [tab]);
 
   return (
     <div>
@@ -121,6 +159,68 @@ export default function AdminControl() {
               </div>
             ) : <p style={{ color: "#484F58", fontSize: "13px" }}>Sin datos de balances</p>}
           </div>
+        </div>
+      )}
+
+      {tab === "solicitudes" && (
+        <div className="tabar-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--tb-border)", paddingBottom: "10px" }}>
+            <h3 style={{ margin: 0, fontSize: "13px", color: "var(--tb-text-2)", fontWeight: 500 }}>Pendientes de Aprobación</h3>
+            <button onClick={fetchUsers} disabled={usersLoading} style={{ background: "none", border: "none", color: "var(--tb-accent)", fontSize: "11px", cursor: "pointer" }}>
+              {usersLoading ? "Actualizando..." : "↻ Refrescar"}
+            </button>
+          </div>
+          
+          {users.length > 0 ? (
+            <div className="tabar-table-wrap">
+              <table className="tabar-table">
+                <thead>
+                  <tr>
+                    <th>Entidad / Responsable</th>
+                    <th>Tipo</th>
+                    <th>Email</th>
+                    <th style={{ textAlign: "right" }}>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: "13px", color: "var(--tb-text)", fontWeight: 500 }}>{u.companyName}</span>
+                          <span style={{ fontSize: "11px", color: "var(--tb-text-3)" }}>{u.displayName}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="tabar-badge" style={{ 
+                          background: "rgba(255,255,255,0.05)", 
+                          color: "var(--tb-text-2)",
+                          textTransform: "capitalize",
+                          fontSize: "10px"
+                        }}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="mono" style={{ fontSize: "11px" }}>{u.email}</td>
+                      <td style={{ textAlign: "right" }}>
+                        <button 
+                          onClick={() => handleApprove(u.id)} 
+                          className="tabar-btn tabar-btn-primary" 
+                          style={{ padding: "4px 10px", fontSize: "11px", width: "auto" }}
+                        >
+                          Aprobar Acceso
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--tb-text-3)" }}>
+              <p style={{ fontSize: "13px" }}>{usersLoading ? "Cargando solicitudes..." : "No hay solicitudes pendientes de aprobación."}</p>
+            </div>
+          )}
         </div>
       )}
 
