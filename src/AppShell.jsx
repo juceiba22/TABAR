@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
@@ -37,8 +38,13 @@ function AppRoutes() {
     profileLoading,
     contextError,
     logout,
-    retryProfile
+    retryProfile,
+    markEmailVerifiedInFirestore,
   } = useRole();
+
+  // FIX: estado local para feedback del botón "Ya verifiqué mi correo"
+  const [verifyChecking, setVerifyChecking] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
 
   // 1. Initial Auth Check (Persistence)
   if (!authInitialized) {
@@ -61,26 +67,59 @@ function AppRoutes() {
 
   // 3. Email Verification Check
   if (!user.emailVerified) {
+    const handleVerifyCheck = async () => {
+      setVerifyChecking(true);
+      setVerifyError("");
+      try {
+        // Refresca el estado real desde Firebase Auth
+        await user.reload();
+        const refreshedUser = auth.currentUser;
+
+        if (refreshedUser?.emailVerified) {
+          // FIX: actualizar emailVerified en Firestore antes de recargar
+          // así el perfil queda consistente y no rompe la carga posterior
+          await markEmailVerifiedInFirestore(refreshedUser.uid);
+          window.location.reload();
+        } else {
+          setVerifyError("Todavía no detectamos la verificación. Revisá tu casilla (también SPAM) y volvé a intentar.");
+        }
+      } catch (err) {
+        console.error("Verify check error:", err);
+        setVerifyError("Ocurrió un error al verificar. Intentá de nuevo.");
+      } finally {
+        setVerifyChecking(false);
+      }
+    };
+
     return (
       <div className="status-screen">
         <div className="status-icon warning">✉</div>
         <h2>Verificación Requerida</h2>
-        <p>Hemos enviado un correo a <strong>{user.email}</strong>. Por favor, verificá tu cuenta para acceder al protocolo TABAR.</p>
+        <p>
+          Hemos enviado un correo a <strong>{user.email}</strong>.{" "}
+          Por favor, verificá tu cuenta para acceder al protocolo TABAR.
+          <br />
+          <span style={{ fontSize: "13px", color: "#484F58", marginTop: "8px", display: "block" }}>
+            Si no lo encontrás, revisá la carpeta de SPAM o Correo No Deseado.
+          </span>
+        </p>
+        {verifyError && (
+          <p style={{ color: "#F85149", fontSize: "13px", marginBottom: "16px", marginTop: "-16px" }}>
+            {verifyError}
+          </p>
+        )}
         <div className="status-actions">
-
           <button
-            onClick={async () => {
-              await user.reload();
-
-              if (auth.currentUser?.emailVerified) {
-                window.location.reload();
-              }
-            }}
-          >Ya verifiqué mi correo</button>
-
-
-
-          <button onClick={logout} className="tabar-btn tabar-btn-secondary">Cerrar Sesión</button>
+            onClick={handleVerifyCheck}
+            disabled={verifyChecking}
+            className="tabar-btn tabar-btn-primary"
+            style={{ opacity: verifyChecking ? 0.6 : 1 }}
+          >
+            {verifyChecking ? "Verificando..." : "Ya verifiqué mi correo"}
+          </button>
+          <button onClick={logout} className="tabar-btn tabar-btn-secondary">
+            Cerrar Sesión
+          </button>
         </div>
       </div>
     );
@@ -104,8 +143,15 @@ function AppRoutes() {
         <h2>Error de Sincronización</h2>
         <p>{contextError}</p>
         <div className="status-actions">
-          <button onClick={retryProfile} className="tabar-btn tabar-btn-primary">Reintentar Conexión</button>
-          <button onClick={logout} className="tabar-btn tabar-btn-secondary">Salir</button>
+          <button
+            onClick={retryProfile}
+            className="tabar-btn tabar-btn-primary"
+          >
+            Reintentar Conexión
+          </button>
+          <button onClick={logout} className="tabar-btn tabar-btn-secondary">
+            Salir
+          </button>
         </div>
       </div>
     );
@@ -117,9 +163,14 @@ function AppRoutes() {
       <div className="status-screen">
         <div className="status-icon warning">?</div>
         <h2>Perfil No Encontrado</h2>
-        <p>Tu cuenta de usuario existe pero no encontramos tu perfil institucional en el sistema.</p>
+        <p>
+          Tu cuenta de usuario existe pero no encontramos tu perfil institucional en el sistema.
+          Es posible que tu cuenta haya sido creada de forma incompleta.
+        </p>
         <div className="status-actions">
-          <button onClick={logout} className="tabar-btn tabar-btn-primary">Volver al Inicio</button>
+          <button onClick={logout} className="tabar-btn tabar-btn-primary">
+            Volver al Inicio
+          </button>
         </div>
       </div>
     );
@@ -131,10 +182,20 @@ function AppRoutes() {
       <div className="status-screen">
         <div className="status-icon clock">⌛</div>
         <h2>Solicitud en Proceso</h2>
-        <p>Tu registro institucional ha sido recibido. Un administrador verificará tus credenciales para habilitar tu acceso al protocolo TABAR.</p>
+        <p>
+          Tu registro institucional ha sido recibido. Un administrador verificará
+          tus credenciales para habilitar tu acceso al protocolo TABAR.
+        </p>
         <div className="status-actions">
-          <button onClick={retryProfile} className="tabar-btn tabar-btn-primary">Verificar Estado</button>
-          <button onClick={logout} className="tabar-btn tabar-btn-secondary">Cerrar Sesión</button>
+          <button
+            onClick={retryProfile}
+            className="tabar-btn tabar-btn-primary"
+          >
+            Verificar Estado
+          </button>
+          <button onClick={logout} className="tabar-btn tabar-btn-secondary">
+            Cerrar Sesión
+          </button>
         </div>
       </div>
     );
@@ -219,12 +280,12 @@ export default function AppShell() {
         .status-icon.warning { background: rgba(227,182,79,0.1); color: #E3B64F; }
         .status-icon.error { background: rgba(248,81,73,0.1); color: #F85149; }
         .status-icon.clock { background: rgba(88,166,255,0.1); color: #58A6FF; }
-        
+
         .status-screen h2 { font-size: 28px; margin-bottom: 12px; font-weight: 600; }
         .status-screen p { color: #8B949E; max-width: 460px; line-height: 1.6; margin-bottom: 32px; font-size: 16px; }
-        
-        .status-actions { display: flex; gap: 16px; }
-        
+
+        .status-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
         .spinner-large {
           width: 40px;
           height: 40px;

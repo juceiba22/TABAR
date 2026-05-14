@@ -258,7 +258,7 @@ export default function LandingRole() {
         500
       );
     }
-  };;
+  };
 
   return (
     <div className="tabar-landing">
