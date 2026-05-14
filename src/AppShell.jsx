@@ -39,7 +39,6 @@ function AppRoutes() {
     contextError,
     logout,
     retryProfile,
-    markEmailVerifiedInFirestore,
   } = useRole();
 
   // FIX: estado local para feedback del botón "Ya verifiqué mi correo"
@@ -72,23 +71,25 @@ function AppRoutes() {
       setVerifyError("");
       try {
         // Refresca el estado real desde Firebase Auth
-        await user.reload();
+        await auth.currentUser.reload();
         const refreshedUser = auth.currentUser;
 
         if (refreshedUser?.emailVerified) {
-          // FIX: actualizar emailVerified en Firestore antes de recargar
-          // así el perfil queda consistente y no rompe la carga posterior
-          await markEmailVerifiedInFirestore(refreshedUser.uid);
+          // RoleContext se encarga de actualizar Firestore automáticamente
+          // al detectar emailVerified=true en el onAuthStateChanged.
+          // Solo recargamos la página para disparar ese flujo limpiamente.
           window.location.reload();
         } else {
           setVerifyError("Todavía no detectamos la verificación. Revisá tu casilla (también SPAM) y volvé a intentar.");
+          setVerifyChecking(false);
         }
       } catch (err) {
         console.error("Verify check error:", err);
         setVerifyError("Ocurrió un error al verificar. Intentá de nuevo.");
-      } finally {
         setVerifyChecking(false);
       }
+      // Nota: si emailVerified=true hacemos reload() y el componente se desmonta,
+      // por eso solo llamamos setVerifyChecking(false) en los casos de error/no-verificado.
     };
 
     return (

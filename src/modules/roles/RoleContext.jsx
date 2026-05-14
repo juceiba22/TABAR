@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../config/firebase";
 
 const RoleContext = createContext(null);
@@ -80,7 +80,8 @@ export function RoleProvider({ children }) {
   // cuando el usuario confirma su mail, para mantener consistencia
   const markEmailVerifiedInFirestore = useCallback(async (uid) => {
     try {
-      await updateDoc(doc(db, "users", uid), { emailVerified: true });
+      // setDoc con merge:true funciona aunque el doc no exista todavía
+      await setDoc(doc(db, "users", uid), { emailVerified: true }, { merge: true });
       console.log("EMAIL_VERIFIED_UPDATED_IN_FIRESTORE");
     } catch (err) {
       // No es crítico si falla, el flujo continúa igual
