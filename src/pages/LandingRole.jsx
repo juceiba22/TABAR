@@ -60,7 +60,6 @@ export default function LandingRole() {
       // =========================
 
       if (mode === "login") {
-
         const cred = await signInWithEmailAndPassword(
           auth,
           email,
@@ -69,25 +68,11 @@ export default function LandingRole() {
 
         // refresca el usuario desde Firebase
         await cred.user.reload();
-
-        const refreshedUser = auth.currentUser;
-
-        // impedir login sin verificar mail
-        if (!refreshedUser?.emailVerified) {
-
-          await signOut(auth);
-
-          setError(
-            "Debes verificar tu correo electrónico antes de ingresar."
-          );
-
-          return;
-        }
-
-        console.log(
-          "LOGIN_SUCCESS:",
-          refreshedUser.uid
-        );
+        
+        // FIX: No desloguear aquí si no está verificado.
+        // AppShell se encargará de mostrar la pantalla de verificación
+        // permitiendo al usuario ver que entró pero necesita validar su mail.
+        console.log("LOGIN_SUCCESS:", cred.user.uid);
       }
 
       // =========================
@@ -95,46 +80,27 @@ export default function LandingRole() {
       // =========================
 
       else if (mode === "register") {
-
-        const userCredential =
-          await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
 
         const user = userCredential.user;
-
-        console.log(
-          "AUTH_USER_CREATED:",
-          user.uid
-        );
+        console.log("AUTH_USER_CREATED:", user.uid);
 
         // =========================
         // 1. SEND VERIFICATION EMAIL
         // =========================
 
         try {
-
           await sendEmailVerification(user);
-
-          console.log(
-            "VERIFICATION_EMAIL_SENT"
-          );
-
+          console.log("VERIFICATION_EMAIL_SENT");
         } catch (vErr) {
-
-          console.error(
-            "VERIFICATION_ERROR:",
-            vErr
-          );
-
-          setError(
-            `No se pudo enviar el correo de verificación: ${vErr.message}`
-          );
-
+          console.error("VERIFICATION_ERROR:", vErr);
+          setError(`No se pudo enviar el correo de verificación: ${vErr.message}`);
+          // Si falla el envío de mail, aquí sí deslogueamos por seguridad
           await signOut(auth);
-
           return;
         }
 
@@ -153,36 +119,28 @@ export default function LandingRole() {
           emailVerified: false
         };
 
+        // FIX: merge: true para evitar colisiones si el onAuthStateChanged
+        // ya disparó un markEmailVerifiedInFirestore paralelo
         await setDoc(
           doc(db, "users", user.uid),
-          profileData
+          profileData,
+          { merge: true }
         );
 
-        console.log(
-          "FIRESTORE_PROFILE_CREATED:",
-          profileData
-        );
+        console.log("FIRESTORE_PROFILE_CREATED:", profileData);
 
         // =========================
-        // 3. SIGN OUT
+        // 3. SUCCESS & REDIRECT
         // =========================
-
-        await signOut(auth);
-
-        // =========================
-        // 4. SUCCESS MESSAGE
-        // =========================
-
-        setMessage(
-          "Cuenta creada correctamente. Revisá tu correo electrónico y verificá tu cuenta antes de iniciar sesión."
-        );
-
-        // limpiar password
-        setPassword("");
-
-        // volver al login
-        setMode("login");
+        // FIX: NO hacemos signOut(auth). El usuario ya está logueado.
+        // AppShell detectará emailVerified: false y mostrará la pantalla de aviso.
+        
+        setMessage("Cuenta creada. Por favor, verificá tu correo para continuar.");
+        
+        // No es necesario setMode("login") porque AppShell ya lo sacará de aquí
+        // al detectar que user es truthy.
       }
+
 
       // =========================
       // FORGOT PASSWORD

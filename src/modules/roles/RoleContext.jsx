@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../config/firebase";
@@ -35,107 +35,130 @@ export function RoleProvider({ children }) {
   const [profileLoading, setProfileLoading] = useState(false);
   const [contextError, setContextError] = useState(null);
 
-  // FIX 1: useCallback para evitar recrear la función en cada render
-  // FIX 2: Timeout aumentado a 15s para tolerar latencia de southamerica-east1
-  // FIX 3: Usa auth.currentUser directamente para evitar estado stale
-  const fetchProfileWithTimeout = useCallback(async (uid) => {
+  // Use a ref to track if a profile fetch is in progress to avoid overlapping
+  const fetchInProgress = useRef(false);
+
+  /**
+   * FIX: retry logic with exponential backoff for Firestore
+   * Latency in southamerica-east1 can be high.
+   */
+  const fetchProfileWithRetry = useCallback(async (uid, maxRetries = 3) => {
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    
     setProfileLoading(true);
     setContextError(null);
 
-    console.log("Fetching profile for UID:", uid);
+    let attempt = 0;
+    let lastError = null;
 
-    const fetchPromise = getDoc(doc(db, "users", uid));
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("TIMEOUT_FIRESTORE")), 15000)
-    );
+    const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-    try {
-      const userDoc = await Promise.race([fetchPromise, timeoutPromise]);
+    while (attempt < maxRetries) {
+      try {
+        console.log(`FETCH_PROFILE Attempt ${attempt + 1}/${maxRetries} for UID:`, uid);
+        
+        // Firestore call with a 15s internal race if needed, but Firestore SDK usually handles timeouts
+        const fetchPromise = getDoc(doc(db, "users", uid));
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("TIMEOUT_FIRESTORE")), 15000)
+        );
 
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        console.log("PROFILE LOADED:", data);
-        setProfile(data);
-        setRole(data.role || null);
-      } else {
-        console.warn("PROFILE_MISSING: No document in Firestore for UID:", uid);
-        setRole(null);
-        setProfile(null);
+        const userDoc = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          console.log("PROFILE_LOADED_SUCCESS:", data);
+          setProfile(data);
+          setRole(data.role || null);
+          setProfileLoading(false);
+          fetchInProgress.current = false;
+          return; // Success!
+        } else {
+          console.warn("PROFILE_MISSING: UID", uid);
+          setRole(null);
+          setProfile(null);
+          setProfileLoading(false);
+          fetchInProgress.current = false;
+          return; // No document exists yet (common during registration race)
+        }
+      } catch (err) {
+        attempt++;
+        lastError = err;
+        console.error(`PROFILE_FETCH_ERROR Attempt ${attempt}:`, err.message);
+        
+        if (attempt < maxRetries) {
+          // Wait before retrying (1s, 2s, 4s...)
+          await delay(1000 * Math.pow(2, attempt - 1));
+        }
       }
-    } catch (err) {
-      console.error("PROFILE_FETCH_ERROR:", err);
-      if (err.message === "TIMEOUT_FIRESTORE") {
-        setContextError("Error de conexión: El servidor de datos no responde. Verificá tu conexión e intentá de nuevo.");
-      } else {
-        setContextError("Error al cargar el perfil institucional. Intentá de nuevo.");
-      }
-      setProfile(null);
-      setRole(null);
-    } finally {
-      setProfileLoading(false);
     }
+
+    // If we reach here, all retries failed
+    console.error("PROFILE_FETCH_FAILED_ALL_RETRIES");
+    if (lastError?.message === "TIMEOUT_FIRESTORE") {
+      setContextError("El servidor de datos no responde. Verificá tu conexión e intentá de nuevo.");
+    } else {
+      setContextError("Error al sincronizar el perfil institucional. Por favor reintentá.");
+    }
+    setProfile(null);
+    setRole(null);
+    setProfileLoading(false);
+    fetchInProgress.current = false;
   }, []);
 
-  // FIX 4: markEmailVerifiedInFirestore actualiza el campo en Firestore
-  // cuando el usuario confirma su mail, para mantener consistencia
   const markEmailVerifiedInFirestore = useCallback(async (uid) => {
     try {
-      // setDoc con merge:true funciona aunque el doc no exista todavía
+      // FIX: use setDoc with merge:true to ensure it works even if doc is being created
       await setDoc(doc(db, "users", uid), { emailVerified: true }, { merge: true });
-      console.log("EMAIL_VERIFIED_UPDATED_IN_FIRESTORE");
+      console.log("FIRESTORE_EMAIL_SYNC_COMPLETE");
     } catch (err) {
-      // No es crítico si falla, el flujo continúa igual
-      console.warn("Could not update emailVerified in Firestore:", err);
+      console.warn("Could not sync emailVerified to Firestore:", err);
     }
   }, []);
 
   useEffect(() => {
-    console.log("Auth listener started...");
-
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("AUTH_STATE_CHANGE:", currentUser ? `Logged in as ${currentUser.email}` : "Logged out");
+      console.log("AUTH_STATE_EVENT:", currentUser ? `Logged in (${currentUser.email})` : "Logged out");
 
       if (currentUser) {
-        // FIX 5: reload() antes de cualquier chequeo para obtener el estado real de Firebase
-        await currentUser.reload();
+        // ALWAYS reload to get fresh emailVerified status
+        try {
+          await currentUser.reload();
+        } catch (e) {
+          console.warn("Auth reload failed (possible sign out during init):", e.message);
+        }
+        
         const refreshedUser = auth.currentUser;
-
-        // Actualizar el estado de user con el usuario refrescado
         setUser(refreshedUser);
 
-        if (!refreshedUser?.emailVerified) {
-          console.warn("EMAIL_NOT_VERIFIED");
+        // FIX: setAuthInitialized immediately after knowing the Auth status.
+        // The AppShell will handle the loading state via profileLoading.
+        setAuthInitialized(true);
+
+        if (refreshedUser?.emailVerified) {
+          // Sync to firestore (fire and forget)
+          markEmailVerifiedInFirestore(refreshedUser.uid);
+          // Load profile
+          await fetchProfileWithRetry(refreshedUser.uid);
+        } else {
+          // Reset profile/role if not verified
           setProfile(null);
           setRole(null);
           setProfileLoading(false);
-          setContextError(null);
-          // FIX 6: setAuthInitialized SIEMPRE al final, sin importar la rama
-          setAuthInitialized(true);
-          return;
         }
-
-        // FIX 7: Actualizar emailVerified en Firestore si el usuario acaba de verificar
-        // (es seguro llamarlo siempre; updateDoc es idempotente en este caso)
-        await markEmailVerifiedInFirestore(refreshedUser.uid);
-
-        // Cargar perfil
-        await fetchProfileWithTimeout(refreshedUser.uid);
-
       } else {
         setUser(null);
         setProfile(null);
         setRole(null);
         setProfileLoading(false);
         setContextError(null);
+        setAuthInitialized(true);
       }
-
-      // FIX 8: setAuthInitialized siempre al final del handler, en todas las ramas
-      setAuthInitialized(true);
     });
 
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Sin dependencias: el listener se registra una sola vez
+  }, [fetchProfileWithRetry, markEmailVerifiedInFirestore]);
 
   const logout = async () => {
     try {
@@ -149,17 +172,12 @@ export function RoleProvider({ children }) {
     }
   };
 
-  // FIX 9: retryProfile usa auth.currentUser (fresco) en lugar del estado user (puede ser stale)
-  // y limpia el error antes de reintentar
   const retryProfile = useCallback(() => {
     const currentUser = auth.currentUser;
     if (currentUser) {
-      setContextError(null);
-      fetchProfileWithTimeout(currentUser.uid);
-    } else {
-      console.warn("retryProfile: no current user");
+      fetchProfileWithRetry(currentUser.uid);
     }
-  }, [fetchProfileWithTimeout]);
+  }, [fetchProfileWithRetry]);
 
   return (
     <RoleContext.Provider
@@ -185,3 +203,4 @@ export function useRole() {
   if (!ctx) throw new Error("useRole must be used inside RoleProvider");
   return ctx;
 }
+

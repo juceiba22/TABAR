@@ -41,11 +41,10 @@ function AppRoutes() {
     retryProfile,
   } = useRole();
 
-  // FIX: estado local para feedback del botón "Ya verifiqué mi correo"
   const [verifyChecking, setVerifyChecking] = useState(false);
   const [verifyError, setVerifyError] = useState("");
 
-  // 1. Initial Auth Check (Persistence)
+  // 1. Initial Auth Check (Firebase Auth handshake)
   if (!authInitialized) {
     return (
       <div className="loading-screen">
@@ -55,7 +54,7 @@ function AppRoutes() {
     );
   }
 
-  // 2. User is NOT logged in
+  // 2. User is NOT logged in -> Show Landing
   if (!user) {
     return (
       <Routes>
@@ -64,32 +63,32 @@ function AppRoutes() {
     );
   }
 
-  // 3. Email Verification Check
+  /**
+   * 3. Email Verification Check (PRIORITY)
+   * We check this BEFORE profileLoading so the user isn't stuck 
+   * in a spinner if Firestore is slow but they haven't verified yet.
+   */
   if (!user.emailVerified) {
     const handleVerifyCheck = async () => {
       setVerifyChecking(true);
       setVerifyError("");
       try {
-        // Refresca el estado real desde Firebase Auth
+        // Force refresh the user token from Firebase
         await auth.currentUser.reload();
         const refreshedUser = auth.currentUser;
 
         if (refreshedUser?.emailVerified) {
-          // RoleContext se encarga de actualizar Firestore automáticamente
-          // al detectar emailVerified=true en el onAuthStateChanged.
-          // Solo recargamos la página para disparar ese flujo limpiamente.
+          // Success! Reload the app to trigger RoleContext update
           window.location.reload();
         } else {
-          setVerifyError("Todavía no detectamos la verificación. Revisá tu casilla (también SPAM) y volvé a intentar.");
+          setVerifyError("Todavía no detectamos la verificación. Revisá tu casilla (también SPAM).");
           setVerifyChecking(false);
         }
       } catch (err) {
         console.error("Verify check error:", err);
-        setVerifyError("Ocurrió un error al verificar. Intentá de nuevo.");
+        setVerifyError("Ocurrió un error. Intentá de nuevo en unos segundos.");
         setVerifyChecking(false);
       }
-      // Nota: si emailVerified=true hacemos reload() y el componente se desmonta,
-      // por eso solo llamamos setVerifyChecking(false) en los casos de error/no-verificado.
     };
 
     return (
@@ -101,7 +100,7 @@ function AppRoutes() {
           Por favor, verificá tu cuenta para acceder al protocolo TABAR.
           <br />
           <span style={{ fontSize: "13px", color: "#484F58", marginTop: "8px", display: "block" }}>
-            Si no lo encontrás, revisá la carpeta de SPAM o Correo No Deseado.
+            Si no lo encontrás, revisá la carpeta de SPAM.
           </span>
         </p>
         {verifyError && (
@@ -116,7 +115,7 @@ function AppRoutes() {
             className="tabar-btn tabar-btn-primary"
             style={{ opacity: verifyChecking ? 0.6 : 1 }}
           >
-            {verifyChecking ? "Verificando..." : "Ya verifiqué mi correo"}
+            {verifyChecking ? "Sincronizando..." : "Ya verifiqué mi correo"}
           </button>
           <button onClick={logout} className="tabar-btn tabar-btn-secondary">
             Cerrar Sesión
@@ -126,22 +125,13 @@ function AppRoutes() {
     );
   }
 
-  // 4. Loading Profile State
-  if (profileLoading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner-large"></div>
-        <p>Cargando perfil institucional...</p>
-      </div>
-    );
-  }
-
-  // 5. Critical Error (Timeout or Firestore Fail)
-  if (contextError && !role) {
+  // 4. Critical Error (Firestore Timeout or Connection Error)
+  // Only show this if we are NOT loading and we don't have a role yet.
+  if (contextError && !role && !profileLoading) {
     return (
       <div className="status-screen">
         <div className="status-icon error">⚠</div>
-        <h2>Error de Sincronización</h2>
+        <h2>Error de Conexión</h2>
         <p>{contextError}</p>
         <div className="status-actions">
           <button
@@ -158,15 +148,25 @@ function AppRoutes() {
     );
   }
 
-  // 6. User is logged in but has no profile/role (Deadlock prevention)
+  // 5. Loading Profile State (Firestore)
+  if (profileLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner-large"></div>
+        <p>Cargando perfil institucional...</p>
+      </div>
+    );
+  }
+
+  // 6. User is logged in but has no profile document (Deadlock prevention)
   if (!role && user) {
     return (
       <div className="status-screen">
         <div className="status-icon warning">?</div>
         <h2>Perfil No Encontrado</h2>
         <p>
-          Tu cuenta de usuario existe pero no encontramos tu perfil institucional en el sistema.
-          Es posible que tu cuenta haya sido creada de forma incompleta.
+          Tu cuenta existe pero no encontramos tu perfil institucional. 
+          Contactá al soporte técnico.
         </p>
         <div className="status-actions">
           <button onClick={logout} className="tabar-btn tabar-btn-primary">
@@ -184,8 +184,8 @@ function AppRoutes() {
         <div className="status-icon clock">⌛</div>
         <h2>Solicitud en Proceso</h2>
         <p>
-          Tu registro institucional ha sido recibido. Un administrador verificará
-          tus credenciales para habilitar tu acceso al protocolo TABAR.
+          Tu registro ha sido recibido. Un administrador verificará
+          tus credenciales para habilitar tu acceso.
         </p>
         <div className="status-actions">
           <button
