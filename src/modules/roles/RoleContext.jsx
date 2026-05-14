@@ -30,7 +30,7 @@ export function RoleProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
-  
+
   // Advanced State Management
   const [authInitialized, setAuthInitialized] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -40,17 +40,17 @@ export function RoleProvider({ children }) {
   const fetchProfileWithTimeout = async (uid) => {
     setProfileLoading(true);
     setContextError(null);
-    
+
     console.log("Fetching profile for UID:", uid);
 
     const fetchPromise = getDoc(doc(db, "users", uid));
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("TIMEOUT_FIRESTORE")), 8000)
     );
 
     try {
       const userDoc = await Promise.race([fetchPromise, timeoutPromise]);
-      
+
       if (userDoc.exists()) {
         const data = userDoc.data();
         console.log("PROFILE LOADED:", data);
@@ -80,18 +80,41 @@ export function RoleProvider({ children }) {
     console.log("Auth listener started...");
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       console.log("AUTH_STATE_CHANGE:", currentUser ? `Logged in as ${currentUser.email}` : "Logged out");
-      
+
       setUser(currentUser);
-      
+
       if (currentUser) {
-        await fetchProfileWithTimeout(currentUser.uid);
+
+        // MUY IMPORTANTE:
+        // refresca el estado real desde Firebase
+        await currentUser.reload();
+
+        const refreshedUser = auth.currentUser;
+
+        // Si NO verificó el mail:
+        // NO intentes cargar Firestore
+        if (!refreshedUser?.emailVerified) {
+          console.warn("EMAIL_NOT_VERIFIED");
+
+          setProfile(null);
+          setRole(null);
+          setProfileLoading(false);
+          setContextError(null);
+
+          if (!authInitialized) setAuthInitialized(true);
+          return;
+        }
+
+        // Recién acá cargamos el perfil
+        await fetchProfileWithTimeout(refreshedUser.uid);
+
       } else {
         setProfile(null);
         setRole(null);
         setProfileLoading(false);
         setContextError(null);
       }
-      
+
       if (!authInitialized) setAuthInitialized(true);
     });
 

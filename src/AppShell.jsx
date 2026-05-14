@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
 import AppLayout from "./modules/layout/AppLayout";
-
+import { auth } from "./config/firebase";
 import LandingRole from "./pages/LandingRole";
 import CampaignPage from "./pages/campaign/index";
 import AdminDashboard from "./pages/admin/dashboard";

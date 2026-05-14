@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendEmailVerification 
+  sendEmailVerification,
+  signOut
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
@@ -24,7 +25,7 @@ const ROLES_INFO = [
 ];
 
 export default function LandingRole() {
-  const [mode, setMode] = useState("login"); 
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -41,7 +42,9 @@ export default function LandingRole() {
   }, [mode]);
 
   const handleAuth = async (e) => {
+
     e.preventDefault();
+
     if (loading) return;
 
     setError("");
@@ -49,26 +52,96 @@ export default function LandingRole() {
     setLoading(true);
 
     try {
+
       console.log(`Starting ${mode} flow for:`, email);
 
+      // =========================
+      // LOGIN
+      // =========================
+
       if (mode === "login") {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        console.log("LOGIN_SUCCESS:", cred.user.uid);
-        
-      } else if (mode === "register") {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        console.log("AUTH_USER_CREATED:", user.uid);
-        
-        // 1. Send Verification Email
-        try {
-          await sendEmailVerification(user);
-          console.log("VERIFICATION_EMAIL_SENT");
-        } catch (vErr) {
-          console.error("VERIFICATION_ERROR:", vErr);
+
+        const cred = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        // refresca el usuario desde Firebase
+        await cred.user.reload();
+
+        const refreshedUser = auth.currentUser;
+
+        // impedir login sin verificar mail
+        if (!refreshedUser?.emailVerified) {
+
+          await signOut(auth);
+
+          setError(
+            "Debes verificar tu correo electrónico antes de ingresar."
+          );
+
+          return;
         }
 
-        // 2. Create Firestore Profile
+        console.log(
+          "LOGIN_SUCCESS:",
+          refreshedUser.uid
+        );
+      }
+
+      // =========================
+      // REGISTER
+      // =========================
+
+      else if (mode === "register") {
+
+        const userCredential =
+          await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+
+        const user = userCredential.user;
+
+        console.log(
+          "AUTH_USER_CREATED:",
+          user.uid
+        );
+
+        // =========================
+        // 1. SEND VERIFICATION EMAIL
+        // =========================
+
+        try {
+
+          await sendEmailVerification(user);
+
+          console.log(
+            "VERIFICATION_EMAIL_SENT"
+          );
+
+        } catch (vErr) {
+
+          console.error(
+            "VERIFICATION_ERROR:",
+            vErr
+          );
+
+          setError(
+            `No se pudo enviar el correo de verificación: ${vErr.message}`
+          );
+
+          await signOut(auth);
+
+          return;
+        }
+
+        // =========================
+        // 2. CREATE FIRESTORE PROFILE
+        // =========================
+
         const profileData = {
           uid: user.uid,
           email,
@@ -80,50 +153,112 @@ export default function LandingRole() {
           emailVerified: false
         };
 
-        await setDoc(doc(db, "users", user.uid), profileData);
-        console.log("FIRESTORE_PROFILE_CREATED:", profileData);
-        
-        setMessage("Cuenta creada. Por favor verificá tu correo electrónico para continuar.");
-        
-      } else if (mode === "forgot") {
-        await sendPasswordResetEmail(auth, email);
-        setMessage("Instrucciones enviadas. Revisa tu casilla de correo.");
+        await setDoc(
+          doc(db, "users", user.uid),
+          profileData
+        );
+
+        console.log(
+          "FIRESTORE_PROFILE_CREATED:",
+          profileData
+        );
+
+        // =========================
+        // 3. SIGN OUT
+        // =========================
+
+        await signOut(auth);
+
+        // =========================
+        // 4. SUCCESS MESSAGE
+        // =========================
+
+        setMessage(
+          "Cuenta creada correctamente. Revisá tu correo electrónico y verificá tu cuenta antes de iniciar sesión."
+        );
+
+        // limpiar password
+        setPassword("");
+
+        // volver al login
+        setMode("login");
       }
+
+      // =========================
+      // FORGOT PASSWORD
+      // =========================
+
+      else if (mode === "forgot") {
+
+        await sendPasswordResetEmail(
+          auth,
+          email
+        );
+
+        setMessage(
+          "Instrucciones enviadas. Revisa tu casilla de correo."
+        );
+      }
+
     } catch (err) {
-      console.error("AUTH_OPERATION_FAILED:", err);
-      
-      let friendlyError = "Error en el sistema. Intente más tarde.";
-      
+
+      console.error(
+        "AUTH_OPERATION_FAILED:",
+        err
+      );
+
+      let friendlyError =
+        "Error en el sistema. Intente más tarde.";
+
       switch (err.code) {
+
         case "auth/user-not-found":
         case "auth/wrong-password":
-          friendlyError = "Credenciales inválidas. Verifique su email y contraseña.";
+          friendlyError =
+            "Credenciales inválidas. Verifique su email y contraseña.";
           break;
+
         case "auth/email-already-in-use":
-          friendlyError = "El correo electrónico ya está registrado.";
+          friendlyError =
+            "El correo electrónico ya está registrado.";
           break;
+
         case "auth/weak-password":
-          friendlyError = "La contraseña es muy débil (mínimo 6 caracteres).";
+          friendlyError =
+            "La contraseña es muy débil (mínimo 6 caracteres).";
           break;
+
         case "auth/invalid-email":
-          friendlyError = "Formato de correo electrónico inválido.";
+          friendlyError =
+            "Formato de correo electrónico inválido.";
           break;
+
         case "auth/too-many-requests":
-          friendlyError = "Demasiados intentos fallidos. Intente de nuevo en unos minutos.";
+          friendlyError =
+            "Demasiados intentos fallidos. Intente de nuevo en unos minutos.";
           break;
+
         case "auth/network-request-failed":
-          friendlyError = "Error de conexión. Verifique su internet.";
+          friendlyError =
+            "Error de conexión. Verifique su internet.";
           break;
+
         default:
-          friendlyError = err.message || friendlyError;
+          friendlyError =
+            err.message || friendlyError;
       }
-      
+
       setError(friendlyError);
+
     } finally {
-      // Small delay to prevent UI flickers and double-clicks
-      setTimeout(() => setLoading(false), 500);
+
+      // evita flicker UI
+      setTimeout(
+        () => setLoading(false),
+        500
+      );
     }
-  };
+  };;
 
   return (
     <div className="tabar-landing">
@@ -163,10 +298,10 @@ export default function LandingRole() {
               <>
                 <div className="form-group">
                   <label>Nombre del Responsable</label>
-                  <input 
-                    required 
-                    type="text" 
-                    className="tabar-input" 
+                  <input
+                    required
+                    type="text"
+                    className="tabar-input"
                     placeholder="Ej. Ing. Alberto García"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -175,10 +310,10 @@ export default function LandingRole() {
                 </div>
                 <div className="form-group">
                   <label>Organización / Empresa</label>
-                  <input 
-                    required 
-                    type="text" 
-                    className="tabar-input" 
+                  <input
+                    required
+                    type="text"
+                    className="tabar-input"
                     placeholder="Ej. Cooperativa Tabacalera de Salta"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
@@ -214,10 +349,10 @@ export default function LandingRole() {
 
             <div className="form-group">
               <label>Correo Electrónico</label>
-              <input 
-                required 
-                type="email" 
-                className="tabar-input" 
+              <input
+                required
+                type="email"
+                className="tabar-input"
                 placeholder="usuario@institucion.gov.ar"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -235,10 +370,10 @@ export default function LandingRole() {
                     </button>
                   )}
                 </div>
-                <input 
-                  required 
-                  type="password" 
-                  className="tabar-input" 
+                <input
+                  required
+                  type="password"
+                  className="tabar-input"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -247,8 +382,8 @@ export default function LandingRole() {
               </div>
             )}
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`tabar-btn tabar-btn-primary tabar-btn-full auth-submit ${loading ? 'btn-loading' : ''}`}
               disabled={loading}
             >
@@ -289,7 +424,8 @@ export default function LandingRole() {
         </div>
       </footer>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .auth-card {
           background: var(--tb-surface-1);
           border: 1px solid var(--tb-border);
