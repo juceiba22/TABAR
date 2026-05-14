@@ -3,19 +3,19 @@ import { RoleProvider, useRole } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
 import AppLayout from "./modules/layout/AppLayout";
 
-import LandingRole      from "./pages/LandingRole";
-import CampaignPage     from "./pages/campaign/index";
-import AdminDashboard   from "./pages/admin/dashboard";
-import AdminControl     from "./pages/admin/control";
+import LandingRole from "./pages/LandingRole";
+import CampaignPage from "./pages/campaign/index";
+import AdminDashboard from "./pages/admin/dashboard";
+import AdminControl from "./pages/admin/control";
 import IndustryDashboard from "./pages/industry/dashboard";
-import IndustryBuy      from "./pages/industry/buy";
+import IndustryBuy from "./pages/industry/buy";
 import IndustryPosition from "./pages/industry/position";
-import StateDashboard   from "./pages/state/dashboard";
-import StateInvest      from "./pages/state/invest";
-import StateReturns     from "./pages/state/returns";
-import DealerDashboard  from "./pages/dealer/dashboard";
-import DealerTrade      from "./pages/dealer/trade";
-import DealerMarkets    from "./pages/dealer/markets";
+import StateDashboard from "./pages/state/dashboard";
+import StateInvest from "./pages/state/invest";
+import StateReturns from "./pages/state/returns";
+import DealerDashboard from "./pages/dealer/dashboard";
+import DealerTrade from "./pages/dealer/trade";
+import DealerMarkets from "./pages/dealer/markets";
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { role, authInitialized, profileLoading } = useRole();
@@ -29,15 +29,15 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 function AppRoutes() {
-  const { 
-    user, 
-    role, 
-    profile, 
-    authInitialized, 
-    profileLoading, 
-    contextError, 
+  const {
+    user,
+    role,
+    profile,
+    authInitialized,
+    profileLoading,
+    contextError,
     logout,
-    retryProfile 
+    retryProfile
   } = useRole();
 
   // 1. Initial Auth Check (Persistence)
@@ -67,7 +67,19 @@ function AppRoutes() {
         <h2>Verificación Requerida</h2>
         <p>Hemos enviado un correo a <strong>{user.email}</strong>. Por favor, verificá tu cuenta para acceder al protocolo TABAR.</p>
         <div className="status-actions">
-          <button onClick={() => window.location.reload()} className="tabar-btn tabar-btn-primary">Ya verifiqué mi correo</button>
+
+          <button
+            onClick={async () => {
+              await user.reload();
+
+              if (auth.currentUser?.emailVerified) {
+                window.location.reload();
+              }
+            }}
+          >Ya verifiqué mi correo</button>
+
+
+
           <button onClick={logout} className="tabar-btn tabar-btn-secondary">Cerrar Sesión</button>
         </div>
       </div>
@@ -132,29 +144,29 @@ function AppRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/campaign"          element={<CampaignPage />} />
-        
+        <Route path="/campaign" element={<CampaignPage />} />
+
         {/* Admin Routes */}
-        <Route path="/admin"             element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/control"     element={<ProtectedRoute allowedRoles={["admin"]}><AdminControl /></ProtectedRoute>} />
-        
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/control" element={<ProtectedRoute allowedRoles={["admin"]}><AdminControl /></ProtectedRoute>} />
+
         {/* Industry Routes */}
-        <Route path="/industry"          element={<ProtectedRoute allowedRoles={["industry", "admin"]}><IndustryDashboard /></ProtectedRoute>} />
-        <Route path="/industry/buy"      element={<ProtectedRoute allowedRoles={["industry"]}><IndustryBuy /></ProtectedRoute>} />
+        <Route path="/industry" element={<ProtectedRoute allowedRoles={["industry", "admin"]}><IndustryDashboard /></ProtectedRoute>} />
+        <Route path="/industry/buy" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryBuy /></ProtectedRoute>} />
         <Route path="/industry/position" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryPosition /></ProtectedRoute>} />
-        
+
         {/* State Routes */}
-        <Route path="/state"             element={<ProtectedRoute allowedRoles={["state", "admin"]}><StateDashboard /></ProtectedRoute>} />
-        <Route path="/state/invest"      element={<ProtectedRoute allowedRoles={["state"]}><StateInvest /></ProtectedRoute>} />
-        <Route path="/state/returns"     element={<ProtectedRoute allowedRoles={["state"]}><StateReturns /></ProtectedRoute>} />
-        
+        <Route path="/state" element={<ProtectedRoute allowedRoles={["state", "admin"]}><StateDashboard /></ProtectedRoute>} />
+        <Route path="/state/invest" element={<ProtectedRoute allowedRoles={["state"]}><StateInvest /></ProtectedRoute>} />
+        <Route path="/state/returns" element={<ProtectedRoute allowedRoles={["state"]}><StateReturns /></ProtectedRoute>} />
+
         {/* Dealer Routes */}
-        <Route path="/dealer"            element={<ProtectedRoute allowedRoles={["dealer", "admin"]}><DealerDashboard /></ProtectedRoute>} />
-        <Route path="/dealer/trade"      element={<ProtectedRoute allowedRoles={["dealer"]}><DealerTrade /></ProtectedRoute>} />
-        <Route path="/dealer/markets"    element={<ProtectedRoute allowedRoles={["dealer"]}><DealerMarkets /></ProtectedRoute>} />
-        
-        <Route path="/"                  element={<Navigate to={`/${role}`} replace />} />
-        <Route path="/*"                 element={<Navigate to={`/${role}`} replace />} />
+        <Route path="/dealer" element={<ProtectedRoute allowedRoles={["dealer", "admin"]}><DealerDashboard /></ProtectedRoute>} />
+        <Route path="/dealer/trade" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerTrade /></ProtectedRoute>} />
+        <Route path="/dealer/markets" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerMarkets /></ProtectedRoute>} />
+
+        <Route path="/" element={<Navigate to={`/${role}`} replace />} />
+        <Route path="/*" element={<Navigate to={`/${role}`} replace />} />
       </Routes>
     </AppLayout>
   );
@@ -169,7 +181,8 @@ export default function AppShell() {
         </DataProvider>
       </RoleProvider>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .loading-screen {
           min-height: 100vh;
           display: flex;
