@@ -58,7 +58,6 @@ export function RoleProvider({ children }) {
       try {
         console.log(`FETCH_PROFILE Attempt ${attempt + 1}/${maxRetries} for UID:`, uid);
         
-        // Firestore call with a 15s internal race if needed, but Firestore SDK usually handles timeouts
         const fetchPromise = getDoc(doc(db, "users", uid));
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("TIMEOUT_FIRESTORE")), 15000)
@@ -73,14 +72,24 @@ export function RoleProvider({ children }) {
           setRole(data.role || null);
           setProfileLoading(false);
           fetchInProgress.current = false;
-          return; // Success!
+          return;
         } else {
-          console.warn("PROFILE_MISSING: UID", uid);
-          setRole(null);
-          setProfile(null);
-          setProfileLoading(false);
-          fetchInProgress.current = false;
-          return; // No document exists yet (common during registration race)
+          // FIX: If document doesn't exist, it might be a race condition during registration.
+          // We should retry instead of giving up immediately.
+          console.warn(`PROFILE_MISSING on attempt ${attempt + 1}: UID`, uid);
+          
+          if (attempt + 1 < maxRetries) {
+            attempt++;
+            await delay(1000 * Math.pow(2, attempt - 1));
+            continue; // Retry
+          } else {
+            // Last attempt failed to find the document
+            setRole(null);
+            setProfile(null);
+            setProfileLoading(false);
+            fetchInProgress.current = false;
+            return;
+          }
         }
       } catch (err) {
         attempt++;
@@ -88,11 +97,11 @@ export function RoleProvider({ children }) {
         console.error(`PROFILE_FETCH_ERROR Attempt ${attempt}:`, err.message);
         
         if (attempt < maxRetries) {
-          // Wait before retrying (1s, 2s, 4s...)
           await delay(1000 * Math.pow(2, attempt - 1));
         }
       }
     }
+
 
     // If we reach here, all retries failed
     console.error("PROFILE_FETCH_FAILED_ALL_RETRIES");
