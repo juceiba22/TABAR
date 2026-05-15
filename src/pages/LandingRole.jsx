@@ -190,9 +190,40 @@ export default function LandingRole() {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          // Usuario verificado pero sin perfil (edge case: registro interrumpido)
-          // No asignamos rol — dejamos que lo gestione un admin, o mostramos "sin acceso"
-          // El RoleContext ya manejará role=null → modo "no-role"
+          // Recuperar datos de registro del localStorage
+          const savedStr = localStorage.getItem(`pending_profile_${cred.user.uid}`);
+          let profileData = {
+            uid: cred.user.uid,
+            email: cred.user.email,
+            displayName: cred.user.email.split('@')[0],
+            companyName: "Entidad a confirmar",
+            role: "industry", // Default fallback
+            createdAt: new Date().toISOString(),
+            status: "approved",
+            emailVerified: true,
+          };
+
+          if (savedStr) {
+            try {
+              const parsed = JSON.parse(savedStr);
+              profileData = {
+                ...parsed,
+                uid: cred.user.uid,
+                status: "approved",
+                emailVerified: true,
+              };
+              localStorage.removeItem(`pending_profile_${cred.user.uid}`);
+            } catch (e) {
+              console.error("Error parsing pending profile:", e);
+            }
+          }
+
+          // Crear el documento AHORA, que el usuario está 100% auth y estable
+          await setDoc(userRef, profileData);
+
+          // Recargar para que RoleContext levante el perfil correctamente
+          window.location.reload();
+          return;
         }
         // RoleContext (onAuthStateChanged) se encarga del resto
 
@@ -211,11 +242,9 @@ export default function LandingRole() {
         // Enviar verificación primero
         await sendEmailVerification(fbUser);
 
-        // ① FIX: Guardar datos temporales en Firestore con status "pending_verification"
-        // El perfil completo (con rol activo) se consolida en el primer login verificado.
-        // Esto evita perfiles huérfanos si el usuario nunca verifica.
-        await setDoc(doc(db, "users", fbUser.uid), {
-          uid: fbUser.uid,
+        // ① FIX: Guardar datos temporales en localStorage en lugar de Firestore
+        // Evita cuelgues (bugg sin fin) por race conditions con reglas de seguridad
+        const pendingProfile = {
           email,
           displayName,
           companyName,
@@ -223,7 +252,8 @@ export default function LandingRole() {
           createdAt: new Date().toISOString(),
           status: "pending_verification",
           emailVerified: false,
-        });
+        };
+        localStorage.setItem(`pending_profile_${fbUser.uid}`, JSON.stringify(pendingProfile));
 
         setPendingUser(fbUser);
         await signOut(auth);
