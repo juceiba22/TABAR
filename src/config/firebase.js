@@ -3,12 +3,12 @@ import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBE_LcTutS7DvIPmD6FN2XS6Vq4w1BUwQ4",
+  authDomain: "tabar-token-mvp-2026.firebaseapp.com",
+  projectId: "tabar-token-mvp-2026",
+  storageBucket: "tabar-token-mvp-2026.firebasestorage.app",
+  messagingSenderId: "852502309292",
+  appId: "1:852502309292:web:ff3f9262f81fd518833209",
 };
 
 const app = initializeApp(firebaseConfig);
