@@ -115,7 +115,7 @@ export default function LandingRole() {
           companyName,
           role: selectedRole,
           createdAt: new Date().toISOString(),
-          status: "pending_approval",
+          status: "approved",
           emailVerified: false
         };
 

@@ -165,17 +165,24 @@ function AppRoutes() {
         <div className="status-icon warning">?</div>
         <h2>Perfil No Encontrado</h2>
         <p>
-          Tu cuenta existe pero no encontramos tu perfil institucional. 
-          Contactá al soporte técnico.
+          Tu cuenta existe pero no logramos sincronizar tu perfil institucional. 
+          Esto puede deberse a un retraso en la base de datos.
         </p>
         <div className="status-actions">
-          <button onClick={logout} className="tabar-btn tabar-btn-primary">
-            Volver al Inicio
+          <button 
+            onClick={() => window.location.reload()} 
+            className="tabar-btn tabar-btn-primary"
+          >
+            Reintentar Sincronización
+          </button>
+          <button onClick={logout} className="tabar-btn tabar-btn-ghost">
+            Cerrar Sesión
           </button>
         </div>
       </div>
     );
   }
+
 
   // 7. Pending Approval State
   if (profile?.status === "pending_approval" && role !== "admin") {
