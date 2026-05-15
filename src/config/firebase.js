@@ -19,4 +19,4 @@ export const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence)
   .catch((err) => console.error("Persistence error:", err));
 
-export const db = getFirestore(app);
+export const db = getFirestore(app, "default");
