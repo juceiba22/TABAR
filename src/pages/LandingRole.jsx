@@ -65,13 +65,16 @@ export default function LandingRole() {
           email,
           password
         );
-
-        // refresca el usuario desde Firebase
-        await cred.user.reload();
         
-        // FIX: No desloguear aquí si no está verificado.
-        // AppShell se encargará de mostrar la pantalla de verificación
-        // permitiendo al usuario ver que entró pero necesita validar su mail.
+        // Immediately check email verification
+        if (!cred.user.emailVerified) {
+          // Send them another email just in case, but block access
+          await signOut(auth);
+          setError("Debes verificar tu correo antes de ingresar. Por favor, revisa tu bandeja de entrada (y SPAM).");
+          setLoading(false);
+          return;
+        }
+
         console.log("LOGIN_SUCCESS:", cred.user.uid);
       }
 
@@ -89,25 +92,19 @@ export default function LandingRole() {
         const user = userCredential.user;
         console.log("AUTH_USER_CREATED:", user.uid);
 
-        // =========================
-        // 1. SEND VERIFICATION EMAIL
-        // =========================
-
+        // 1. Send Verification Email
         try {
           await sendEmailVerification(user);
           console.log("VERIFICATION_EMAIL_SENT");
         } catch (vErr) {
           console.error("VERIFICATION_ERROR:", vErr);
           setError(`No se pudo enviar el correo de verificación: ${vErr.message}`);
-          // Si falla el envío de mail, aquí sí deslogueamos por seguridad
           await signOut(auth);
+          setLoading(false);
           return;
         }
 
-        // =========================
-        // 2. CREATE FIRESTORE PROFILE
-        // =========================
-
+        // 2. Create Firestore Profile (Minimal)
         const profileData = {
           uid: user.uid,
           email,
@@ -115,31 +112,19 @@ export default function LandingRole() {
           companyName,
           role: selectedRole,
           createdAt: new Date().toISOString(),
-          status: "approved",
-          emailVerified: false
+          status: "approved" // Default to approved as requested to remove manual steps
         };
 
-        // FIX: merge: true para evitar colisiones si el onAuthStateChanged
-        // ya disparó un markEmailVerifiedInFirestore paralelo
-        await setDoc(
-          doc(db, "users", user.uid),
-          profileData,
-          { merge: true }
-        );
-
+        await setDoc(doc(db, "users", user.uid), profileData);
         console.log("FIRESTORE_PROFILE_CREATED:", profileData);
 
-        // =========================
-        // 3. SUCCESS & REDIRECT
-        // =========================
-        // FIX: NO hacemos signOut(auth). El usuario ya está logueado.
-        // AppShell detectará emailVerified: false y mostrará la pantalla de aviso.
+        // 3. Sign Out Immediately and Show Message
+        await signOut(auth);
         
-        setMessage("Cuenta creada. Por favor, verificá tu correo para continuar.");
-        
-        // No es necesario setMode("login") porque AppShell ya lo sacará de aquí
-        // al detectar que user es truthy.
+        setMessage("Cuenta creada con éxito. Por favor, revisa tu correo (y SPAM) para verificar tu cuenta y poder ingresar.");
+        setMode("login");
       }
+
 
 
       // =========================
