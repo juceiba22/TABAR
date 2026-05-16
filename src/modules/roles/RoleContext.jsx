@@ -25,6 +25,7 @@ export const ROLES = {
   INDUSTRY: "industry",
   STATE: "state",
   DEALER: "dealer",
+  PRODUCER: "producer",
 };
 
 export const ROLE_LABELS = {
@@ -32,6 +33,7 @@ export const ROLE_LABELS = {
   industry: "Industria / Exportador",
   state: "Estado Nacional",
   dealer: "Dealer / Revendedor",
+  producer: "Productor Tabacalero",
 };
 
 export const ROLE_COLORS = {
@@ -39,6 +41,7 @@ export const ROLE_COLORS = {
   industry: "#58A6FF",
   state: "#F0883E",
   dealer: "#BC8CFF",
+  producer: "#3FB950",
 };
 
 /* ─── Rutas raíz por rol — única fuente de verdad ─────────────────────────
@@ -49,6 +52,7 @@ export const ROLE_HOME = {
   industry: "/industry",
   state: "/state",
   dealer: "/dealer",
+  producer: "/producer",
 };
 
 export function RoleProvider({ children }) {

@@ -32,9 +32,11 @@ const ROLE_PALETTE = {
   industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.12)", border: "rgba(88,166,255,0.35)", glyph: "⬡" },
   state: { color: "#F0883E", dim: "rgba(240,136,62,0.12)", border: "rgba(240,136,62,0.35)", glyph: "◉" },
   dealer: { color: "#BC8CFF", dim: "rgba(188,140,255,0.12)", border: "rgba(188,140,255,0.35)", glyph: "◇" },
+  producer: { color: "#3FB950", dim: "rgba(63,185,80,0.12)", border: "rgba(63,185,80,0.35)", glyph: "🌿" },
 };
 
 const ROLES_INFO = [
+  { id: "producer", title: "Productor Tabacalero", subtitle: "Finca / Cultivo de Tabaco" },
   { id: "industry", title: "Industria", subtitle: "Exportador / Productor" },
   { id: "state", title: "Estado", subtitle: "Ente Nacional / FET" },
   { id: "dealer", title: "Dealer", subtitle: "Revendedor / Trader" },

@@ -7,6 +7,7 @@ const ROLE_PALETTE = {
   industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)",  border: "rgba(88,166,255,0.25)" },
   state:    { color: "#F0883E", dim: "rgba(240,136,62,0.10)",  border: "rgba(240,136,62,0.25)" },
   dealer:   { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)", border: "rgba(188,140,255,0.25)" },
+  producer: { color: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(63,185,80,0.25)" },
 };
 
 const NAV_LINKS = {
@@ -32,6 +33,11 @@ const NAV_LINKS = {
     { path: "/dealer/trade",    label: "Operar" },
     { path: "/dealer/markets",  label: "Mercados" },
     { path: "/campaign",        label: "Estado Campaña" },
+  ],
+  producer: [
+    { path: "/producer",          label: "Mi Dashboard Finca" },
+    { path: "/producer/tokenizar",label: "Tokenizar Fardos" },
+    { path: "/campaign",          label: "Estado Campaña" },
   ],
 };
 
@@ -78,7 +84,7 @@ export default function AppLayout({ children }) {
 
           <nav className="tabar-nav">
             {links.map((link) => {
-              const isEnd = ["/admin", "/industry", "/state", "/dealer"].includes(link.path);
+              const isEnd = ["/admin", "/industry", "/state", "/dealer", "/producer"].includes(link.path);
               return (
                 <NavLink
                   key={link.path}

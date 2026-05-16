@@ -29,9 +29,9 @@ import IndustryPosition from "./pages/industry/position";
 import StateDashboard from "./pages/state/dashboard";
 import StateInvest from "./pages/state/invest";
 import StateReturns from "./pages/state/returns";
-import DealerDashboard from "./pages/dealer/dashboard";
-import DealerTrade from "./pages/dealer/trade";
 import DealerMarkets from "./pages/dealer/markets";
+import ProducerDashboard from "./pages/producer/dashboard";
+import ProducerTokenizar from "./pages/producer/tokenizar";
 
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
 function SplashScreen() {
@@ -192,6 +192,24 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["dealer"]}>
               <DealerMarkets />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ── Producer ── */}
+        <Route
+          path="/producer"
+          element={
+            <ProtectedRoute allowedRoles={["producer", "admin"]}>
+              <ProducerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/producer/tokenizar"
+          element={
+            <ProtectedRoute allowedRoles={["producer"]}>
+              <ProducerTokenizar />
             </ProtectedRoute>
           }
         />

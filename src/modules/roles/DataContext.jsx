@@ -17,7 +17,7 @@ const ESTADO_INICIAL_CAMPANA = {
 export function DataProvider({ children }) {
   const { user, profile } = useRole();
   const [campana, setCampana] = useState(ESTADO_INICIAL_CAMPANA);
-  const [balances, setBalances] = useState({ industry: 0, state: 0, dealer: 0 });
+  const [balances, setBalances] = useState({ industry: 0, state: 0, dealer: 0, producer: 0 });
   const [historial, setHistorial] = useState([]);
 
   // Listen to the active campaign (we assume doc ID 'active')
@@ -38,7 +38,7 @@ export function DataProvider({ children }) {
       if (docSnap.exists()) {
         setBalances(docSnap.data());
       } else {
-        setBalances({ industry: 0, state: 0, dealer: 0 });
+        setBalances({ industry: 0, state: 0, dealer: 0, producer: 0 });
       }
     });
     return () => unsub();
@@ -74,7 +74,7 @@ export function DataProvider({ children }) {
       inicio: new Date().toISOString()
     });
     // Reset global balances when starting a new campaign
-    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0 });
+    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0, producer: 0 });
     await addHistorial(`✅ Campaña iniciada: ${fardosTotales.toLocaleString("es-AR")} TABAR por ${diasTotales} días`, "success");
   };
 
@@ -182,9 +182,39 @@ export function DataProvider({ children }) {
     }
   };
 
+  const tokenizarProducer = async (cantidad) => {
+    if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
+    if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
+    
+    const campanaRef = doc(db, "campaigns", "active");
+    const balancesRef = doc(db, "balances", "global");
+
+    try {
+      await runTransaction(db, async (t) => {
+        const cSnap = await t.get(campanaRef);
+        const bSnap = await t.get(balancesRef);
+        
+        if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
+        if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
+
+        const newVendidos = cSnap.data().fardosVendidos + cantidad;
+        const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
+        t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
+
+        const currentProducerBal = bSnap.exists() ? (bSnap.data().producer || 0) : 0;
+        t.set(balancesRef, { ...bSnap.data(), producer: currentProducerBal + cantidad }, { merge: true });
+      });
+
+      await addHistorial(`🌿 Productor Tabacalero tokenizó ${cantidad.toLocaleString("es-AR")} fardos (TABAR)`, "success");
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  };
+
   const resetDemo = async () => {
     await setDoc(doc(db, "campaigns", "active"), ESTADO_INICIAL_CAMPANA);
-    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0 });
+    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0, producer: 0 });
     // Audit logs remain as historical records, or could be cleared if desired.
   };
 
@@ -192,7 +222,7 @@ export function DataProvider({ children }) {
     <DataContext.Provider value={{
       campana, balances, historial,
       iniciarCampana, cerrarCampana,
-      comprarIndustry, invertirState, operarDealer,
+      comprarIndustry, invertirState, operarDealer, tokenizarProducer,
       resetDemo,
     }}>
       {children}

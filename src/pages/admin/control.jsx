@@ -154,6 +154,10 @@ export default function AdminControl() {
                       <td className="mono" style={{ textTransform: "capitalize" }}>Mercado Dealer</td>
                       <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.dealer > 0 ? "#BC8CFF" : "#484F58" }}>{(balances.dealer || 0).toLocaleString("es-AR")}</td>
                     </tr>
+                    <tr>
+                      <td className="mono" style={{ textTransform: "capitalize" }}>Productores / Fincas</td>
+                      <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.producer > 0 ? "#3FB950" : "#484F58" }}>{(balances.producer || 0).toLocaleString("es-AR")}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
