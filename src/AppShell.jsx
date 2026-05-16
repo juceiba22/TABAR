@@ -29,6 +29,8 @@ import IndustryPosition from "./pages/industry/position";
 import StateDashboard from "./pages/state/dashboard";
 import StateInvest from "./pages/state/invest";
 import StateReturns from "./pages/state/returns";
+import DealerDashboard from "./pages/dealer/dashboard";
+import DealerTrade from "./pages/dealer/trade";
 import DealerMarkets from "./pages/dealer/markets";
 import ProducerDashboard from "./pages/producer/dashboard";
 import ProducerTokenizar from "./pages/producer/tokenizar";
