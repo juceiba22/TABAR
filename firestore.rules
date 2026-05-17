@@ -23,7 +23,8 @@ service cloud.firestore {
     // Campaigns collection
     match /campaigns/{campaignId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      // For this MVP, we allow authenticated users to update campaigns via client-side transactions
+      allow write: if isAuthenticated();
     }
 
     // Balances collection
