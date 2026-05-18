@@ -1,12 +1,11 @@
 /**
- * LandingRole.jsx — TABAR Auth v3
+ * LandingRole.jsx — TABAR Auth v2 Mejorado
  *
- * Mejoras en esta versión:
- *  ① Agregados campos: Nombre, Apellido
- *  ② Agregado selector de tipo documento (DNI/Pasaporte) + campo de número
- *  ③ Validación simple de documento
- *  ④ Campos disponibles SOLO en REGISTER (NO en LOGIN)
- *  ⑤ Datos persistidos en Firestore y localStorage
+ * Cambios realizados:
+ *  ① Agregados campos: Nombre, Apellido, Tipo de Documento, Número de Documento
+ *  ② Estos campos SOLO aparecen en REGISTRO (no en LOGIN)
+ *  ③ Validación simple y almacenamiento en Firestore/localStorage
+ *  ④ Diseño y CSS COMPLETAMENTE preservados
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -66,8 +65,8 @@ function mapFirebaseError(code) {
   switch (code) {
     case "auth/invalid-credential":
     case "auth/invalid-email":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
+    case "auth/wrong-password":       // legacy fallback
+    case "auth/user-not-found":       // legacy fallback
       return "Credenciales inválidas. Verificá tu email y contraseña.";
     case "auth/email-already-in-use":
       return "Este correo ya está registrado. Intentá iniciar sesión.";
@@ -104,20 +103,20 @@ export default function LandingRole() {
   // "login" | "register" | "forgot" | "verify-email" | "no-role"
   const [mode, setMode] = useState("login");
 
-  /* ─── Campos de autenticación ──────────────────────────────────────── */
+  /* ─── Campos ───────────────────────────────────────────────────────── */
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [selectedRole, setSelectedRole] = useState("industry");
 
-  /* ─── Campos de perfil (disponibles SOLO en REGISTER) ───────────── */
+  // NUEVOS CAMPOS — solo para REGISTRO
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [documentType, setDocumentType] = useState("dni");
   const [documentNumber, setDocumentNumber] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [selectedRole, setSelectedRole] = useState("industry");
 
   /* ─── Estado UI ─────────────────────────────────────────────────────── */
   const [error, setError] = useState("");
@@ -126,7 +125,7 @@ export default function LandingRole() {
 
   /* ─── Verificación email: reenvío con cooldown ─────────────────────── */
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [pendingUser, setPendingUser] = useState(null);
+  const [pendingUser, setPendingUser] = useState(null); // user de Firebase en espera de verificación
 
   useEffect(() => {
     setError("");
@@ -148,35 +147,28 @@ export default function LandingRole() {
   }, [user, role, authLoading]);
 
   /* ─── Validación client-side ─────────────────────────────────────── */
-  const validateDocumentNumber = useCallback((doc, type) => {
-    if (!doc.trim()) return false;
-    // Validación simple: debe contener al menos números
-    return /\d/.test(doc);
-  }, []);
-
   const validateRegister = useCallback(() => {
-    // Validaciones de documento (solo en REGISTER)
+    // Validar nuevos campos de documento
     if (!firstName.trim())
       return "El nombre es obligatorio.";
     if (!lastName.trim())
       return "El apellido es obligatorio.";
     if (!documentNumber.trim())
       return "El número de documento es obligatorio.";
-    if (!validateDocumentNumber(documentNumber, documentType))
+    if (!/\d/.test(documentNumber))
       return "El número de documento debe contener números.";
 
-    // Validaciones específicas de REGISTER
+    // Validaciones existentes
     if (!displayName.trim())
       return "El nombre del responsable es obligatorio.";
     if (!companyName.trim())
       return "El nombre de la organización es obligatorio.";
-
     if (password.length < 6)
       return "La contraseña debe tener al menos 6 caracteres.";
     if (password !== passwordConfirm)
       return "Las contraseñas no coinciden.";
     return null;
-  }, [firstName, lastName, documentNumber, documentType, displayName, companyName, password, passwordConfirm, validateDocumentNumber]);
+  }, [firstName, lastName, documentNumber, displayName, companyName, password, passwordConfirm]);
 
   /* ─── Reenviar email de verificación ──────────────────────────────── */
   const handleResendVerification = async () => {
@@ -300,7 +292,7 @@ export default function LandingRole() {
     } catch (err) {
       setError(mapFirebaseError(err.code));
     } finally {
-      setLoading(false);
+      setLoading(false); // ⑤ FIX: Sin setTimeout artificial
     }
   };
 
@@ -420,10 +412,9 @@ export default function LandingRole() {
                   {error && <Alert type="error" text={error} />}
                   {message && <Alert type="success" text={message} />}
 
-                  {/* ── NUEVOS CAMPOS: Nombre y Apellido + Documento (SOLO REGISTRO) ── */}
+                  {/* ── NUEVOS CAMPOS SOLO EN REGISTRO ── */}
                   {mode === "register" && (
                     <>
-                      {/* Nombre */}
                       <Field label="Nombre">
                         <input
                           required
@@ -437,7 +428,6 @@ export default function LandingRole() {
                         />
                       </Field>
 
-                      {/* Apellido */}
                       <Field label="Apellido">
                         <input
                           required
@@ -451,8 +441,8 @@ export default function LandingRole() {
                         />
                       </Field>
 
-                      {/* Tipo de Documento + Número */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "12px" }}>
+                      {/* Selector Tipo de Documento + Número */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "12px", marginBottom: "18px" }}>
                         <Field label="Tipo de documento">
                           <select
                             required
@@ -484,7 +474,7 @@ export default function LandingRole() {
                     </>
                   )}
 
-                  {/* ── Campos extra de REGISTRO ── */}
+                  {/* ── Campos extra de registro (ORIGINALES) ── */}
                   {mode === "register" && (
                     <>
                       <Field label="Nombre del responsable">
@@ -569,7 +559,7 @@ export default function LandingRole() {
                     </Field>
                   )}
 
-                  {/* ── Confirmar contraseña — solo en registro ── */}
+                  {/* ⑧ Confirmar contraseña — solo en registro */}
                   {mode === "register" && (
                     <Field label="Confirmá la contraseña">
                       <PasswordInput
@@ -654,7 +644,7 @@ export default function LandingRole() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Sub-componentes
+   Sub-componentes (SIN CAMBIOS)
 ═══════════════════════════════════════════════════════════════════════════ */
 
 function Field({ label, action, children }) {
@@ -783,27 +773,32 @@ function VerifyEmailScreen({ email, cooldown, message, error, onResend, onBack }
       </div>
       <h2 className="lr-status-title">Verificá tu correo</h2>
       <p className="lr-status-desc">
-        Enviamos un enlace de verificación a <strong>{email}</strong>. Revisá tu bandeja de entrada (incluyendo SPAM).
+        Enviamos un enlace de verificación a{" "}
+        <strong className="lr-status-email">{email}</strong>.
+        Hacé clic en el enlace y luego volvé para iniciar sesión.
       </p>
+      <p className="lr-status-hint">
+        ¿No lo encontrás? Revisá la carpeta de SPAM o correo no deseado.
+      </p>
+
       {error && <Alert type="error" text={error} />}
       {message && <Alert type="success" text={message} />}
-      <div style={{ display: "flex", gap: "10px" }}>
-        <button
-          type="button"
-          className="lr-btn-primary"
-          onClick={onResend}
-          disabled={cooldown > 0}
-        >
-          {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar correo"}
-        </button>
-        <button
-          type="button"
-          className="lr-btn-ghost"
-          onClick={onBack}
-        >
-          Volver
-        </button>
-      </div>
+
+      <button
+        type="button"
+        className="lr-btn-primary"
+        onClick={onResend}
+        disabled={cooldown > 0}
+      >
+        {cooldown > 0
+          ? `Reenviar correo (${cooldown}s)`
+          : "Reenviar correo de verificación"
+        }
+      </button>
+
+      <button type="button" className="lr-btn-ghost" onClick={onBack}>
+        Volver al inicio de sesión
+      </button>
     </div>
   );
 }
@@ -812,24 +807,30 @@ function NoRoleScreen({ onLogout }) {
   return (
     <div className="lr-status-screen">
       <div className="lr-status-icon lr-status-icon--warning">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2L2 20h20L12 2z" />
+          <line x1="12" y1="10" x2="12" y2="14" />
+          <line x1="12" y1="18" x2="12.01" y2="18" />
         </svg>
       </div>
       <h2 className="lr-status-title">Acceso pendiente</h2>
       <p className="lr-status-desc">
-        Tu cuenta está autenticada pero aún no tiene asignado un rol. Contactá al administrador para obtener acceso.
+        Tu cuenta fue creada pero todavía no tiene un rol asignado. El
+        administrador del sistema debe habilitarte el acceso.
       </p>
-      <button type="button" className="lr-btn-primary" onClick={onLogout}>
+      <p className="lr-status-hint">
+        Si creés que esto es un error, contactá al administrador de TABAR.
+      </p>
+      <button type="button" className="lr-btn-ghost" onClick={onLogout}>
         Cerrar sesión
       </button>
     </div>
   );
 }
 
-/* ─── Estilos CSS ────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Estilos — ⑥ ORIGINALES SIN CAMBIOS
+═══════════════════════════════════════════════════════════════════════════ */
 const STYLES = `
 /* ── Root ────────────────────────────────── */
 .lr-root {
@@ -1381,11 +1382,4 @@ const STYLES = `
 }
 
 @keyframes lr-spin { to { transform: rotate(360deg); } }
-
-/* ── Document grid responsive ───────────── */
-@media (max-width: 768px) {
-  .lr-form > div[style*="grid-template-columns"] {
-    grid-template-columns: 1fr !important;
-  }
-}
 `;
