@@ -37,7 +37,7 @@ const ENTIDADES = [
 export default function StateInvest() {
   const { user } = useRole();
   const { invertirState } = useData();
-
+  
   // Form states
   const [entidad, setEntidad] = useState("");
   const [numeroResolucion, setNumeroResolucion] = useState("");
@@ -45,7 +45,7 @@ export default function StateInvest() {
   const [monto, setMonto] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfInfo, setPdfInfo] = useState(null); // { nombre, tamaño }
-
+  
   const [step, setStep] = useState("form");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,7 +102,7 @@ export default function StateInvest() {
       const randomId = Math.random().toString(36).substring(2, 9);
       const pdfFileName = `poa_${timestamp}_${randomId}.pdf`;
       const storageRef = ref(storage, `poa_uploads/${pdfFileName}`);
-
+      
       await uploadBytes(storageRef, pdfFile);
       const pdfUrl = await getDownloadURL(storageRef);
 
@@ -124,7 +124,7 @@ export default function StateInvest() {
       // 3. Send to backend/DataContext
       // Assuming invertirState can handle POA data, or you might need a different function
       const res = await invertirState(poaData);
-
+      
       setLoading(false);
       if (res?.ok) {
         setStep("done");
@@ -164,10 +164,10 @@ export default function StateInvest() {
           <div>
             <div className="tabar-card">
               <h3 className="tabar-card-title">Cargar POA (Plan Operativo Anual)</h3>
-
+              
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Entidad Beneficiaria *</label>
-                <select
+                <select 
                   value={entidad}
                   onChange={(e) => setEntidad(e.target.value)}
                   className="tabar-input"
@@ -182,8 +182,8 @@ export default function StateInvest() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Número de Resolución *</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   min="1"
                   value={numeroResolucion}
                   onChange={(e) => setNumeroResolucion(e.target.value)}
@@ -194,8 +194,8 @@ export default function StateInvest() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Año de Resolución *</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   min="2000"
                   max={new Date().getFullYear()}
                   value={anioResolucion}
@@ -207,8 +207,8 @@ export default function StateInvest() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Monto (en $) *</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   min="1"
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
@@ -228,7 +228,7 @@ export default function StateInvest() {
                   transition: "all 0.2s",
                   backgroundColor: pdfFile ? "rgba(63,185,80,0.08)" : "transparent"
                 }}>
-                  <input
+                  <input 
                     type="file"
                     accept=".pdf"
                     onChange={handlePdfChange}
@@ -274,11 +274,11 @@ export default function StateInvest() {
                 </div>
               )}
 
-              <button
+              <button 
                 onClick={handleConfirm}
                 disabled={!isFormValid}
                 className="tabar-btn tabar-btn-primary tabar-btn-full"
-                style={{
+                style={{ 
                   marginTop: "16px",
                   background: isFormValid ? C.accent : "#484F58",
                   borderColor: isFormValid ? C.accent : "#484F58",
@@ -315,25 +315,25 @@ export default function StateInvest() {
           <InfoRow label="Año de Resolución" value={anioResolucion} />
           <InfoRow label="Monto" value={`$${parseInt(monto).toLocaleString("es-AR")}`} valueColor="#3FB950" />
           <InfoRow label="Archivo" value={`${pdfInfo.nombre} (${pdfInfo.tamaño} MB)`} />
-
+          
           {error && (
-            <div className="tabar-notice" style={{
-              color: "#F85149",
-              borderColor: "rgba(248,81,73,0.3)",
-              marginTop: "16px"
+            <div className="tabar-notice" style={{ 
+              color: "#F85149", 
+              borderColor: "rgba(248,81,73,0.3)", 
+              marginTop: "16px" 
             }}>
               {error}
             </div>
           )}
-
+          
           <div className="tabar-btn-row" style={{ marginTop: "20px" }}>
-            <button
+            <button 
               onClick={handleSubmit}
               disabled={loading}
               className="tabar-btn tabar-btn-primary tabar-btn-full"
-              style={{
-                background: C.accent,
-                borderColor: C.accent,
+              style={{ 
+                background: C.accent, 
+                borderColor: C.accent, 
                 color: "#080C10",
                 opacity: loading ? 0.7 : 1,
                 cursor: loading ? "not-allowed" : "pointer"
@@ -341,7 +341,7 @@ export default function StateInvest() {
             >
               {loading ? "Procesando..." : "Confirmar carga"}
             </button>
-            <button
+            <button 
               onClick={() => setStep("form")}
               disabled={loading}
               className="tabar-btn tabar-btn-ghost"
@@ -372,7 +372,7 @@ export default function StateInvest() {
             <div><strong>Monto:</strong> ${parseInt(monto).toLocaleString("es-AR")}</div>
             <div><strong>Archivo:</strong> {pdfInfo.nombre}</div>
           </div>
-          <button
+          <button 
             onClick={resetForm}
             className="tabar-btn tabar-btn-secondary"
           >
@@ -386,19 +386,19 @@ export default function StateInvest() {
 
 function InfoRow({ label, value, valueColor }) {
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "space-between",
-      padding: "6px 0",
-      borderBottom: "1px solid rgba(255,255,255,0.04)",
-      flexWrap: "wrap",
+    <div style={{ 
+      display: "flex", 
+      justifyContent: "space-between", 
+      padding: "6px 0", 
+      borderBottom: "1px solid rgba(255,255,255,0.04)", 
+      flexWrap: "wrap", 
       gap: "4px",
       alignItems: "center"
     }}>
       <span style={{ fontSize: "12px", color: "#484F58" }}>{label}</span>
-      <span style={{
-        fontSize: "12px",
-        color: valueColor || "#8B949E",
+      <span style={{ 
+        fontSize: "12px", 
+        color: valueColor || "#8B949E", 
         fontWeight: 500,
         wordBreak: "break-word",
         textAlign: "right",
@@ -411,17 +411,17 @@ function InfoRow({ label, value, valueColor }) {
 function StepInfo({ n, text, color, bg }) {
   return (
     <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
-      <div style={{
-        minWidth: "24px",
-        height: "24px",
-        borderRadius: "6px",
-        background: bg,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "11px",
-        color,
-        fontWeight: 600
+      <div style={{ 
+        minWidth: "24px", 
+        height: "24px", 
+        borderRadius: "6px", 
+        background: bg, 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        fontSize: "11px", 
+        color, 
+        fontWeight: 600 
       }}>
         {n}
       </div>

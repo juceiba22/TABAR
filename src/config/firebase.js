@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBE_LcTutS7DvIPmD6FN2XS6Vq4w1BUwQ4",
@@ -20,3 +21,4 @@ setPersistence(auth, browserLocalPersistence)
   .catch((err) => console.error("Persistence error:", err));
 
 export const db = getFirestore(app);
+export const storage = getStorage(app);

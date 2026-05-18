@@ -89,7 +89,7 @@ export function DataProvider({ children }) {
   const comprarIndustry = async (cantidad) => {
     if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
     if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
-    
+
     const campanaRef = doc(db, "campaigns", "active");
     const balancesRef = doc(db, "balances", "global");
 
@@ -97,7 +97,7 @@ export function DataProvider({ children }) {
       await runTransaction(db, async (t) => {
         const cSnap = await t.get(campanaRef);
         const bSnap = await t.get(balancesRef);
-        
+
         if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
         if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
 
@@ -116,39 +116,62 @@ export function DataProvider({ children }) {
     }
   };
 
-  const invertirState = async (cantidad) => {
-    if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
-    if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
-    
-    const campanaRef = doc(db, "campaigns", "active");
-    const balancesRef = doc(db, "balances", "global");
-
+  const invertirState = async (datos) => {
     try {
-      await runTransaction(db, async (t) => {
-        const cSnap = await t.get(campanaRef);
-        const bSnap = await t.get(balancesRef);
-        
-        if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
-        if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
+      // CASO 1: Si es un número (inversión FET antigua)
+      if (typeof datos === "number") {
+        const cantidad = datos;
 
-        const newVendidos = cSnap.data().fardosVendidos + cantidad;
-        const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
-        t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
+        if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
+        if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
 
-        const currentStateBal = bSnap.exists() ? (bSnap.data().state || 0) : 0;
-        t.set(balancesRef, { ...bSnap.data(), state: currentStateBal + cantidad }, { merge: true });
-      });
+        const campanaRef = doc(db, "campaigns", "active");
+        const balancesRef = doc(db, "balances", "global");
 
-      await addHistorial(`✅ Estado Nacional invirtió ${cantidad.toLocaleString("es-AR")} TABAR vía FET`, "success");
-      return { ok: true };
+        await runTransaction(db, async (t) => {
+          const cSnap = await t.get(campanaRef);
+          const bSnap = await t.get(balancesRef);
+
+          if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
+          if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
+
+          const newVendidos = cSnap.data().fardosVendidos + cantidad;
+          const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
+          t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
+
+          const currentStateBal = bSnap.exists() ? (bSnap.data().state || 0) : 0;
+          t.set(balancesRef, { ...bSnap.data(), state: currentStateBal + cantidad }, { merge: true });
+        });
+
+        await addHistorial(`✅ Estado Nacional invirtió ${cantidad.toLocaleString("es-AR")} TABAR vía FET`, "success");
+        return { ok: true };
+      }
+
+      // CASO 2: Si es un objeto (POA nuevo)
+      if (typeof datos === "object" && datos.entidad) {
+        const poaData = datos;
+
+        // Guardar en colección poa_uploads
+        const docRef = doc(db, "poa_uploads", `${Date.now()}`);
+        await setDoc(docRef, {
+          ...poaData,
+          estado: "pendiente_aprobacion"
+        });
+
+        await addHistorial(`✅ Se cargó POA de ${poaData.entidad} por $${poaData.monto.toLocaleString("es-AR")}`, "success");
+        return { ok: true };
+      }
+
+      // Si no es número ni objeto, error
+      return { ok: false, error: "Formato de datos inválido" };
+
     } catch (e) {
       return { ok: false, error: e.message };
     }
   };
-
   const operarDealer = async (tipo, cantidad) => {
     if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
-    
+
     const campanaRef = doc(db, "campaigns", "active");
     const balancesRef = doc(db, "balances", "global");
 
@@ -156,23 +179,23 @@ export function DataProvider({ children }) {
       await runTransaction(db, async (t) => {
         const cSnap = await t.get(campanaRef);
         const bSnap = await t.get(balancesRef);
-        
+
         if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
-        
+
         const currentDealerBal = bSnap.exists() ? (bSnap.data().dealer || 0) : 0;
 
         if (tipo === "buy") {
           if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
-          t.update(campanaRef, { 
-            fardosVendidos: cSnap.data().fardosVendidos + cantidad, 
-            fardosDisponibles: cSnap.data().fardosDisponibles - cantidad 
+          t.update(campanaRef, {
+            fardosVendidos: cSnap.data().fardosVendidos + cantidad,
+            fardosDisponibles: cSnap.data().fardosDisponibles - cantidad
           });
           t.set(balancesRef, { ...bSnap.data(), dealer: currentDealerBal + cantidad }, { merge: true });
         } else {
           if (cantidad > currentDealerBal) throw new Error("Balance insuficiente");
-          t.update(campanaRef, { 
-            fardosVendidos: cSnap.data().fardosVendidos - cantidad, 
-            fardosDisponibles: cSnap.data().fardosDisponibles + cantidad 
+          t.update(campanaRef, {
+            fardosVendidos: cSnap.data().fardosVendidos - cantidad,
+            fardosDisponibles: cSnap.data().fardosDisponibles + cantidad
           });
           t.set(balancesRef, { ...bSnap.data(), dealer: currentDealerBal - cantidad }, { merge: true });
         }
@@ -188,7 +211,7 @@ export function DataProvider({ children }) {
   const tokenizarProducer = async (cantidad) => {
     if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
     if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
-    
+
     const campanaRef = doc(db, "campaigns", "active");
     const balancesRef = doc(db, "balances", "global");
 
@@ -196,7 +219,7 @@ export function DataProvider({ children }) {
       await runTransaction(db, async (t) => {
         const cSnap = await t.get(campanaRef);
         const bSnap = await t.get(balancesRef);
-        
+
         if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
         if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
 
