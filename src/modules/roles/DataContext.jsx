@@ -22,6 +22,7 @@ export function DataProvider({ children }) {
 
   // Listen to the active campaign (we assume doc ID 'active')
   useEffect(() => {
+    if (!user) { setCampana(ESTADO_INICIAL_CAMPANA); return; }
     const unsub = onSnapshot(doc(db, "campaigns", "active"), (docSnap) => {
       if (docSnap.exists()) {
         setCampana(docSnap.data());
@@ -30,10 +31,11 @@ export function DataProvider({ children }) {
       }
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   // Listen to global balances (mock global balances for the MVP)
   useEffect(() => {
+    if (!user) { setBalances({ industry: 0, state: 0, dealer: 0, producer: 0 }); return; }
     const unsub = onSnapshot(doc(db, "balances", "global"), (docSnap) => {
       if (docSnap.exists()) {
         setBalances(docSnap.data());
@@ -42,17 +44,18 @@ export function DataProvider({ children }) {
       }
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   // Listen to history
   useEffect(() => {
+    if (!user) { setHistorial([]); return; }
     const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(20));
     const unsub = onSnapshot(q, (snap) => {
       const logs = snap.docs.map(d => ({ id: d.id, ...d.data(), hora: d.data().timestamp?.toDate().toLocaleTimeString("es-AR") || "" }));
       setHistorial(logs);
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   const addHistorial = async (msg, tipo = "info") => {
     await addDoc(collection(db, "audit_logs"), {

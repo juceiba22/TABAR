@@ -1,24 +1,20 @@
 /**
- * AppShell.jsx — v2
+ * AppShell.jsx — v3
  *
- * Fixes vs versión anterior:
- *  ① Eliminada redirección a /undefined: catch-all usa ROLE_HOME[role]
- *    con fallback explícito. Si role es null, va a "/" (LandingRole),
- *    nunca a una ruta vacía o inválida.
- *  ② Un único catch-all al final del árbol de rutas — los dos catch-all
- *    anteriores competían y causaban renders dobles.
- *  ③ ProtectedRoute distingue tres estados: loading, sin auth, sin rol
- *    para ese recurso. Cada uno tiene un destino claro.
- *  ④ AppRoutes no renderiza nada hasta que loading === false,
- *    cortando el flash de LandingRole en recargas con sesión activa.
- *  ⑤ Usuario autenticado sin rol (role === null) ve LandingRole donde
- *    el modo "no-role" ya está manejado — no queda atrapado en limbo.
+ * Cambios vs v2:
+ *  ① Ruta "/" ahora apunta a PublicPresentation (landing pública).
+ *  ② LandingRole (login/registro) se movió a "/login".
+ *  ③ Usuarios autenticados con rol son redirigidos desde "/" a su dashboard.
+ *  ④ ProtectedRoute redirige a "/login" en vez de "/" para no-autenticados.
+ *  ⑤ Catch-all para usuarios sin auth redirige a "/" (landing pública).
+ *  ⑥ Se preserva SplashScreen, DataProvider y RoleProvider intactos.
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
 import AppLayout from "./modules/layout/AppLayout";
+import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
 import CampaignPage from "./pages/campaign/index";
 import AdminDashboard from "./pages/admin/dashboard";
@@ -54,55 +50,94 @@ function SplashScreen() {
  * Guarda una ruta según autenticación y rol.
  *
  * Estados posibles:
- *   loading  → SplashScreen (④ no hay flash)
- *   !user    → redirect a "/"  (LandingRole)
- *   role no permitido → redirect al home del rol actual (① sin /undefined)
+ *   loading  → SplashScreen (sin flash)
+ *   !user    → redirect a "/login"  (④ formulario de auth)
+ *   role no permitido → redirect al home del rol actual
  *   ok       → renderiza children
  */
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, role, loading } = useRole();
 
-  // ④ Esperar a que RoleContext termine de resolver antes de decidir
   if (loading) return <SplashScreen />;
 
-  // No autenticado
-  if (!user) return <Navigate to="/" replace />;
+  // ④ No autenticado → formulario de login
+  if (!user) return <Navigate to="/login" replace />;
 
-  // ① Rol no permitido → home del rol actual, con fallback seguro
+  // Rol no permitido → home del rol actual, con fallback seguro
   if (allowedRoles && !allowedRoles.includes(role)) {
-    const destination = ROLE_HOME[role] ?? "/";
+    const destination = ROLE_HOME[role] ?? "/login";
     return <Navigate to={destination} replace />;
   }
 
   return children;
 }
 
+/* ─── SmartRoot: redirige auth con rol, o muestra landing ────────────────── */
+function SmartRoot() {
+  const { user, role, loading } = useRole();
+
+  if (loading) return <SplashScreen />;
+
+  // ③ Usuario con sesión activa y rol → directo a su dashboard
+  if (user && role) {
+    const dest = ROLE_HOME[role] ?? "/login";
+    return <Navigate to={dest} replace />;
+  }
+
+  // ① Sin sesión o sin rol → landing pública
+  return <PublicPresentation />;
+}
+
+/* ─── SmartLogin: redirige auth con rol, o muestra login ─────────────────── */
+function SmartLogin() {
+  const { user, role, loading } = useRole();
+
+  if (loading) return <SplashScreen />;
+
+  // Ya autenticado con rol → no tiene sentido ver el login
+  if (user && role) {
+    const dest = ROLE_HOME[role] ?? "/";
+    return <Navigate to={dest} replace />;
+  }
+
+  // ② Mostrar formulario de login/registro
+  return <LandingRole />;
+}
+
 /* ─── AppRoutes ──────────────────────────────────────────────────────────── */
 function AppRoutes() {
   const { user, role, loading } = useRole();
 
-  // ④ Bloquear render hasta que loading termine — evita flash de LandingRole
+  // Bloquear render hasta que loading termine — evita flash
   if (loading) return <SplashScreen />;
 
-  // ⑤ Sin sesión (o usuario verificado sin rol → LandingRole maneja modo "no-role")
+  // ⑤ Sin sesión o sin rol: mostrar rutas públicas + login
   if (!user || !role) {
     return (
       <Routes>
-        <Route path="/*" element={<LandingRole />} />
+        <Route path="/" element={<SmartRoot />} />
+        <Route path="/login" element={<SmartLogin />} />
+        {/* Cualquier otra ruta sin auth → landing pública */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
 
-  // ① Destino raíz del rol actual
+  // Destino raíz del rol actual
   const roleHome = ROLE_HOME[role] ?? "/";
 
   return (
-    <AppLayout>
-      <Routes>
-        {/* ── Ruta compartida ── */}
+    <Routes>
+      {/* ── Rutas públicas accesibles también estando auth ── */}
+      <Route path="/" element={<Navigate to={roleHome} replace />} />
+      <Route path="/login" element={<Navigate to={roleHome} replace />} />
+
+      {/* ── Rutas protegidas dentro del AppLayout ── */}
+      <Route element={<AppLayout />}>
+        {/* Ruta compartida */}
         <Route path="/campaign" element={<CampaignPage />} />
 
-        {/* ── Admin ── */}
+        {/* Admin */}
         <Route
           path="/admin"
           element={
@@ -120,7 +155,7 @@ function AppRoutes() {
           }
         />
 
-        {/* ── Industry ── */}
+        {/* Industry */}
         <Route
           path="/industry"
           element={
@@ -146,7 +181,7 @@ function AppRoutes() {
           }
         />
 
-        {/* ── State ── */}
+        {/* State */}
         <Route
           path="/state"
           element={
@@ -172,7 +207,7 @@ function AppRoutes() {
           }
         />
 
-        {/* ── Dealer ── */}
+        {/* Dealer */}
         <Route
           path="/dealer"
           element={
@@ -198,7 +233,7 @@ function AppRoutes() {
           }
         />
 
-        {/* ── Producer ── */}
+        {/* Producer */}
         <Route
           path="/producer"
           element={
@@ -215,11 +250,11 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+      </Route>
 
-        {/* ② Un único catch-all — redirige al home del rol actual */}
-        <Route path="*" element={<Navigate to={roleHome} replace />} />
-      </Routes>
-    </AppLayout>
+      {/* Catch-all — redirige al home del rol actual */}
+      <Route path="*" element={<Navigate to={roleHome} replace />} />
+    </Routes>
   );
 }
 

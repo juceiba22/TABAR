@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRole, ROLE_LABELS } from "../roles/RoleContext";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Outlet } from "react-router-dom";
 
 const ROLE_PALETTE = {
   admin:    { color: "#E3B64F", dim: "rgba(227,182,79,0.10)",  border: "rgba(227,182,79,0.25)" },
@@ -139,7 +139,7 @@ export default function AppLayout({ children }) {
             Conectado
           </div>
         </header>
-        <main className="tabar-content">{children}</main>
+        <main className="tabar-content">{children || <Outlet />}</main>
       </div>
     </div>
   );
