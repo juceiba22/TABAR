@@ -65,23 +65,22 @@ export default function ProducerTokenizar() {
       const fetchAsociaciones = async () => {
         setLoadingAsociaciones(true);
         try {
-          const q = query(collection(db, "producer_associations"));
+          const q = query(
+            collection(db, "producer_associations"),
+            where("producerUids", "array-contains", user.uid)
+          );
           const querySnapshot = await getDocs(q);
           const asociaciones = [];
           
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const yaEstá = data.productores.some(p => p.uid === user.uid);
-            
-            if (!yaEstá) {
-              asociaciones.push({
-                id: doc.id,
-                nombre: data.nombre,
-                totalKgs: data.inventario?.totalKgs || 0,
-                totalFardos: data.inventario?.totalFardos || 0,
-                productores: data.productores.map(p => p.nombre).join(", ")
-              });
-            }
+            asociaciones.push({
+              id: doc.id,
+              nombre: data.nombre,
+              totalKgs: data.inventario?.totalKgs || 0,
+              totalFardos: data.inventario?.totalFardos || 0,
+              productores: data.productores.map(p => p.nombre).join(", ")
+            });
           });
           
           setAsociacionesDisponibles(asociaciones);

@@ -263,8 +263,11 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
   try {
     console.log("🔄 Creando/buscando asociación...", { productorAsociadoUID });
     
-    // Traer TODAS las asociaciones (no podemos filtrar por array de objetos)
-    const q = query(collection(db, "producer_associations"));
+    // Verificar si existe asociación entre estos productores
+    const q = query(
+      collection(db, "producer_associations"),
+      where("producerUids", "array-contains", user.uid)
+    );
     const querySnapshot = await getDocs(q);
     
     let associationId = null;
@@ -272,17 +275,12 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
     // Filtrar en el código qué asociaciones tienen al usuario actual
     for (const docSnap of querySnapshot.docs) {
       const data = docSnap.data();
-      const tieneAlUsuarioActual = data.productores.some(p => p.uid === user.uid);
-      
-      if (tieneAlUsuarioActual) {
-        // Verificar si el otro productor también está
-        const tieneAlOtroProductor = data.productores.some(p => p.uid === productorAsociadoUID);
+      const tieneAlOtroProductor = data.producerUids.includes(productorAsociadoUID);
         
-        if (tieneAlOtroProductor) {
-          console.log("✅ Asociación compartida encontrada:", docSnap.id);
-          associationId = docSnap.id;
-          break;
-        }
+      if (tieneAlOtroProductor) {
+        console.log("✅ Asociación compartida encontrada:", docSnap.id);
+        associationId = docSnap.id;
+        break;
       }
     }
     
@@ -294,6 +292,7 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
       const datosGuardar = {
         id: `ASSOC-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         nombre: `Asociación ${datosAsociacion.tipoTabaco} - ${new Date().getFullYear()}`,
+        producerUids: [user.uid, productorAsociadoUID],
         productores: [
           { 
             uid: user.uid, 
@@ -358,6 +357,7 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
         };
         
         await updateDoc(assocRef, {
+          producerUids: arrayUnion(user.uid),
           productores: arrayUnion(nuevoProductor),
           actualizadoEn: serverTimestamp()
         });

@@ -18,7 +18,7 @@ export default function ProducerAsociaciones() {
 
         const q = query(
           collection(db, "producer_associations"),
-          where("productores", "array-contains", { uid: user.uid })
+          where("producerUids", "array-contains", user.uid)
         );
 
         const querySnapshot = await getDocs(q);
