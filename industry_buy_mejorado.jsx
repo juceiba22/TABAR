@@ -13,14 +13,14 @@ const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
 export default function IndustryBuy() {
   const { user } = useRole();
   const { comprarIndustry } = useData();
-
+  
   // Form states
   const [tipoTabaco, setTipoTabaco] = useState("");
   const [calidadSolicitada, setCalidadSolicitada] = useState("");
   const [cantidadKgs, setCantidadKgs] = useState("");
   const [precioDisponible, setPrecioDisponible] = useState("");
   const [notaAdicional, setNotaAdicional] = useState("");
-
+  
   const [step, setStep] = useState("form");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,21 +48,21 @@ export default function IndustryBuy() {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-
+      
       // Header
       doc.setFillColor(88, 166, 255);
       doc.rect(0, 0, pageWidth, 40, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(20);
       doc.text("ORDEN DE COMPRA", pageWidth / 2, 20, { align: "center" });
-
+      
       // Order number and date
       doc.setTextColor(50, 50, 50);
       doc.setFontSize(10);
       const numeroOrden = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       doc.text(`Número de Orden: ${numeroOrden}`, 20, 50);
       doc.text(`Fecha: ${new Date().toLocaleDateString("es-AR")}`, 20, 58);
-
+      
       // Acopiador info
       doc.setFontSize(11);
       doc.setFont(undefined, "bold");
@@ -71,23 +71,23 @@ export default function IndustryBuy() {
       doc.setFontSize(10);
       doc.text(`Email: ${user?.email}`, 20, 83);
       doc.text(`Usuario: ${user?.displayName || user?.email}`, 20, 91);
-
+      
       // Order details
       doc.setFontSize(11);
       doc.setFont(undefined, "bold");
       doc.text("Detalles de la Orden", 20, 110);
-
+      
       doc.setFont(undefined, "normal");
       doc.setFontSize(10);
       doc.text(`Tipo de Tabaco: ${tipoTabaco}`, 20, 118);
       doc.text(`Calidad Solicitada: ${calidadSolicitada}`, 20, 126);
       doc.text(`Cantidad: ${parseInt(cantidadKgs).toLocaleString("es-AR")} Kgs`, 20, 134);
       doc.text(`Precio Unitario: $${parseFloat(precioDisponible).toFixed(2)}`, 20, 142);
-
+      
       const montoTotal = (parseInt(cantidadKgs) * parseFloat(precioDisponible)).toFixed(2);
       doc.setFont(undefined, "bold");
       doc.text(`Monto Total: $${parseFloat(montoTotal).toLocaleString("es-AR")}`, 20, 150);
-
+      
       // Notes
       if (notaAdicional) {
         doc.setFont(undefined, "normal");
@@ -96,12 +96,12 @@ export default function IndustryBuy() {
         const notasLines = doc.splitTextToSize(notaAdicional, 170);
         doc.text(notasLines, 20, 176);
       }
-
+      
       // Footer
       doc.setTextColor(150, 150, 150);
       doc.setFontSize(8);
       doc.text("Documento generado automáticamente por TABAR — Plataforma de Financiamiento Agroindustrial", 20, pageHeight - 10);
-
+      
       return doc;
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -118,13 +118,13 @@ export default function IndustryBuy() {
       const doc = await generatePDF();
       const pdfData = doc.output("arraybuffer");
       const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
-
+      
       // 2. Upload PDF to Firebase Storage
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 9);
       const pdfFileName = `orden_compra_${timestamp}_${randomId}.pdf`;
       const storageRef = ref(storage, `purchase_orders/${pdfFileName}`);
-
+      
       await uploadBytes(storageRef, pdfBlob);
       const pdfUrl = await getDownloadURL(storageRef);
 
@@ -147,7 +147,7 @@ export default function IndustryBuy() {
 
       // 4. Save to Firestore
       const res = await comprarIndustry(ordenData);
-
+      
       setLoading(false);
       if (res?.ok) {
         setStep("done");
@@ -185,10 +185,10 @@ export default function IndustryBuy() {
           <div>
             <div className="tabar-card">
               <h3 className="tabar-card-title">Nueva Orden de Compra</h3>
-
+              
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Tipo de Tabaco *</label>
-                <select
+                <select 
                   value={tipoTabaco}
                   onChange={(e) => setTipoTabaco(e.target.value)}
                   className="tabar-input"
@@ -203,7 +203,7 @@ export default function IndustryBuy() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Calidad Solicitada *</label>
-                <select
+                <select 
                   value={calidadSolicitada}
                   onChange={(e) => setCalidadSolicitada(e.target.value)}
                   className="tabar-input"
@@ -218,8 +218,8 @@ export default function IndustryBuy() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Cantidad de Kgs *</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   min="1"
                   value={cantidadKgs}
                   onChange={(e) => setCantidadKgs(e.target.value)}
@@ -230,8 +230,8 @@ export default function IndustryBuy() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Precio que estás dispuesto a pagar ($) *</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   min="0"
                   step="0.01"
                   value={precioDisponible}
@@ -243,7 +243,7 @@ export default function IndustryBuy() {
 
               <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Nota Adicional</label>
-                <textarea
+                <textarea 
                   value={notaAdicional}
                   onChange={(e) => setNotaAdicional(e.target.value)}
                   placeholder="Información adicional sobre la orden..."
@@ -266,11 +266,11 @@ export default function IndustryBuy() {
                 </div>
               )}
 
-              <button
+              <button 
                 onClick={handleConfirm}
                 disabled={!isFormValid}
                 className="tabar-btn tabar-btn-primary tabar-btn-full"
-                style={{
+                style={{ 
                   marginTop: "16px",
                   background: isFormValid ? C.accent : "#484F58",
                   borderColor: isFormValid ? C.accent : "#484F58",
@@ -308,25 +308,25 @@ export default function IndustryBuy() {
           <InfoRow label="Precio por Kg" value={`$${parseFloat(precioDisponible).toFixed(2)}`} />
           <InfoRow label="Monto Total" value={`$${(parseInt(cantidadKgs) * parseFloat(precioDisponible)).toLocaleString("es-AR")}`} valueColor="#3FB950" />
           {notaAdicional && <InfoRow label="Nota" value={notaAdicional} />}
-
+          
           {error && (
-            <div className="tabar-notice" style={{
-              color: "#F85149",
-              borderColor: "rgba(248,81,73,0.3)",
-              marginTop: "16px"
+            <div className="tabar-notice" style={{ 
+              color: "#F85149", 
+              borderColor: "rgba(248,81,73,0.3)", 
+              marginTop: "16px" 
             }}>
               {error}
             </div>
           )}
-
+          
           <div className="tabar-btn-row" style={{ marginTop: "20px" }}>
-            <button
+            <button 
               onClick={handleSubmit}
               disabled={loading}
               className="tabar-btn tabar-btn-primary tabar-btn-full"
-              style={{
-                background: C.accent,
-                borderColor: C.accent,
+              style={{ 
+                background: C.accent, 
+                borderColor: C.accent, 
                 color: "#080C10",
                 opacity: loading ? 0.7 : 1,
                 cursor: loading ? "not-allowed" : "pointer"
@@ -334,7 +334,7 @@ export default function IndustryBuy() {
             >
               {loading ? "Procesando..." : "Emitir orden de compra"}
             </button>
-            <button
+            <button 
               onClick={() => setStep("form")}
               disabled={loading}
               className="tabar-btn tabar-btn-ghost"
@@ -366,7 +366,7 @@ export default function IndustryBuy() {
             <div><strong>Cantidad:</strong> {parseInt(cantidadKgs).toLocaleString("es-AR")} Kgs</div>
             <div><strong>Monto Total:</strong> ${(parseInt(cantidadKgs) * parseFloat(precioDisponible)).toLocaleString("es-AR")}</div>
           </div>
-          <button
+          <button 
             onClick={resetForm}
             className="tabar-btn tabar-btn-secondary"
           >
@@ -380,19 +380,19 @@ export default function IndustryBuy() {
 
 function InfoRow({ label, value, valueColor }) {
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "space-between",
-      padding: "6px 0",
-      borderBottom: "1px solid rgba(255,255,255,0.04)",
-      flexWrap: "wrap",
+    <div style={{ 
+      display: "flex", 
+      justifyContent: "space-between", 
+      padding: "6px 0", 
+      borderBottom: "1px solid rgba(255,255,255,0.04)", 
+      flexWrap: "wrap", 
       gap: "4px",
       alignItems: "center"
     }}>
       <span style={{ fontSize: "12px", color: "#484F58" }}>{label}</span>
-      <span style={{
-        fontSize: "12px",
-        color: valueColor || "#8B949E",
+      <span style={{ 
+        fontSize: "12px", 
+        color: valueColor || "#8B949E", 
         fontWeight: 500,
         wordBreak: "break-word",
         textAlign: "right",
@@ -405,17 +405,17 @@ function InfoRow({ label, value, valueColor }) {
 function StepInfo({ n, text, color, bg }) {
   return (
     <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
-      <div style={{
-        minWidth: "24px",
-        height: "24px",
-        borderRadius: "6px",
-        background: bg,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "11px",
-        color,
-        fontWeight: 600
+      <div style={{ 
+        minWidth: "24px", 
+        height: "24px", 
+        borderRadius: "6px", 
+        background: bg, 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        fontSize: "11px", 
+        color, 
+        fontWeight: 600 
       }}>
         {n}
       </div>

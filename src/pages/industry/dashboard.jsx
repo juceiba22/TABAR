@@ -15,7 +15,7 @@ export default function IndustryDashboard() {
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
           <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>⬡</div>
-          <h1>Mi Dashboard — Industria</h1>
+          <h1>Mi Dashboard — Acopiador</h1>
         </div>
         <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Resumen de tu posición en la campaña TABAR</p>
       </div>

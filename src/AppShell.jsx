@@ -29,6 +29,7 @@ import DealerDashboard from "./pages/dealer/dashboard";
 import DealerTrade from "./pages/dealer/trade";
 import DealerMarkets from "./pages/dealer/markets";
 import ProducerDashboard from "./pages/producer/dashboard";
+import IndustryFinancing from "./pages/industry/financing";
 import ProducerTokenizar from "./pages/producer/tokenizar";
 
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
@@ -180,7 +181,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
+        <Route path="/industry/financing" element={<IndustryFinancing />} />
         {/* State */}
         <Route
           path="/state"

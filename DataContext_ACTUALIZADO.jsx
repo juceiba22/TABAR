@@ -294,15 +294,15 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      campana,
-      balances,
+      campana, 
+      balances, 
       historial,
-      iniciarCampana,
+      iniciarCampana, 
       cerrarCampana,
       comprarIndustry,      // Actualizada ✅
       requestFinancing,     // NUEVA ✅
-      invertirState,
-      operarDealer,
+      invertirState, 
+      operarDealer, 
       tokenizarProducer,
       resetDemo,
     }}>

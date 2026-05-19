@@ -33,7 +33,7 @@ const ROLE_PALETTE = {
 
 const ROLES_INFO = [
   { id: "producer", title: "Productor Tabacalero", subtitle: "Finca / Cultivo de Tabaco" },
-  { id: "industry", title: "Industria", subtitle: "Exportador / Productor" },
+  { id: "industry", title: "Acopiador", subtitle: "Entidad/Acopio" },
   { id: "state", title: "Estado", subtitle: "Ente Nacional / FET" },
   { id: "dealer", title: "Dealer", subtitle: "Revendedor / Trader" },
   { id: "admin", title: "Administración", subtitle: "Fideicomiso / Admin" },
