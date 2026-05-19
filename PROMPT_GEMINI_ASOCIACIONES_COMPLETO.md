@@ -1,3 +1,371 @@
+# Prompt Completo para Gemini 3.1 Pro - Sistema de Asociaciones de Productores TABAR
+
+## INSTRUCCIÓN PRINCIPAL
+
+Implementa un **sistema completo de asociaciones de productores** en la plataforma TABAR que permita:
+
+1. **Usuario A** crear una asociación al certificar tabaco con "Venta Asociada"
+2. **Usuario B** unirse a la asociación existente creada por Usuario A
+3. Ambos productores pueden consolidar sus kilos para venta en bloque
+4. Visualizar todas las asociaciones y sus inventarios consolidados
+
+El sistema debe incluir:
+- Nueva colección Firestore `producer_associations`
+- Vinculación de tokenizaciones a asociaciones
+- Opción de crear nueva asociación O unirse a existente
+- Nueva página de visualización "Mis Asociaciones"
+- Actualización de reglas de seguridad Firestore
+
+---
+
+## ESPECIFICACIONES TÉCNICAS
+
+### 1. ESTRUCTURA DE DATOS - Colección `producer_associations`
+
+```json
+{
+  "id": "ASSOC-1716108600000-abc123",
+  "nombre": "Asociación Virginia - 2024",
+  "productores": [
+    {
+      "uid": "user123",
+      "nombre": "Juan Pérez",
+      "email": "juan@example.com",
+      "rol": "coordinador"
+    },
+    {
+      "uid": "user456",
+      "nombre": "María García",
+      "email": "maria@example.com",
+      "rol": "miembro"
+    }
+  ],
+  "inventario": {
+    "totalKgs": 2500,
+    "totalFardos": 50,
+    "tipoTabaco": "Virginia",
+    "calidades": ["T1F", "T1L", "B1F"],
+    "precioPromedio": 2.25,
+    "usdFinanciamientoTotal": 4250
+  },
+  "estado": "activa",
+  "fechaCreacion": "timestamp",
+  "fechaVenta": null,
+  "numeroVenta": null,
+  "creadoPor": "user123",
+  "actualizadoEn": "timestamp"
+}
+```
+
+### 2. ACTUALIZACIÓN - Colección `producer_tokenizations`
+
+```json
+{
+  "associationId": "ASSOC-1716108600000-abc123",
+  "aporteFardos": 25,
+  "aporteKgs": 1250,
+  "aporteUSD": 2125
+}
+```
+
+---
+
+## CAMBIOS EN CÓDIGO
+
+### CAMBIO 1: firestore.rules
+
+**UBICACIÓN:** En Firebase Console → Firestore → Rules
+
+**BUSCAR esta línea en tu archivo actual:**
+```firestore
+// Producer Tokenizations
+match /producer_tokenizations/{document=**} {
+```
+
+**DESPUÉS de esa sección, AGREGAR esto:**
+
+```firestore
+// Producer Associations
+match /producer_associations/{associationId} {
+  allow read: if request.auth != null;
+  allow create: if request.auth != null;
+  allow update: if request.auth != null;
+  allow delete: if request.auth != null && request.auth.uid == resource.data.creadoPor;
+}
+```
+
+**IMPORTANTE:** Debe quedar antes del "Default deny" al final del archivo.
+
+---
+
+### CAMBIO 2: src/modules/roles/DataContext.jsx
+
+**AGREGAR esta importación en la cabecera (si no está):**
+```javascript
+import { arrayUnion, getDoc } from "firebase/firestore";
+```
+
+**ENCONTRAR la función `tokenizarProducer` existente y MANTENERLA IGUAL.**
+
+**AGREGAR DESPUÉS de `tokenizarProducer`, estas tres nuevas funciones:**
+
+```javascript
+// Función para crear o unirse a una asociación
+const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => {
+  try {
+    // Verificar si existe asociación entre estos productores
+    const q = query(
+      collection(db, "producer_associations"),
+      where("productores", "array-contains", { uid: user.uid })
+    );
+    
+    const existentes = await getDocs(q);
+    let associationId = null;
+    
+    if (existentes.docs.length > 0) {
+      // Buscar si el otro productor ya está en alguna asociación
+      let asociacionCompartida = null;
+      for (const doc of existentes.docs) {
+        const uids = doc.data().productores.map(p => p.uid);
+        if (uids.includes(productorAsociadoUID)) {
+          asociacionCompartida = doc.id;
+          break;
+        }
+      }
+      
+      if (asociacionCompartida) {
+        associationId = asociacionCompartida;
+      } else {
+        // Crear nueva asociación
+        const newAssocRef = doc(collection(db, "producer_associations"));
+        await setDoc(newAssocRef, {
+          id: `ASSOC-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          nombre: `Asociación ${datosAsociacion.tipoTabaco} - ${new Date().getFullYear()}`,
+          productores: [
+            { 
+              uid: user.uid, 
+              nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(), 
+              email: user.email, 
+              rol: "coordinador" 
+            },
+            { 
+              uid: productorAsociadoUID, 
+              nombre: datosAsociacion.productorAsociadoNombre, 
+              email: datosAsociacion.productorAsociadoEmail, 
+              rol: "miembro" 
+            }
+          ],
+          inventario: {
+            totalKgs: 0,
+            totalFardos: 0,
+            tipoTabaco: datosAsociacion.tipoTabaco,
+            calidades: [datosAsociacion.calidad],
+            precioPromedio: datosAsociacion.precioVenta,
+            usdFinanciamientoTotal: 0
+          },
+          estado: "activa",
+          creadoPor: user.uid,
+          fechaCreacion: serverTimestamp(),
+          actualizadoEn: serverTimestamp()
+        });
+        
+        associationId = newAssocRef.id;
+      }
+    } else {
+      // Crear nueva asociación (ninguna existente)
+      const newAssocRef = doc(collection(db, "producer_associations"));
+      await setDoc(newAssocRef, {
+        id: `ASSOC-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        nombre: `Asociación ${datosAsociacion.tipoTabaco} - ${new Date().getFullYear()}`,
+        productores: [
+          { 
+            uid: user.uid, 
+            nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(), 
+            email: user.email, 
+            rol: "coordinador" 
+          },
+          { 
+            uid: productorAsociadoUID, 
+            nombre: datosAsociacion.productorAsociadoNombre, 
+            email: datosAsociacion.productorAsociadoEmail, 
+            rol: "miembro" 
+          }
+        ],
+        inventario: {
+          totalKgs: 0,
+          totalFardos: 0,
+          tipoTabaco: datosAsociacion.tipoTabaco,
+          calidades: [datosAsociacion.calidad],
+          precioPromedio: datosAsociacion.precioVenta,
+          usdFinanciamientoTotal: 0
+        },
+        estado: "activa",
+        creadoPor: user.uid,
+        fechaCreacion: serverTimestamp(),
+        actualizadoEn: serverTimestamp()
+      });
+      
+      associationId = newAssocRef.id;
+    }
+    
+    return { ok: true, associationId };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
+
+// Función para unirse a una asociación existente
+const unirseAAsociacion = async (associationId, datosTokenizacion) => {
+  try {
+    const assocRef = doc(db, "producer_associations", associationId);
+    const assocSnap = await getDoc(assocRef);
+    
+    if (!assocSnap.exists()) {
+      return { ok: false, error: "Asociación no encontrada" };
+    }
+    
+    const assoc = assocSnap.data();
+    
+    // Verificar si el usuario ya está en la asociación
+    const yaEstá = assoc.productores.some(p => p.uid === user.uid);
+    
+    if (!yaEstá) {
+      // Agregar el usuario a la asociación
+      const nuevoProductor = {
+        uid: user.uid,
+        nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+        email: user.email,
+        rol: "miembro"
+      };
+      
+      await updateDoc(assocRef, {
+        productores: arrayUnion(nuevoProductor),
+        actualizadoEn: serverTimestamp()
+      });
+    }
+    
+    return { ok: true, associationId };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
+
+// Función para vender en bloque
+const venderAsociacionEnBloque = async (associationId, precioVenta) => {
+  try {
+    const assocRef = doc(db, "producer_associations", associationId);
+    const assocSnap = await getDoc(assocRef);
+    
+    if (!assocSnap.exists()) return { ok: false, error: "Asociación no encontrada" };
+    
+    const assoc = assocSnap.data();
+    const numeroVenta = `VENTA-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const montoTotal = assoc.inventario.totalKgs * precioVenta;
+
+    await updateDoc(assocRef, {
+      estado: "vendida",
+      numeroVenta: numeroVenta,
+      "inventario.precioVenta": precioVenta,
+      fechaVenta: serverTimestamp(),
+      actualizadoEn: serverTimestamp()
+    });
+
+    await addHistorial(
+      `✅ Asociación vendida en bloque: ${assoc.inventario.totalKgs.toLocaleString("es-AR")} Kgs por $${montoTotal.toLocaleString("es-AR")}`,
+      "success"
+    );
+    
+    return { ok: true, numeroVenta };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
+```
+
+**MODIFICAR la función `tokenizarProducer` existente - REEMPLAZAR COMPLETAMENTE:**
+
+```javascript
+const tokenizarProducer = async (datos) => {
+  if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
+  
+  const cantidad = typeof datos === "object" ? datos.cantidadFardos : datos;
+  if (cantidad > campana.fardosDisponibles) 
+    return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
+
+  const campanaRef = doc(db, "campaigns", "active");
+  const balancesRef = doc(db, "balances", "global");
+
+  try {
+    await runTransaction(db, async (t) => {
+      const cSnap = await t.get(campanaRef);
+      const bSnap = await t.get(balancesRef);
+
+      if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
+      if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
+
+      const newVendidos = cSnap.data().fardosVendidos + cantidad;
+      const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
+      t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
+
+      const currentProducerBal = bSnap.exists() ? (bSnap.data().producer || 0) : 0;
+      t.set(balancesRef, { ...bSnap.data(), producer: currentProducerBal + cantidad }, { merge: true });
+    });
+
+    if (typeof datos === "object") {
+      const docRef = doc(db, "producer_tokenizations", `${Date.now()}`);
+      await setDoc(docRef, {
+        ...datos,
+        associationId: datos.associationId || null,
+        aporteFardos: datos.tipoVenta === "asociada" ? datos.cantidadFardos : null,
+        aporteKgs: datos.tipoVenta === "asociada" ? datos.totalKgs : null,
+        aporteUSD: datos.tipoVenta === "asociada" ? datos.usdTotal : null,
+        timestamp: serverTimestamp()
+      });
+
+      // Actualizar inventario de la asociación
+      if (datos.associationId) {
+        const { increment } = require("firebase/firestore");
+        const assocRef = doc(db, "producer_associations", datos.associationId);
+        await updateDoc(assocRef, {
+          "inventario.totalKgs": increment(datos.totalKgs),
+          "inventario.totalFardos": increment(datos.cantidadFardos),
+          actualizadoEn: serverTimestamp()
+        });
+      }
+    }
+
+    await addHistorial(`🌿 Productor tokenizó ${cantidad.toLocaleString("es-AR")} fardos (TABAR)`, "success");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
+```
+
+**EXPORTAR las nuevas funciones en el return del provider:**
+
+```javascript
+return (
+  <DataContext.Provider value={{
+    // ... valores existentes ...
+    tokenizarProducer,
+    crearOUnirseAsociacion,      // ← AGREGAR
+    unirseAAsociacion,            // ← AGREGAR
+    venderAsociacionEnBloque,     // ← AGREGAR
+    // ... resto de valores ...
+  }}>
+    {children}
+  </DataContext.Provider>
+);
+```
+
+---
+
+### CAMBIO 3: src/pages/producer/tokenizar.jsx
+
+**REEMPLAZAR completamente la sección de importaciones y estados iniciales:**
+
+```javascript
 import { useState, useEffect } from "react";
 import { useData } from "../../modules/roles/DataContext";
 import { useRole } from "../../modules/roles/RoleContext";
@@ -26,7 +394,7 @@ const OPCIONES_CALIDAD = [
 
 export default function ProducerTokenizar() {
   const { tokenizarProducer, crearOUnirseAsociacion, unirseAAsociacion } = useData();
-  const { user, profile } = useRole();
+  const { user } = useRole();
 
   // Estados del formulario
   const [totalKgs, setTotalKgs] = useState("");
@@ -175,7 +543,7 @@ export default function ProducerTokenizar() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Nombre: ${profile?.firstName || ""} ${profile?.lastName || ""}`, 20, 50);
+    doc.text(`Nombre: ${user?.displayName || "No disponible"}`, 20, 50);
     doc.text(`Email: ${user?.email || "No disponible"}`, 20, 57);
     doc.text(`ID Productor: ${user?.uid?.substring(0, 12) || "No disponible"}`, 20, 64);
 
@@ -697,3 +1065,345 @@ export default function ProducerTokenizar() {
     </div>
   );
 }
+```
+
+---
+
+### CAMBIO 4: CREAR NUEVO ARCHIVO - src/pages/producer/asociaciones.jsx
+
+**Crear completamente este archivo:**
+
+```jsx
+import { useState, useEffect } from "react";
+import { useRole } from "../../modules/roles/RoleContext";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../config/firebase";
+
+const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
+
+export default function ProducerAsociaciones() {
+  const { user } = useRole();
+  const [asociaciones, setAsociaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchAsociaciones = async () => {
+      try {
+        if (!user?.uid) return;
+
+        const q = query(
+          collection(db, "producer_associations"),
+          where("productores", "array-contains", { uid: user.uid })
+        );
+
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setAsociaciones(data);
+      } catch (err) {
+        console.error("Error fetching asociaciones:", err);
+        setError("Error al cargar asociaciones");
+      }
+      setLoading(false);
+    };
+
+    fetchAsociaciones();
+  }, [user]);
+
+  if (loading) {
+    return <div style={{ textAlign: "center", padding: "40px" }}>Cargando...</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ color: "#F85149", textAlign: "center", padding: "40px" }}>
+        {error}
+      </div>
+    );
+  }
+
+  if (asociaciones.length === 0) {
+    return (
+      <div style={{ maxWidth: "600px", margin: "60px auto", textAlign: "center" }}>
+        <div style={{ fontSize: "50px", marginBottom: "20px" }}>📭</div>
+        <h2 style={{ color: "#8B949E" }}>Sin asociaciones aún</h2>
+        <p style={{ color: "#8B949E", marginBottom: "30px" }}>
+          Cuando certifiques tabaco con "Venta Asociada", aparecerá aquí.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+      <div className="tabar-page-header">
+        <div className="tabar-page-header-row">
+          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>👥</div>
+          <h1>Mis Asociaciones de Venta</h1>
+        </div>
+        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>
+          Visualiza y gestiona tus asociaciones de productores
+        </p>
+      </div>
+
+      {asociaciones.map((asoc) => (
+        <div key={asoc.id} className="tabar-card" style={{ marginBottom: "20px" }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+            paddingBottom: "12px",
+            borderBottom: "1px solid rgba(255,255,255,0.1)"
+          }}>
+            <h3 style={{ margin: 0, fontSize: "16px" }}>{asoc.nombre}</h3>
+            <span style={{
+              padding: "4px 12px",
+              borderRadius: "4px",
+              fontSize: "11px",
+              fontWeight: 600,
+              background: asoc.estado === "activa" ? "rgba(63,185,80,0.2)" : "rgba(248,81,73,0.2)",
+              color: asoc.estado === "activa" ? "#3FB950" : "#F85149"
+            }}>
+              {asoc.estado.toUpperCase()}
+            </span>
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <p style={{ fontSize: "12px", color: "#8B949E", margin: "0 0 8px 0" }}>
+              Coordinador: <strong>{asoc.productores.find(p => p.rol === "coordinador")?.nombre}</strong>
+            </p>
+            <p style={{ fontSize: "12px", color: "#8B949E", margin: 0 }}>
+              Miembros: {asoc.productores.map(p => p.nombre).join(", ")}
+            </p>
+          </div>
+
+          <div style={{
+            background: "rgba(63,185,80,0.05)",
+            border: "1px solid rgba(63,185,80,0.2)",
+            borderRadius: "8px",
+            padding: "12px",
+            marginBottom: "16px"
+          }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "12px", color: C.accent }}>
+              INVENTARIO CONSOLIDADO
+            </h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "12px" }}>
+              <div>
+                <span style={{ color: "#8B949E" }}>Total Kgs:</span>
+                <p style={{ margin: 0, fontWeight: 600 }}>{asoc.inventario.totalKgs.toLocaleString("es-AR")} kg</p>
+              </div>
+              <div>
+                <span style={{ color: "#8B949E" }}>Total Fardos:</span>
+                <p style={{ margin: 0, fontWeight: 600 }}>{asoc.inventario.totalFardos}</p>
+              </div>
+              <div>
+                <span style={{ color: "#8B949E" }}>Tipo de Tabaco:</span>
+                <p style={{ margin: 0, fontWeight: 600 }}>{asoc.inventario.tipoTabaco}</p>
+              </div>
+              <div>
+                <span style={{ color: "#8B949E" }}>Financiamiento USD:</span>
+                <p style={{ margin: 0, fontWeight: 600, color: C.accent }}>USD ${asoc.inventario.usdFinanciamientoTotal.toLocaleString("es-AR")}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "12px" }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "12px", color: "#8B949E" }}>MIS APORTES</h4>
+            <AportesDetalle asociacionId={asoc.id} productorUID={user.uid} />
+          </div>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button className="tabar-btn tabar-btn-ghost" style={{ fontSize: "12px" }}>
+              Ver detalles completos
+            </button>
+            {asoc.estado === "vendida" && (
+              <button className="tabar-btn tabar-btn-ghost" style={{ fontSize: "12px" }}>
+                Ver comprobante de venta
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AportesDetalle({ asociacionId, productorUID }) {
+  const [aportes, setAportes] = useState([]);
+
+  useEffect(() => {
+    const fetchAportes = async () => {
+      try {
+        const q = query(
+          collection(db, "producer_tokenizations"),
+          where("associationId", "==", asociacionId)
+        );
+        const snap = await getDocs(q);
+        const data = snap.docs
+          .map(doc => doc.data())
+          .filter(d => d.productorOwner === productorUID);
+        setAportes(data);
+      } catch (err) {
+        console.error("Error fetching aportes:", err);
+      }
+    };
+    fetchAportes();
+  }, [asociacionId, productorUID]);
+
+  return (
+    <div style={{ fontSize: "12px" }}>
+      {aportes.length === 0 ? (
+        <p style={{ color: "#8B949E", margin: 0 }}>Sin aportes registrados</p>
+      ) : (
+        aportes.map((aporte, idx) => (
+          <div
+            key={idx}
+            style={{
+              padding: "8px",
+              background: "rgba(255,255,255,0.02)",
+              borderRadius: "4px",
+              marginBottom: "8px"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#8B949E" }}>Aporte {idx + 1}</span>
+              <span style={{ fontWeight: 600 }}>{aporte.aporteKgs} kg en {aporte.aporteFardos} fardos</span>
+            </div>
+            <p style={{ margin: "4px 0 0 0", color: "#8B949E", fontSize: "11px" }}>
+              📅 {new Date(aporte.timestamp?.toDate?.() || aporte.timestamp).toLocaleDateString("es-AR")}
+            </p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### CAMBIO 5: src/modules/layout/AppLayout.jsx
+
+**ENCONTRAR la configuración de ROLE_TABS (buscar "const ROLE_TABS"):**
+
+```javascript
+const ROLE_TABS = {
+  producer: [
+    { path: "/producer", label: "Dashboard" },
+    { path: "/producer/tokenizar", label: "Certificación y Cotización" },
+    { path: "/producer/asociaciones", label: "Mis Asociaciones" },  // ← AGREGAR ESTA LÍNEA
+  ],
+  // ... resto de roles ...
+};
+```
+
+---
+
+### CAMBIO 6: src/AppShell.jsx
+
+**AGREGAR esta importación al inicio del archivo:**
+
+```javascript
+import ProducerAsociaciones from "./pages/producer/asociaciones";
+```
+
+**ENCONTRAR dónde están las rutas de producer (buscar "Route path="/producer") y AGREGAR esto:**
+
+```javascript
+<Route 
+  path="/producer/asociaciones" 
+  element={
+    <ProtectedRoute allowedRoles={["producer"]}>
+      <ProducerAsociaciones />
+    </ProtectedRoute>
+  } 
+/>
+```
+
+---
+
+## ORDEN DE IMPLEMENTACIÓN RECOMENDADO
+
+1. **Primero:** Actualizar `firestore.rules` (cambio 1) y deployar en Firebase
+2. **Segundo:** Modificar `DataContext.jsx` (cambio 2)
+3. **Tercero:** Reemplazar `tokenizar.jsx` (cambio 3)
+4. **Cuarto:** Crear nuevo archivo `asociaciones.jsx` (cambio 4)
+5. **Quinto:** Actualizar `AppLayout.jsx` (cambio 5)
+6. **Sexto:** Actualizar `AppShell.jsx` (cambio 6)
+
+---
+
+## VALIDACIONES Y TESTING
+
+### Después de implementar, verificar:
+
+✅ Usuario A puede certificar tabaco con "Venta Asociada"  
+✅ Se crea una asociación automáticamente  
+✅ El inventario se consolida correctamente  
+✅ Usuario B ve la asociación disponible en el dropdown  
+✅ Usuario B puede seleccionar "Unirme a asociación existente"  
+✅ Usuario B se une correctamente a la asociación  
+✅ Ambos ven la asociación en "Mis Asociaciones"  
+✅ Cada uno ve solo sus aportes (kgs, fardos)  
+✅ El inventario se actualiza cuando ambos aportarán
+
+### Casos de prueba:
+
+**Caso 1:**
+1. Usuario A certifica 500 kgs (10 fardos) con Venta Asociada
+2. Selecciona "Crear nueva asociación"
+3. Selecciona Usuario B
+4. ✅ Se crea la asociación con 500 kgs
+
+**Caso 2:**
+1. Usuario B va a certificar
+2. Selecciona "Venta Asociada"
+3. Selecciona "Unirme a asociación existente"
+4. Ve la asociación creada por Usuario A
+5. ✅ Se une y certifica 750 kgs
+6. ✅ La asociación ahora tiene 1250 kgs totales (500 + 750)
+
+**Caso 3:**
+1. Ambos usuarios van a "Mis Asociaciones"
+2. ✅ Ven la misma asociación
+3. Usuario A ve su aporte de 500 kgs
+4. Usuario B ve su aporte de 750 kgs
+
+---
+
+## NOTAS IMPORTANTES
+
+- **Firestore:** Desplegar reglas primero en Firebase Console
+- **Importaciones:** `arrayUnion` debe estar importado en DataContext
+- **Timestamps:** Usar `serverTimestamp()` siempre
+- **Nombres:** Se concatenan automáticamente desde `profile.firstName` y `profile.lastName`
+- **Diseño:** Las nuevas vistas respetan la paleta verde (#3FB950)
+- **Dropdowns:** Se cargan dinámicamente, muestran solo asociaciones donde el usuario NO está
+
+---
+
+## CAMBIOS EN RESUMEN
+
+| Archivo | Cambio | Tipo |
+|---------|--------|------|
+| `firestore.rules` | Agregar regla para `producer_associations` | Agregado |
+| `DataContext.jsx` | 3 funciones nuevas + modificar `tokenizarProducer` | Modificado |
+| `tokenizar.jsx` | Reemplazar completamente (agregar opciones de asociación) | Modificado |
+| `asociaciones.jsx` | Crear nuevo archivo completo | **Nuevo** |
+| `AppLayout.jsx` | Agregar tab para "Mis Asociaciones" | Modificado |
+| `AppShell.jsx` | Agregar import + ruta | Modificado |
+
+---
+
+## RESULTADO FINAL
+
+- ✅ Usuario A crea una asociación
+- ✅ Usuario B ve y se une a la asociación existente
+- ✅ Ambos ven el inventario consolidado
+- ✅ Ambos ven sus aportes individuales
+- ✅ Pueden vender en bloque posteriormente
