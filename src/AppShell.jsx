@@ -31,6 +31,7 @@ import DealerMarkets from "./pages/dealer/markets";
 import ProducerDashboard from "./pages/producer/dashboard";
 import IndustryFinancing from "./pages/industry/financing";
 import ProducerTokenizar from "./pages/producer/tokenizar";
+import ProducerAssociations from "./pages/producer/asociaciones";
 
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
 function SplashScreen() {
@@ -248,6 +249,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["producer"]}>
               <ProducerTokenizar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/producer/asociaciones"
+          element={
+            <ProtectedRoute allowedRoles={["producer"]}>
+              <ProducerAssociations />
             </ProtectedRoute>
           }
         />

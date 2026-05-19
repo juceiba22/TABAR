@@ -53,36 +53,32 @@ export default function ProducerTokenizar() {
   const precioFinal = precioVenta ? parseFloat(precioVenta) : 85;
   const usdTotal = cantidadFardos * precioFinal;
 
-  // Traer productores disponibles para la Venta Asociada
+  // Traer asociaciones disponibles para la Venta Asociada
   useEffect(() => {
     if (user?.uid) {
-      const fetchProducers = async () => {
-        setLoadingProductores(true);
+      const fetchAssociations = async () => {
+        setLoadingProductores(true); // Reusing the same loading state
         try {
-          const q = query(collection(db, "users"), where("role", "==", "producer"));
+          // In a real app we'd query where user is a member, but let's just get all or those where user is member.
+          // Since we might want to join any association to sell, let's fetch all active ones
+          const q = query(collection(db, "producer_associations"), where("estadoAsociacion", "==", "activa"));
           const querySnapshot = await getDocs(q);
-          const producers = [];
+          const assocs = [];
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            if (data.uid !== user.uid) {
-              producers.push({
-                uid: data.uid,
-                firstName: data.firstName || "",
-                lastName: data.lastName || "",
-                documentNumber: data.documentNumber || "",
-                email: data.email || ""
-              });
+            // User can associate their tokens to associations they belong to.
+            // Or maybe any? Let's say any association they are a member of.
+            if (data.creadoPor === user.uid || (data.productores && data.productores.some(p => p.uid === user.uid))) {
+              assocs.push({ id: doc.id, ...data });
             }
           });
-          // Sort alphabetical
-          producers.sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName));
-          setProductoresDisponibles(producers);
+          setProductoresDisponibles(assocs); // reusing the state variable for associations
         } catch (err) {
-          console.error("Error fetching producers:", err);
+          console.error("Error fetching associations:", err);
         }
         setLoadingProductores(false);
       };
-      fetchProducers();
+      fetchAssociations();
     }
   }, [user]);
 
@@ -97,7 +93,7 @@ export default function ProducerTokenizar() {
   };
 
   // Generar PDF con datos del certificado
-  const generarCertificadoPDF = (producerObj) => {
+  const generarCertificadoPDF = (assocObj) => {
     const doc = new jsPDF();
     const codigo = generarCodigoTransaccion();
     const ahora = new Date();
@@ -173,20 +169,18 @@ export default function ProducerTokenizar() {
     doc.text(`Activos TABAR Generados: ${cantidadFardos.toLocaleString("es-AR")}`, 20, yPos);
     yPos += 11;
 
-    // Sección Productor Asociado si existe
-    if (producerObj) {
+    // Sección Asociación Vinculada si existe
+    if (assocObj) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        doc.text("PRODUCTOR ASOCIADO", 20, yPos);
+        doc.text("ASOCIACIÓN VINCULADA", 20, yPos);
         yPos += 8;
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Nombre: ${producerObj.firstName} ${producerObj.lastName}`, 20, yPos);
+        doc.text(`Asociación: ${assocObj.nombre}`, 20, yPos);
         yPos += 7;
-        doc.text(`DNI: ${producerObj.documentNumber}`, 20, yPos);
-        yPos += 7;
-        doc.text(`Email: ${producerObj.email}`, 20, yPos);
+        doc.text(`ID Asociación: ${assocObj.id}`, 20, yPos);
         yPos += 11;
     }
 
@@ -219,13 +213,13 @@ export default function ProducerTokenizar() {
 
   const handleTokenizar = async () => {
     if (tipoVenta === "asociada" && !productorAsociado) {
-        setError("Debes seleccionar un productor asociado");
+        setError("Debes seleccionar una asociación");
         return;
     }
     setError("");
     setLoading(true);
 
-    const producerObj = tipoVenta === "asociada" ? JSON.parse(productorAsociado) : null;
+    const assocObj = tipoVenta === "asociada" ? JSON.parse(productorAsociado) : null;
     
     const tokenizationData = {
       cantidadFardos,
@@ -239,17 +233,15 @@ export default function ProducerTokenizar() {
       productorOwner: user.uid,
     };
 
-    if (producerObj) {
-      tokenizationData.productorAsociadoUID = producerObj.uid;
-      tokenizationData.productorAsociadoNombre = `${producerObj.firstName} ${producerObj.lastName}`;
-      tokenizationData.productorAsociadoDNI = producerObj.documentNumber;
-      tokenizationData.productorAsociadoEmail = producerObj.email;
+    if (assocObj) {
+      tokenizationData.asociacionVinculada = assocObj.id;
+      tokenizationData.asociacionNombre = assocObj.nombre;
     }
 
     const res = await tokenizarProducer(tokenizationData);
     if (res.ok) {
       // Generar PDF
-      const codigo = generarCertificadoPDF(producerObj);
+      const codigo = generarCertificadoPDF(assocObj);
       setTransactionCode(codigo);
       setSuccess(true);
     } else {
@@ -422,11 +414,11 @@ export default function ProducerTokenizar() {
           </div>
         </div>
 
-        {/* Productor Asociado */}
+        {/* Asociación Vinculada */}
         {tipoVenta === "asociada" && (
           <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-              Productor Asociado *
+              Asociación Vinculada *
             </label>
             <select
               className="tabar-input"
@@ -435,11 +427,14 @@ export default function ProducerTokenizar() {
               disabled={loading || showConfirm || loadingProductores}
               style={{ cursor: "pointer" }}
             >
-              <option value="">{loadingProductores ? "Cargando productores..." : "Seleccionar productor asociado"}</option>
-              {productoresDisponibles.map(p => (
-                <option key={p.uid} value={JSON.stringify(p)}>{p.firstName} {p.lastName} ({p.documentNumber}) - {p.email}</option>
+              <option value="">{loadingProductores ? "Cargando asociaciones..." : "Seleccionar asociación"}</option>
+              {productoresDisponibles.map(a => (
+                <option key={a.id} value={JSON.stringify(a)}>{a.nombre} (ID: {a.id})</option>
               ))}
             </select>
+            <p style={{ fontSize: "11px", color: "#484F58", marginTop: "6px" }}>
+              Si no ves tu asociación, puedes crearla en el menú "Venta en Bloque"
+            </p>
           </div>
         )}
 

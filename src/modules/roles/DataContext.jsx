@@ -256,6 +256,54 @@ export function DataProvider({ children }) {
     }
   };
 
+  // ========================================================================
+  // NUEVAS FUNCIONES PARA ASOCIACIONES DE PRODUCTORES
+  // ========================================================================
+  const crearOUnirseAsociacion = async (asociacionData) => {
+    try {
+      const { id, nombre, productores, creadoPor, totalKgsConsolidados } = asociacionData;
+      
+      const docRef = doc(db, "producer_associations", id);
+      await setDoc(docRef, {
+        id,
+        nombre,
+        productores,
+        creadoPor,
+        totalKgsConsolidados,
+        estadoAsociacion: "activa",
+        timestampCreacion: serverTimestamp(),
+      });
+
+      await addHistorial(`🤝 Asociación "${nombre}" creada/actualizada exitosamente`, "success");
+      return { ok: true, id };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const venderAsociacionEnBloque = async (ventaData) => {
+    try {
+      if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
+
+      const { asociacionId, compradorId, totalKgs, precioAcordado, tokenizacionesVinculadas } = ventaData;
+      
+      // We don't deduct fardosDisponibles here because tokenizarProducer already did it.
+      // This function just registers the sale of already tokenized fardos.
+
+      const docRef = doc(db, "block_sales", `${Date.now()}`);
+      await setDoc(docRef, {
+        ...ventaData,
+        estadoVenta: "completada",
+        timestampVenta: serverTimestamp(),
+      });
+
+      await addHistorial(`💼 Venta en bloque de ${totalKgs} Kgs registrada (Asoc. ${asociacionId})`, "success");
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
   const tokenizarProducer = async (datos) => {
     if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
     
@@ -289,6 +337,18 @@ export function DataProvider({ children }) {
           ...datos,
           timestamp: serverTimestamp()
         });
+
+        // If it's linked to an association, update the association's totalKgsConsolidados
+        if (datos.asociacionVinculada) {
+           const assocRef = doc(db, "producer_associations", datos.asociacionVinculada);
+           await runTransaction(db, async (t) => {
+             const assocSnap = await t.get(assocRef);
+             if (assocSnap.exists()) {
+               const currentTotal = assocSnap.data().totalKgsConsolidados || 0;
+               t.update(assocRef, { totalKgsConsolidados: currentTotal + cantidad });
+             }
+           });
+        }
       }
 
       await addHistorial(`🌿 Productor Tabacalero tokenizó ${cantidad.toLocaleString("es-AR")} fardos (TABAR)`, "success");
@@ -315,7 +375,9 @@ export function DataProvider({ children }) {
       requestFinancing,     // NUEVA ✅
       invertirState,
       operarDealer,
-      tokenizarProducer,
+      tokenizarProducer,    // Actualizada ✅
+      crearOUnirseAsociacion, // NUEVA ✅
+      venderAsociacionEnBloque, // NUEVA ✅
       resetDemo,
     }}>
       {children}
