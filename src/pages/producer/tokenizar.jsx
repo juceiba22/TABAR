@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "../../modules/roles/DataContext";
 import { useRole } from "../../modules/roles/RoleContext";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../config/firebase";
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
 
@@ -32,6 +34,10 @@ export default function ProducerTokenizar() {
   const [tipoTabaco, setTipoTabaco] = useState("");
   const [calidad, setCalidad] = useState("");
   const [tipoVenta, setTipoVenta] = useState("");
+  const [precioVenta, setPrecioVenta] = useState("");
+  const [productoresDisponibles, setProductoresDisponibles] = useState([]);
+  const [productorAsociado, setProductorAsociado] = useState("");
+  const [loadingProductores, setLoadingProductores] = useState(false);
 
   // Estados de UI
   const [loading, setLoading] = useState(false);
@@ -44,10 +50,44 @@ export default function ProducerTokenizar() {
   const numTotalKgs = parseInt(totalKgs) || 0;
   const numTamanoFardo = parseInt(tamanoFardo) || 0;
   const cantidadFardos = numTamanoFardo > 0 ? Math.ceil(numTotalKgs / numTamanoFardo) : 0;
-  const usdTotal = cantidadFardos * 85;
+  const precioFinal = precioVenta ? parseFloat(precioVenta) : 85;
+  const usdTotal = cantidadFardos * precioFinal;
+
+  // Traer productores disponibles para la Venta Asociada
+  useEffect(() => {
+    if (user?.uid) {
+      const fetchProducers = async () => {
+        setLoadingProductores(true);
+        try {
+          const q = query(collection(db, "users"), where("role", "==", "producer"));
+          const querySnapshot = await getDocs(q);
+          const producers = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.uid !== user.uid) {
+              producers.push({
+                uid: data.uid,
+                firstName: data.firstName || "",
+                lastName: data.lastName || "",
+                documentNumber: data.documentNumber || "",
+                email: data.email || ""
+              });
+            }
+          });
+          // Sort alphabetical
+          producers.sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName));
+          setProductoresDisponibles(producers);
+        } catch (err) {
+          console.error("Error fetching producers:", err);
+        }
+        setLoadingProductores(false);
+      };
+      fetchProducers();
+    }
+  }, [user]);
 
   // Validar que todos los campos estén completos
-  const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVenta;
+  const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVenta && (!precioVenta || parseFloat(precioVenta) > 0) && (tipoVenta !== "asociada" || productorAsociado);
 
   // Generar código de transacción único
   const generarCodigoTransaccion = () => {
@@ -57,7 +97,7 @@ export default function ProducerTokenizar() {
   };
 
   // Generar PDF con datos del certificado
-  const generarCertificadoPDF = () => {
+  const generarCertificadoPDF = (producerObj) => {
     const doc = new jsPDF();
     const codigo = generarCodigoTransaccion();
     const ahora = new Date();
@@ -108,26 +148,61 @@ export default function ProducerTokenizar() {
     doc.text(`Calidad: ${calidad}`, 20, 111);
     doc.text(`Tipo de Venta: ${tipoVenta === "individual" ? "Venta Individual" : "Venta Asociada"}`, 20, 118);
 
-    // Sección: Financiamiento
+    // Sección: Precios
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("FINANCIAMIENTO ADELANTADO", 20, 129);
+    doc.text("PRECIOS", 20, 129);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Monto USD: USD ${usdTotal.toLocaleString("es-AR")}`, 20, 137);
-    doc.text(`Activos TABAR Generados: ${cantidadFardos.toLocaleString("es-AR")}`, 20, 144);
+    doc.text(`Precio USD Financing (acopiador): $85`, 20, 137);
+    doc.text(`Precio de Venta (productor): $${precioVenta ? precioVenta : "No especificado"}`, 20, 144);
+
+    let yPos = 155;
+
+    // Sección: Financiamiento
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("FINANCIAMIENTO ADELANTADO", 20, yPos);
+    yPos += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Monto USD: USD ${usdTotal.toLocaleString("es-AR")}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Activos TABAR Generados: ${cantidadFardos.toLocaleString("es-AR")}`, 20, yPos);
+    yPos += 11;
+
+    // Sección Productor Asociado si existe
+    if (producerObj) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("PRODUCTOR ASOCIADO", 20, yPos);
+        yPos += 8;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Nombre: ${producerObj.firstName} ${producerObj.lastName}`, 20, yPos);
+        yPos += 7;
+        doc.text(`DNI: ${producerObj.documentNumber}`, 20, yPos);
+        yPos += 7;
+        doc.text(`Email: ${producerObj.email}`, 20, yPos);
+        yPos += 11;
+    }
 
     // Sección: Información de Transacción
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("INFORMACIÓN DE TRANSACCIÓN", 20, 155);
+    doc.text("INFORMACIÓN DE TRANSACCIÓN", 20, yPos);
+    yPos += 8;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Código de Transacción: ${codigo}`, 20, 163);
-    doc.text(`Fecha y Hora: ${fechaHora}`, 20, 170);
-    doc.text(`Estado: Certificado y Tokenizado`, 20, 177);
+    doc.text(`Código de Transacción: ${codigo}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Fecha y Hora: ${fechaHora}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Estado: Certificado y Tokenizado`, 20, yPos);
 
     // Pie de página
     doc.setFont("helvetica", "italic");
@@ -143,12 +218,38 @@ export default function ProducerTokenizar() {
   };
 
   const handleTokenizar = async () => {
+    if (tipoVenta === "asociada" && !productorAsociado) {
+        setError("Debes seleccionar un productor asociado");
+        return;
+    }
     setError("");
     setLoading(true);
-    const res = await tokenizarProducer(cantidadFardos);
+
+    const producerObj = tipoVenta === "asociada" ? JSON.parse(productorAsociado) : null;
+    
+    const tokenizationData = {
+      cantidadFardos,
+      totalKgs: parseInt(totalKgs),
+      tamanoFardo: parseInt(tamanoFardo),
+      tipoTabaco,
+      calidad,
+      tipoVenta,
+      precioVenta: precioFinal,
+      usdTotal,
+      productorOwner: user.uid,
+    };
+
+    if (producerObj) {
+      tokenizationData.productorAsociadoUID = producerObj.uid;
+      tokenizationData.productorAsociadoNombre = `${producerObj.firstName} ${producerObj.lastName}`;
+      tokenizationData.productorAsociadoDNI = producerObj.documentNumber;
+      tokenizationData.productorAsociadoEmail = producerObj.email;
+    }
+
+    const res = await tokenizarProducer(tokenizationData);
     if (res.ok) {
       // Generar PDF
-      const codigo = generarCertificadoPDF();
+      const codigo = generarCertificadoPDF(producerObj);
       setTransactionCode(codigo);
       setSuccess(true);
     } else {
@@ -237,6 +338,21 @@ export default function ProducerTokenizar() {
           </p>
         </div>
 
+        {/* Precio de venta */}
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
+            Precio de venta ($)
+          </label>
+          <input
+            type="number"
+            className="tabar-input"
+            placeholder="Ej: 2.50"
+            value={precioVenta}
+            onChange={(e) => setPrecioVenta(e.target.value)}
+            disabled={loading || showConfirm}
+          />
+        </div>
+
         {/* Tipo de Tabaco */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
@@ -287,7 +403,7 @@ export default function ProducerTokenizar() {
                 name="tipoVenta"
                 value="individual"
                 checked={tipoVenta === "individual"}
-                onChange={(e) => setTipoVenta(e.target.value)}
+                onChange={(e) => { setTipoVenta(e.target.value); setProductorAsociado(""); }}
                 disabled={loading || showConfirm}
               />
               <span>Venta Individual</span>
@@ -305,6 +421,27 @@ export default function ProducerTokenizar() {
             </label>
           </div>
         </div>
+
+        {/* Productor Asociado */}
+        {tipoVenta === "asociada" && (
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
+              Productor Asociado *
+            </label>
+            <select
+              className="tabar-input"
+              value={productorAsociado}
+              onChange={(e) => setProductorAsociado(e.target.value)}
+              disabled={loading || showConfirm || loadingProductores}
+              style={{ cursor: "pointer" }}
+            >
+              <option value="">{loadingProductores ? "Cargando productores..." : "Seleccionar productor asociado"}</option>
+              {productoresDisponibles.map(p => (
+                <option key={p.uid} value={JSON.stringify(p)}>{p.firstName} {p.lastName} ({p.documentNumber}) - {p.email}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Resumen de la operación */}
         {cantidadFardos > 0 && !showConfirm && (
@@ -327,6 +464,14 @@ export default function ProducerTokenizar() {
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
               <span style={{ color: "#8B949E" }}>Cantidad de fardos</span>
               <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>{cantidadFardos}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
+              <span style={{ color: "#8B949E" }}>Precio USD Financing</span>
+              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>$85</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
+              <span style={{ color: "#8B949E" }}>Precio de Venta</span>
+              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>${precioVenta ? precioVenta : "85"}</span>
             </div>
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", margin: "12px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>

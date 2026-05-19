@@ -256,8 +256,12 @@ export function DataProvider({ children }) {
     }
   };
 
-  const tokenizarProducer = async (cantidad) => {
+  const tokenizarProducer = async (datos) => {
     if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
+    
+    // Para soportar el formato antiguo (solo cantidad) y el nuevo (objeto)
+    const cantidad = typeof datos === "object" ? datos.cantidadFardos : datos;
+    
     if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
 
     const campanaRef = doc(db, "campaigns", "active");
@@ -278,6 +282,14 @@ export function DataProvider({ children }) {
         const currentProducerBal = bSnap.exists() ? (bSnap.data().producer || 0) : 0;
         t.set(balancesRef, { ...bSnap.data(), producer: currentProducerBal + cantidad }, { merge: true });
       });
+
+      if (typeof datos === "object") {
+        const docRef = doc(db, "producer_tokenizations", `${Date.now()}`);
+        await setDoc(docRef, {
+          ...datos,
+          timestamp: serverTimestamp()
+        });
+      }
 
       await addHistorial(`🌿 Productor Tabacalero tokenizó ${cantidad.toLocaleString("es-AR")} fardos (TABAR)`, "success");
       return { ok: true };
