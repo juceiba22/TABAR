@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useRole, ROLE_HOME } from "../modules/roles/RoleContext";
+import "./PublicPresentation.css";
 
 /* ─── Datos del Diagnóstico y Solución ────────────────────────────────────── */
 
