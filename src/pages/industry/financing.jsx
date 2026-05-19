@@ -3,7 +3,7 @@ import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
 import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
+import { jsPDF } from "jspdf";
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
 
 const MOTIVOS = [
@@ -14,6 +14,20 @@ const MOTIVOS = [
 ];
 
 const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];
+
+const POSICIONES_ARANCELARIAS = [
+    "2401.10.10 — Tabaco sin desvenar tipo Oriental",
+    "2401.10.20 — Tabaco sin desvenar secado al aire (“light air cured”)",
+    "2401.10.30 — Tabaco sin desvenar tipo Virginia (“flue cured”)",
+    "2401.10.40 — Tabaco sin desvenar tipo Burley",
+    "2401.10.90 — Los demás tabacos sin desvenar",
+    "2401.20.10 — Tabaco total o parcialmente desvenado tipo Oriental",
+    "2401.20.20 — Tabaco total o parcialmente desvenado secado al aire (“light air cured”)",
+    "2401.20.30 — Tabaco total o parcialmente desvenado tipo Virginia (“flue cured”)",
+    "2401.20.40 — Tabaco total o parcialmente desvenado tipo Burley",
+    "2401.20.90 — Los demás tabacos total o parcialmente desvenados",
+    "2401.30.00 — Desperdicios de tabaco"
+];
 
 const PLAZOS = [
     { valor: 15, label: "15 días" },
@@ -27,6 +41,8 @@ export default function IndustryFinancing() {
     const { requestFinancing } = useData();
 
     // Form states
+    const [montoFinanciamiento, setMontoFinanciamiento] = useState("");
+    const [posicionArancelaria, setPosicionArancelaria] = useState("");
     const [motivoFinanciamiento, setMotivoFinanciamiento] = useState("");
     const [motivoPersonalizado, setMotivoPersonalizado] = useState("");
     const [tipoTabacoGarantia, setTipoTabacoGarantia] = useState("");
@@ -39,10 +55,12 @@ export default function IndustryFinancing() {
     const [loading, setLoading] = useState(false);
 
     // Validations
-    const isFormValid = motivoFinanciamiento && tipoTabacoGarantia && warrantFile && plazo &&
+    const isFormValid = montoFinanciamiento && posicionArancelaria && motivoFinanciamiento && tipoTabacoGarantia && warrantFile && plazo &&
         (motivoFinanciamiento !== "Otro" || motivoPersonalizado.trim());
 
     const formErrors = [];
+    if (!montoFinanciamiento) formErrors.push("Ingresa el monto de financiamiento");
+    if (!posicionArancelaria) formErrors.push("Selecciona la posición arancelaria");
     if (!motivoFinanciamiento) formErrors.push("Selecciona un motivo de financiamiento");
     if (motivoFinanciamiento === "Otro" && !motivoPersonalizado.trim()) formErrors.push("Especifica el motivo de financiamiento");
     if (!tipoTabacoGarantia) formErrors.push("Selecciona el tipo de tabaco en garantía");
@@ -79,9 +97,36 @@ export default function IndustryFinancing() {
         setError("");
 
         try {
-            // 1. Upload Warrant to Firebase Storage
             const timestamp = Date.now();
             const randomId = Math.random().toString(36).substring(2, 9);
+            const numSolicitud = `FIN-${timestamp}-${randomId}`;
+
+            // 0. Generar PDF
+            const doc = new jsPDF();
+            doc.setFillColor(88, 166, 255);
+            doc.rect(0, 0, 210, 40, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text("CERTIFICADO DE SOLICITUD DE FINANCIAMIENTO", 105, 20, { align: "center" });
+
+            doc.setTextColor(50, 50, 50);
+            doc.setFontSize(10);
+            doc.text(`Solicitud: ${numSolicitud}`, 20, 50);
+            doc.text(`Fecha: ${new Date().toLocaleDateString("es-AR")}`, 20, 58);
+            
+            doc.setFont(undefined, "bold");
+            doc.text("Detalles de la Solicitud", 20, 75);
+            doc.setFont(undefined, "normal");
+            doc.text(`Monto de Financiamiento: $${parseFloat(montoFinanciamiento).toLocaleString("es-AR")}`, 20, 85);
+            doc.text(`Motivo: ${motivoFinanciamiento === "Otro" ? motivoPersonalizado : motivoFinanciamiento}`, 20, 93);
+            doc.text(`Tipo de Tabaco: ${tipoTabacoGarantia}`, 20, 101);
+            doc.text(`Posición Arancelaria:`, 20, 109);
+            const posArancelariaLines = doc.splitTextToSize(posicionArancelaria, 170);
+            doc.text(posArancelariaLines, 20, 117);
+
+            doc.save(`Certificado_Solicitud_Financiamiento_${numSolicitud}.pdf`);
+
+            // 1. Upload Warrant to Firebase Storage
             const warrantFileName = `warrant_${timestamp}_${randomId}`;
             const storageRef = ref(storage, `financing_warrants/${warrantFileName}`);
 
@@ -90,7 +135,9 @@ export default function IndustryFinancing() {
 
             // 2. Prepare data for Firestore
             const financingData = {
-                numeroSolicitud: `FIN-${timestamp}-${randomId}`,
+                numeroSolicitud: numSolicitud,
+                montoFinanciamiento: parseFloat(montoFinanciamiento),
+                posicionArancelaria: posicionArancelaria,
                 motivoFinanciamiento: motivoFinanciamiento === "Otro" ? motivoPersonalizado : motivoFinanciamiento,
                 tipoTabacoGarantia: tipoTabacoGarantia,
                 warrantUrl: warrantUrl,
@@ -121,6 +168,8 @@ export default function IndustryFinancing() {
 
     // Reset form
     const resetForm = () => {
+        setMontoFinanciamiento("");
+        setPosicionArancelaria("");
         setMotivoFinanciamiento("");
         setMotivoPersonalizado("");
         setTipoTabacoGarantia("");
@@ -145,6 +194,19 @@ export default function IndustryFinancing() {
                     <div>
                         <div className="tabar-card">
                             <h3 className="tabar-card-title">Solicitud de Financiamiento</h3>
+
+                            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
+                                <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Monto de Financiamiento ($) *</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={montoFinanciamiento}
+                                    onChange={(e) => setMontoFinanciamiento(e.target.value)}
+                                    placeholder="Ej: 500000"
+                                    className="tabar-input"
+                                />
+                            </div>
 
                             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
                                 <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Motivo de Financiamiento *</label>
@@ -188,6 +250,21 @@ export default function IndustryFinancing() {
                                     <option value="">-- Selecciona tipo --</option>
                                     {TIPOS_TABACO.map((tipo, idx) => (
                                         <option key={idx} value={tipo}>{tipo}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "16px", paddingBottom: "12px" }}>
+                                <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Posición Arancelaria *</label>
+                                <select
+                                    value={posicionArancelaria}
+                                    onChange={(e) => setPosicionArancelaria(e.target.value)}
+                                    className="tabar-input"
+                                    style={{ padding: "8px 12px", fontFamily: "inherit", cursor: "pointer" }}
+                                >
+                                    <option value="">-- Selecciona posición --</option>
+                                    {POSICIONES_ARANCELARIAS.map((pos, idx) => (
+                                        <option key={idx} value={pos}>{pos}</option>
                                     ))}
                                 </select>
                             </div>
@@ -299,8 +376,10 @@ export default function IndustryFinancing() {
             {step === "confirm" && (
                 <div className="tabar-card">
                     <h3 className="tabar-card-title">Confirmá tu solicitud de financiamiento</h3>
+                    <InfoRow label="Monto" value={`$${parseFloat(montoFinanciamiento).toLocaleString("es-AR")}`} valueColor="#3FB950" />
                     <InfoRow label="Motivo" value={motivoFinanciamiento === "Otro" ? motivoPersonalizado : motivoFinanciamiento} />
                     <InfoRow label="Tipo de Tabaco en Garantía" value={tipoTabacoGarantia} />
+                    <InfoRow label="Posición Arancelaria" value={posicionArancelaria} />
                     <InfoRow label="Plazo de Devolución" value={`${plazo} días`} />
                     <InfoRow label="Warrant" value={`${warrantInfo.nombre} (${warrantInfo.tamaño} MB)`} />
 
@@ -357,8 +436,10 @@ export default function IndustryFinancing() {
                         fontSize: "12px",
                         color: "#58A6FF"
                     }}>
+                        <div><strong>Monto:</strong> ${parseFloat(montoFinanciamiento).toLocaleString("es-AR")}</div>
                         <div><strong>Motivo:</strong> {motivoFinanciamiento === "Otro" ? motivoPersonalizado : motivoFinanciamiento}</div>
                         <div><strong>Tabaco en Garantía:</strong> {tipoTabacoGarantia}</div>
+                        <div><strong>Posición Arancelaria:</strong> {posicionArancelaria}</div>
                         <div><strong>Plazo:</strong> {plazo} días</div>
                     </div>
                     <button

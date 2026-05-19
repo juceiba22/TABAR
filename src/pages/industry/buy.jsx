@@ -11,7 +11,7 @@ const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];
 const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
 
 export default function IndustryBuy() {
-  const { user } = useRole();
+  const { user, profile } = useRole();
   const { comprarIndustry } = useData();
 
   // Form states
@@ -70,7 +70,8 @@ export default function IndustryBuy() {
       doc.setFont(undefined, "normal");
       doc.setFontSize(10);
       doc.text(`Email: ${user?.email}`, 20, 83);
-      doc.text(`Usuario: ${user?.displayName || user?.email}`, 20, 91);
+      doc.text(`Usuario: ${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user?.displayName || user?.email, 20, 91);
+      doc.text(`DNI / Documento: ${profile?.documentNumber || "No especificado"}`, 20, 99);
 
       // Order details
       doc.setFontSize(11);
@@ -116,13 +117,18 @@ export default function IndustryBuy() {
     try {
       // 1. Generate PDF
       const doc = await generatePDF();
+
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 9);
+      const pdfFileName = `orden_compra_${timestamp}_${randomId}.pdf`;
+
+      // Descarga automática del PDF
+      doc.save(pdfFileName);
+
       const pdfData = doc.output("arraybuffer");
       const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
 
       // 2. Upload PDF to Firebase Storage
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 9);
-      const pdfFileName = `orden_compra_${timestamp}_${randomId}.pdf`;
       const storageRef = ref(storage, `purchase_orders/${pdfFileName}`);
 
       await uploadBytes(storageRef, pdfBlob);

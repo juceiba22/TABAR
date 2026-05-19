@@ -73,7 +73,7 @@ export default function ProducerTokenizar() {
     // Encabezado
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
-    doc.text("CERTIFICADO DE TOKENIZACIÓN TABAR", 20, 20);
+    doc.text("CERTIFICADO DE CERTIFICACIÓN Y COTIZACIÓN TABAR", 20, 20);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
@@ -133,7 +133,7 @@ export default function ProducerTokenizar() {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(139, 148, 158);
-    doc.text("Este certificado es un comprobante digital de la tokenización realizada en la plataforma TABAR.", 20, 250);
+    doc.text("Este certificado es un comprobante digital de la certificación realizada en la plataforma TABAR.", 20, 250);
     doc.text("La existencia de este documento implica la aceptación de los términos y condiciones del financiamiento tabacalero.", 20, 256);
 
     // Guardar el PDF
@@ -161,9 +161,9 @@ export default function ProducerTokenizar() {
     return (
       <div style={{ maxWidth: "500px", margin: "60px auto", textAlign: "center" }}>
         <div style={{ fontSize: "50px", marginBottom: "20px" }}>🌿</div>
-        <h2 style={{ color: "#3FB950", marginBottom: "12px" }}>¡Tokenización Exitosa!</h2>
+        <h2 style={{ color: "#3FB950", marginBottom: "12px" }}>¡Certificación Exitosa!</h2>
         <p style={{ color: "#8B949E", marginBottom: "12px", fontSize: "12px" }}>
-          Tus {cantidadFardos} fardos ({totalKgs} kg) han sido certificados y tokenizados como activos TABAR.
+          Tus {cantidadFardos} fardos ({totalKgs} kg) han sido certificados y ya están a la venta.
         </p>
         <div style={{
           background: "rgba(63,185,80,0.1)",
@@ -179,7 +179,7 @@ export default function ProducerTokenizar() {
           </p>
         </div>
         <p style={{ color: "#8B949E", marginBottom: "30px", fontSize: "12px" }}>
-          El financiamiento de USD {usdTotal} se reflejará en tu balance en breve.
+          Tu tabaco ha sido cotizado exitosamente por nuestro sistema.
           <br />
           Se ha generado un PDF con los detalles del certificado.
         </p>
@@ -193,7 +193,7 @@ export default function ProducerTokenizar() {
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
           <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>▣</div>
-          <h1>Certificación y Tokenización</h1>
+          <h1>Certificación y Cotización</h1>
         </div>
         <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Transformá tu tabaco físico en activos digitales financieros</p>
       </div>
