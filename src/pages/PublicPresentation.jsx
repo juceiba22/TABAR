@@ -101,21 +101,21 @@ export default function PublicPresentation() {
       {/* ══════════ HERO ══════════ */}
       <section className="pp-hero">
         <div className="pp-hero-inner">
-          <span className="pp-hero-tag">SISTEMA FIDUCIARIO Y SIMULADOR DE MERCADO</span>
+          <span className="pp-hero-tag"> PLATAFORMA PARA EL MERCADO ARGENTINO DE TABACO  </span>
           <h1 className="pp-hero-title">
-            La infraestructura digital para el saneamiento del sector tabacalero.
+            La solución a los problemas del sector tabacalero.
           </h1>
           <p className="pp-hero-sub">
-            De 132.000 a 80.000 toneladas anuales: la contracción del 39.4% en la producción formal demuestra que el sistema tradicional está agotado. TABAR es la respuesta institucional y de mercado.
+            La caída sistemática de la producción y del FET demuestran que el sistema tradicional está agotado. Por eso creamos TABAR, la plataforma que va a revolucionar el mercado del tabaco.
           </p>
-          
+
           <div className="pp-hero-actions">
             <Link to="/login" className="pp-cta">
               [ Ingresar a la Plataforma ]
               <span className="pp-cta-arrow">→</span>
             </Link>
             <a href="#" className="pp-cta pp-cta-secondary" onClick={(e) => { e.preventDefault(); alert('Descarga de Ensayo de Diagnóstico no disponible temporalmente.'); }}>
-              [ Descargar Ensayo de Diagnóstico (PDF) ]
+              [ Conocer más la propuesta ]
             </a>
           </div>
         </div>

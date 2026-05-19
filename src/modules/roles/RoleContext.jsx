@@ -30,7 +30,7 @@ export const ROLES = {
 
 export const ROLE_LABELS = {
   admin: "Fideicomiso / Admin",
-  industry: "Industria / Exportador",
+  industry: "Acopiador",
   state: "Estado Nacional",
   dealer: "Dealer / Revendedor",
   producer: "Productor Tabacalero",
