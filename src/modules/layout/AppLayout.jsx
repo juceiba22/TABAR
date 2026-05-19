@@ -37,7 +37,7 @@ const NAV_LINKS = {
   ],
   producer: [
     { path: "/producer", label: "Mi Dashboard Finca" },
-    { path: "/producer/tokenizar", label: "Tokenizar Fardos" },
+    { path: "/producer/tokenizar", label: "Certificar Tabaco" },
     { path: "/campaign", label: "Estado Campaña" },
   ],
 };
