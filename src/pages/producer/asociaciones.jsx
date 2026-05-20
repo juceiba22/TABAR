@@ -188,7 +188,7 @@ export default function ProducerAsociaciones() {
                         <div key={idx} style={{ display: "flex", justifyContent: "space-between", background: "rgba(255,255,255,0.02)", padding: "6px 12px", borderRadius: "4px", fontSize: "11px" }}>
                           <span style={{ textTransform: "capitalize", fontWeight: 500 }}>🌿 {t.tipo}</span>
                           <span>
-                            <strong>{t.kgs.toLocaleString("es-AR")} kg</strong> ({t.fardos} fardos)
+                            <strong>{(t.kgs || 0).toLocaleString("es-AR")} kg</strong> ({t.fardos || 0} fardos)
                             <span style={{ color: C.accent, marginLeft: "10px", fontWeight: "bold" }}>USD ${(t.usdTotal || 0).toLocaleString("es-AR")}</span>
                           </span>
                         </div>
@@ -315,6 +315,19 @@ function AportesDetalle({ asociacionId, productorUID }) {
     fetchAportes();
   }, [asociacionId, productorUID]);
 
+  const formatAporteFecha = (aporte) => {
+    const dateSource = aporte.creadoEn || aporte.timestamp || aporte.actualizadoEn;
+    if (!dateSource) return "Fecha no disponible";
+    
+    try {
+      const dateObj = dateSource.toDate ? dateSource.toDate() : new Date(dateSource);
+      if (isNaN(dateObj.getTime())) return "Fecha no disponible";
+      return dateObj.toLocaleDateString("es-AR");
+    } catch (err) {
+      return "Fecha no disponible";
+    }
+  };
+
   return (
     <div style={{ fontSize: "12px" }}>
       {aportes.length === 0 ? (
@@ -332,10 +345,10 @@ function AportesDetalle({ asociacionId, productorUID }) {
           >
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "#8B949E" }}>Aporte {idx + 1}</span>
-              <span style={{ fontWeight: 600 }}>{aporte.aporteKgs} kg en {aporte.aporteFardos} fardos</span>
+              <span style={{ fontWeight: 600 }}>{(aporte.totalKgs || 0).toLocaleString("es-AR")} kg en {aporte.cantidadFardos || 0} fardos</span>
             </div>
             <p style={{ margin: "4px 0 0 0", color: "#8B949E", fontSize: "11px" }}>
-              📅 {new Date(aporte.timestamp?.toDate?.() || aporte.timestamp).toLocaleDateString("es-AR")}
+              📅 {formatAporteFecha(aporte)}
             </p>
           </div>
         ))
