@@ -80,9 +80,9 @@ service cloud.firestore {
     match /producer_associations/{associationId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.creadoPor || 
-         request.auth.uid in resource.data.productores[*].uid);
+      allow update: if request.auth != null &&
+        (request.auth.uid == resource.data.creadoPor ||
+         request.auth.uid in resource.data.productoresUIDs);
       allow delete: if request.auth.uid == resource.data.creadoPor;
     }
 

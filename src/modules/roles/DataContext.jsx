@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, addDoc, serverTimestamp, query, orderBy, limit, getDoc, getDocs, where, runTransaction, arrayUnion } from "firebase/firestore";
 import { db } from "../../config/firebase";
+import { getDocs, where, arrayUnion } from "firebase/firestore";
 import { useRole } from "./RoleContext";
 
 const DataContext = createContext(null);
@@ -259,116 +260,67 @@ export function DataProvider({ children }) {
   // ========================================================================
   // NUEVAS FUNCIONES PARA ASOCIACIONES DE PRODUCTORES
   // ========================================================================
-const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => {
+const unirseAAsociacion = async (associationId, datosTokenizacion) => {
   try {
-    console.log("🔄 Creando/buscando asociación...", { productorAsociadoUID });
-    
-    // Verificar si existe asociación entre estos productores
-    const q = query(
-      collection(db, "producer_associations"),
-      where("producerUids", "array-contains", user.uid)
-    );
-    const querySnapshot = await getDocs(q);
-    
-    let associationId = null;
-    
-    // Filtrar en el código qué asociaciones tienen al usuario actual
-    for (const docSnap of querySnapshot.docs) {
-      const data = docSnap.data();
-      const tieneAlOtroProductor = data.producerUids.includes(productorAsociadoUID);
-        
-      if (tieneAlOtroProductor) {
-        console.log("✅ Asociación compartida encontrada:", docSnap.id);
-        associationId = docSnap.id;
-        break;
-      }
+    if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
+
+    const assocRef = doc(db, "producer_associations", associationId);
+    const assocSnap = await getDoc(assocRef);
+
+    if (!assocSnap.exists()) {
+      return { ok: false, error: "Asociación no encontrada" };
     }
-    
-    // Si no existe asociación compartida, crear nueva
-    if (!associationId) {
-      console.log("📝 Creando nueva asociación...");
-      const newAssocRef = doc(collection(db, "producer_associations"));
-      
-      const datosGuardar = {
-        id: `ASSOC-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        nombre: `Asociación ${datosAsociacion.tipoTabaco} - ${new Date().getFullYear()}`,
-        producerUids: [user.uid, productorAsociadoUID],
-        productores: [
-          { 
-            uid: user.uid, 
-            nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user.displayName || "Sin nombre", 
-            email: user.email, 
-            rol: "coordinador" 
-          },
-          { 
-            uid: productorAsociadoUID, 
-            nombre: datosAsociacion.productorAsociadoNombre || "Sin nombre", 
-            email: datosAsociacion.productorAsociadoEmail || "", 
-            rol: "miembro" 
-          }
-        ],
-        inventario: {
-          totalKgs: 0,
-          totalFardos: 0,
-          tipoTabaco: datosAsociacion.tipoTabaco,
-          calidades: [datosAsociacion.calidad],
-          precioPromedio: datosAsociacion.precioVenta || 85,
-          usdFinanciamientoTotal: 0
-        },
-        estado: "activa",
-        creadoPor: user.uid,
-        fechaCreacion: serverTimestamp(),
-        actualizadoEn: serverTimestamp()
+
+    const assoc = assocSnap.data();
+
+    // Verificar si el usuario ya está en la asociación
+    const yaEstá = assoc.productores.some(p => p.uid === user.uid);
+
+    if (!yaEstá) {
+      const nuevoProductor = {
+        uid: user.uid,
+        nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+        email: user.email,
+        rol: "miembro"
       };
-      
-      console.log("💾 Guardando:", datosGuardar);
-      await setDoc(newAssocRef, datosGuardar);
-      associationId = newAssocRef.id;
-      console.log("✅ Asociación creada:", associationId);
+
+      // Actualizar inventario según tipo de tabaco
+      let nuevoInventario = { ...assoc.inventario };
+      const tipoTabaco = datosTokenizacion.tipoTabaco;
+      const tiposTabaco = nuevoInventario.tiposTabaco || [];
+
+      let tabacoencontrado = tiposTabaco.find(t => t.tipo === tipoTabaco);
+      if (tabacoencontrado) {
+        tabacoencontrado.kgs += datosTokenizacion.kgs || 0;
+        tabacoencontrado.fardos += datosTokenizacion.cantidadFardos || 0;
+        tabacoencontrado.usdTotal += datosTokenizacion.usdTotal || 0;
+      } else {
+        tiposTabaco.push({
+          tipo: tipoTabaco,
+          calidades: [datosTokenizacion.calidad],
+          kgs: datosTokenizacion.kgs || 0,
+          fardos: datosTokenizacion.cantidadFardos || 0,
+          usdTotal: datosTokenizacion.usdTotal || 0
+        });
+      }
+
+      nuevoInventario.tiposTabaco = tiposTabaco;
+      nuevoInventario.totalKgs = (nuevoInventario.totalKgs || 0) + (datosTokenizacion.kgs || 0);
+      nuevoInventario.totalFardos = (nuevoInventario.totalFardos || 0) + (datosTokenizacion.cantidadFardos || 0);
+
+      await updateDoc(assocRef, {
+        productores: arrayUnion(nuevoProductor),
+        productoresUIDs: arrayUnion(user.uid),  // ← AGREGADO
+        inventario: nuevoInventario,
+        actualizadoEn: serverTimestamp()
+      });
     }
-    
+
     return { ok: true, associationId };
   } catch (e) {
-    console.error("❌ Error en crearOUnirseAsociacion:", e);
     return { ok: false, error: e.message };
   }
 };
-  const unirseAAsociacion = async (associationId, datosTokenizacion) => {
-    try {
-      const assocRef = doc(db, "producer_associations", associationId);
-      const assocSnap = await getDoc(assocRef);
-      
-      if (!assocSnap.exists()) {
-        return { ok: false, error: "Asociación no encontrada" };
-      }
-      
-      const assoc = assocSnap.data();
-      
-      // Verificar si el usuario ya está en la asociación
-      const yaEstá = assoc.productores.some(p => p.uid === user.uid);
-      
-      if (!yaEstá) {
-        // Agregar el usuario a la asociación
-        const nuevoProductor = {
-          uid: user.uid,
-          nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
-          email: user.email,
-          rol: "miembro"
-        };
-        
-        await updateDoc(assocRef, {
-          producerUids: arrayUnion(user.uid),
-          productores: arrayUnion(nuevoProductor),
-          actualizadoEn: serverTimestamp()
-        });
-      }
-      
-      return { ok: true, associationId };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
-  };
-
   const venderAsociacionEnBloque = async (associationId, precioVenta) => {
     try {
       const assocRef = doc(db, "producer_associations", associationId);
@@ -454,6 +406,174 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
       return { ok: false, error: e.message };
     }
   };
+// ========================================================================
+// PASTE ESTAS FUNCIONES EN DataContext.jsx DESPUÉS DE tokenizarProducer
+// ========================================================================
+
+// ========================================================================
+// NUEVA FUNCIÓN: crearAsociacion
+// Permite crear una nueva asociación sin pasar por tokenizar
+// ========================================================================
+const crearAsociacion = async (nombreAsociacion) => {
+  try {
+    if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
+
+    const newAssociationRef = doc(collection(db, "producer_associations"));
+
+    await setDoc(newAssociationRef, {
+      nombre: nombreAsociacion,
+      productores: [{
+        uid: user.uid,
+        nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+        email: user.email,
+        rol: "creador"
+      }],
+      productoresUIDs: [user.uid],  // ← AGREGADO para Firestore Rules
+      inventario: {
+        totalKgs: 0,
+        totalFardos: 0,
+        tiposTabaco: []
+      },
+      estado: "activa",
+      creadoPor: user.uid,
+      creadoEn: serverTimestamp(),
+      actualizadoEn: serverTimestamp()
+    });
+
+    await addHistorial(`✅ Productor creó asociación: "${nombreAsociacion}"`, "success");
+    return { ok: true, associationId: newAssociationRef.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
+// ========================================================================
+// NUEVA FUNCIÓN: obtenerAsociacionesDelProductor
+// Obtiene todas las asociaciones a las que pertenece el productor
+// ========================================================================
+const obtenerAsociacionesDelProductor = async () => {
+  try {
+    if (!user?.uid) return { ok: false, asociaciones: [] };
+
+    // Obtener todas las asociaciones y filtrar en cliente
+    const allAssoc = await getDocs(collection(db, "producer_associations"));
+    const miasAsociaciones = [];
+
+    allAssoc.forEach((doc) => {
+      const data = doc.data();
+      const esMiembro = data.productores?.some(p => p.uid === user.uid);
+      if (esMiembro) {
+        miasAsociaciones.push({
+          id: doc.id,
+          ...data
+        });
+      }
+    });
+
+    return { ok: true, asociaciones: miasAsociaciones };
+  } catch (e) {
+    return { ok: false, error: e.message, asociaciones: [] };
+  }
+};
+
+// ========================================================================
+// NUEVA FUNCIÓN: obtenerAsociacionesDisponiblesParaUnirse
+// Obtiene asociaciones que el productor AÚN NO ha unido
+// ========================================================================
+const obtenerAsociacionesDisponiblesParaUnirse = async () => {
+  try {
+    if (!user?.uid) return { ok: false, asociaciones: [] };
+
+    const allAssoc = await getDocs(collection(db, "producer_associations"));
+    const asociacionesDisponibles = [];
+
+    allAssoc.forEach((doc) => {
+      const data = doc.data();
+      const yaEsMiembro = data.productores?.some(p => p.uid === user.uid);
+
+      if (!yaEsMiembro) {
+        asociacionesDisponibles.push({
+          id: doc.id,
+          nombre: data.nombre,
+          cantidadProductores: data.productores?.length || 0,
+          productores: data.productores?.map(p => p.nombre).join(", ") || "",
+          inventario: data.inventario || {},
+          estado: data.estado
+        });
+      }
+    });
+
+    return { ok: true, asociaciones: asociacionesDisponibles };
+  } catch (e) {
+    return { ok: false, error: e.message, asociaciones: [] };
+  }
+};
+
+// ========================================================================
+// NUEVA FUNCIÓN: unirseAAsociacion
+// Permite que un productor se una a una asociación existente
+// ========================================================================
+const unirseAAsociacion = async (associationId, datosTokenizacion) => {
+  try {
+    if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
+
+    const assocRef = doc(db, "producer_associations", associationId);
+    const assocSnap = await getDoc(assocRef);
+
+    if (!assocSnap.exists()) {
+      return { ok: false, error: "Asociación no encontrada" };
+    }
+
+    const assoc = assocSnap.data();
+
+    // Verificar si el usuario ya está en la asociación
+    const yaEstá = assoc.productores.some(p => p.uid === user.uid);
+
+    if (!yaEstá) {
+      const nuevoProductor = {
+        uid: user.uid,
+        nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+        email: user.email,
+        rol: "miembro"
+      };
+
+      // Actualizar inventario según tipo de tabaco
+      let nuevoInventario = { ...assoc.inventario };
+      const tipoTabaco = datosTokenizacion.tipoTabaco;
+      const tiposTabaco = nuevoInventario.tiposTabaco || [];
+
+      let tabacoencontrado = tiposTabaco.find(t => t.tipo === tipoTabaco);
+      if (tabacoencontrado) {
+        // Mismo tipo: sumar valores
+        tabacoencontrado.kgs += datosTokenizacion.kgs || 0;
+        tabacoencontrado.fardos += datosTokenizacion.cantidadFardos || 0;
+        tabacoencontrado.usdTotal += datosTokenizacion.usdTotal || 0;
+      } else {
+        // Tipo diferente: crear entrada nueva
+        tiposTabaco.push({
+          tipo: tipoTabaco,
+          calidades: [datosTokenizacion.calidad],
+          kgs: datosTokenizacion.kgs || 0,
+          fardos: datosTokenizacion.cantidadFardos || 0,
+          usdTotal: datosTokenizacion.usdTotal || 0
+        });
+      }
+
+      nuevoInventario.tiposTabaco = tiposTabaco;
+      nuevoInventario.totalKgs = (nuevoInventario.totalKgs || 0) + (datosTokenizacion.kgs || 0);
+      nuevoInventario.totalFardos = (nuevoInventario.totalFardos || 0) + (datosTokenizacion.cantidadFardos || 0);
+
+      await updateDoc(assocRef, {
+        productores: arrayUnion(nuevoProductor),
+        inventario: nuevoInventario,
+        actualizadoEn: serverTimestamp()
+      });
+    }
+
+    return { ok: true, associationId };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+};
 
   const resetDemo = async () => {
     await setDoc(doc(db, "campaigns", "active"), ESTADO_INICIAL_CAMPANA);
@@ -476,6 +596,10 @@ const crearOUnirseAsociacion = async (productorAsociadoUID, datosAsociacion) => 
       crearOUnirseAsociacion, // NUEVA ✅
       unirseAAsociacion,    // NUEVA ✅
       venderAsociacionEnBloque, // NUEVA ✅
+      crearAsociacion,                           // ← NUEVO
+      obtenerAsociacionesDelProductor,           // ← NUEVO
+      obtenerAsociacionesDisponiblesParaUnirse,  // ← NUEVO
+      unirseAAsociacion,
       resetDemo,
     }}>
       {children}
