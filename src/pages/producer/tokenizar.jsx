@@ -25,7 +25,7 @@ const OPCIONES_CALIDAD = [
 ];
 
 export default function ProducerTokenizar() {
-  const { tokenizarProducer, crearOUnirseAsociacion, obtenerAsociacionesDelProductor, unirseAAsociacion } = useData();
+  const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
   const { user, profile } = useRole();
 
   // Estados del formulario
@@ -35,16 +35,11 @@ export default function ProducerTokenizar() {
   const [calidad, setCalidad] = useState("");
   const [tipoVenta, setTipoVenta] = useState("");
   const [precioVenta, setPrecioVenta] = useState("");
-  const [productoresDisponibles, setProductoresDisponibles] = useState([]);
-  const [productorAsociado, setProductorAsociado] = useState("");
-  const [loadingProductores, setLoadingProductores] = useState(false);
 
   // Estados para asociaciones existentes
   const [asociacionesDisponibles, setAsociacionesDisponibles] = useState([]);
   const [asociacionSeleccionada, setAsociacionSeleccionada] = useState("");
   const [loadingAsociaciones, setLoadingAsociaciones] = useState(false);
-  const [modoAsociacion, setModoAsociacion] = useState("crear"); // "crear" o "unirse"
-  const [asociacionesDelProductor, setAsociacionesDelProductor] = useState([]);
 
   // Estados de UI
   const [loading, setLoading] = useState(false);
@@ -60,99 +55,32 @@ export default function ProducerTokenizar() {
   const precioFinal = precioVenta ? parseFloat(precioVenta) : 85;
   const usdTotal = cantidadFardos * precioFinal;
 
-  // Traer asociaciones disponibles para unirse
+  // Cargar todas las asociaciones activas cuando el usuario elige venta asociada
   useEffect(() => {
     if (user?.uid && tipoVenta === "asociada") {
       const fetchAsociaciones = async () => {
         setLoadingAsociaciones(true);
         try {
-          const q = query(
-            collection(db, "producer_associations"),
-            where("producerUids", "array-contains", user.uid)
-          );
-          const querySnapshot = await getDocs(q);
-          const asociaciones = [];
-          
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            asociaciones.push({
-              id: doc.id,
-              nombre: data.nombre,
-              totalKgs: data.inventario?.totalKgs || 0,
-              totalFardos: data.inventario?.totalFardos || 0,
-              productores: data.productores.map(p => p.nombre).join(", ")
-            });
-          });
-          
-          setAsociacionesDisponibles(asociaciones);
+          const res = await obtenerTodasLasAsociaciones();
+          if (res.ok) {
+            // Filtrar solo las activas
+            const activas = (res.asociaciones || []).filter(asoc => asoc.estado === "activa");
+            setAsociacionesDisponibles(activas);
+          }
         } catch (err) {
           console.error("Error fetching asociaciones:", err);
         }
         setLoadingAsociaciones(false);
       };
-      
+
       fetchAsociaciones();
     }
   }, [user, tipoVenta]);
 
-// Cargar asociaciones cuando el usuario elige venta asociada
-useEffect(() => {
-  if (user?.uid && tipoVenta === "asociada" && modoAsociacion === "unirse") {
-    const fetchAsociaciones = async () => {
-      setLoadingAsociaciones(true);
-      try {
-        const res = await obtenerAsociacionesDelProductor();
-        if (res.ok) {
-          setAsociacionesDelProductor(res.asociaciones || []);
-        }
-      } catch (err) {
-        console.error("Error fetching asociaciones:", err);
-      }
-      setLoadingAsociaciones(false);
-    };
-
-    fetchAsociaciones();
-  }
-}, [user, tipoVenta, modoAsociacion]);
-
-  // Traer productores disponibles para la Venta Asociada
-  useEffect(() => {
-    if (user?.uid && tipoVenta === "asociada" && modoAsociacion === "crear") {
-      const fetchProducers = async () => {
-        setLoadingProductores(true);
-        try {
-          const q = query(collection(db, "users"), where("role", "==", "producer"));
-          const querySnapshot = await getDocs(q);
-          const producers = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.uid !== user.uid) {
-              producers.push({
-                uid: data.uid,
-                firstName: data.firstName || "",
-                lastName: data.lastName || "",
-                documentNumber: data.documentNumber || "",
-                email: data.email || ""
-              });
-            }
-          });
-          producers.sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName));
-          setProductoresDisponibles(producers);
-        } catch (err) {
-          console.error("Error fetching producers:", err);
-        }
-        setLoadingProductores(false);
-      };
-      fetchProducers();
-    }
-  }, [user, tipoVenta, modoAsociacion]);
-
- // Validar que todos los campos estén completos
-const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVenta && 
-  (!precioVenta || parseFloat(precioVenta) > 0) && 
-  (tipoVenta !== "asociada" || 
-    (modoAsociacion === "unirse" && asociacionSeleccionada) || 
-    (modoAsociacion === "crear" && productorAsociado));
+  // Validar que todos los campos estén completos
+  const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVenta && 
+    (!precioVenta || parseFloat(precioVenta) > 0) && 
+    (tipoVenta !== "asociada" || asociacionSeleccionada);
 
 
     
@@ -285,28 +213,20 @@ const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVent
   };
 
   const handleTokenizar = async () => {
-  // Validaciones
-  if (tipoVenta === "asociada") {
-    if (modoAsociacion === "unirse" && !asociacionSeleccionada) {
+    // Validaciones
+    if (tipoVenta === "asociada" && !asociacionSeleccionada) {
       setError("Debes seleccionar una asociación");
       return;
     }
-    if (modoAsociacion === "crear" && !productorAsociado) {
-      setError("Debes seleccionar un productor asociado");
-      return;
-    }
-  }
 
-  setError("");
-  setLoading(true);
+    setError("");
+    setLoading(true);
 
-  let associationId = null;
-  let producerObj = null;
+    let associationId = null;
 
-  try {
-    if (tipoVenta === "asociada") {
-      if (modoAsociacion === "unirse") {
-        // OPCIÓN 1: Unirse a asociación existente
+    try {
+      if (tipoVenta === "asociada") {
+        // Unirse/Aportar a la asociación seleccionada
         const res = await unirseAAsociacion(asociacionSeleccionada, {
           tipoTabaco,
           calidad,
@@ -322,66 +242,49 @@ const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVent
         }
 
         associationId = res.associationId;
-      } else {
-        // OPCIÓN 2: Crear nueva asociación
-        producerObj = JSON.parse(productorAsociado);
+      }
 
-        const assocRes = await crearOUnirseAsociacion(producerObj.uid, {
-          tipoTabaco,
-          calidad,
-          kgs: parseInt(totalKgs),
-          cantidadFardos,
-          usdTotal,
-          productorAsociadoNombre: `${producerObj.firstName} ${producerObj.lastName}`,
-          productorAsociadoEmail: producerObj.email
-        });
+      // Preparar datos de tokenización
+      const tokenizationData = {
+        cantidadFardos,
+        totalKgs: parseInt(totalKgs),
+        tamanoFardo: parseInt(tamanoFardo),
+        tipoTabaco,
+        calidad,
+        tipoVenta,
+        precioVenta: precioFinal,
+        usdTotal,
+        productorOwner: user.uid,
+        associationId: associationId,
+      };
 
-        if (!assocRes.ok) {
-          setError(assocRes.error);
-          setLoading(false);
-          return;
+      // Llamar a tokenizarProducer
+      const res = await tokenizarProducer(tokenizationData);
+      if (res.ok) {
+        // Intentar obtener información de la asociación seleccionada para el PDF
+        let selectedAssoc = null;
+        if (associationId) {
+          selectedAssoc = asociacionesDisponibles.find(a => a.id === associationId);
         }
 
-        associationId = assocRes.associationId;
+        const codigo = generarCertificadoPDF(selectedAssoc ? {
+          firstName: selectedAssoc.nombre,
+          lastName: "",
+          documentNumber: `ID: ${associationId.substring(0, 8)}`,
+          email: "Venta Asociada"
+        } : null);
+
+        setTransactionCode(codigo);
+        setSuccess(true);
+      } else {
+        setError(res.error || "Error al tokenizar los fardos");
       }
+    } catch (err) {
+      setError(err.message || "Error al procesar");
     }
 
-    // Preparar datos de tokenización
-    const tokenizationData = {
-      cantidadFardos,
-      totalKgs: parseInt(totalKgs),
-      tamanoFardo: parseInt(tamanoFardo),
-      tipoTabaco,
-      calidad,
-      tipoVenta,
-      precioVenta: precioFinal,
-      usdTotal,
-      productorOwner: user.uid,
-      associationId: associationId,
-    };
-
-    if (producerObj) {
-      tokenizationData.productorAsociadoUID = producerObj.uid;
-      tokenizationData.productorAsociadoNombre = `${producerObj.firstName} ${producerObj.lastName}`;
-      tokenizationData.productorAsociadoDNI = producerObj.documentNumber;
-      tokenizationData.productorAsociadoEmail = producerObj.email;
-    }
-
-    // Llamar a tokenizarProducer
-    const res = await tokenizarProducer(tokenizationData);
-    if (res.ok) {
-      const codigo = generarCertificadoPDF(producerObj);
-      setTransactionCode(codigo);
-      setSuccess(true);
-    } else {
-      setError(res.error || "Error al tokenizar los fardos");
-    }
-  } catch (err) {
-    setError(err.message || "Error al procesar");
-  }
-
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
 
   if (success) {
@@ -548,157 +451,11 @@ const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVent
           </div>
         </div>
 
-        {/* Modo de asociación - NUEVO */}
-{tipoVenta === "asociada" && (
-  <div style={{ marginBottom: "20px" }}>
-    <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-      ¿Cómo deseas asociarte? *
-    </label>
-    <div style={{ display: "flex", gap: "16px" }}>
-      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-        <input
-          type="radio"
-          name="modoAsociacion"
-          value="crear"
-          checked={modoAsociacion === "crear"}
-          onChange={(e) => {
-            setModoAsociacion(e.target.value);
-            setAsociacionSeleccionada("");
-          }}
-          disabled={loading || showConfirm}
-        />
-        <span>Crear nueva asociación</span>
-      </label>
-      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-        <input
-          type="radio"
-          name="modoAsociacion"
-          value="unirse"
-          checked={modoAsociacion === "unirse"}
-          onChange={(e) => {
-            setModoAsociacion(e.target.value);
-            setProductorAsociado("");
-          }}
-          disabled={loading || showConfirm || asociacionesDelProductor.length === 0}
-        />
-        <span>Unirme a asociación existente {asociacionesDelProductor.length > 0 ? `(${asociacionesDelProductor.length})` : "(ninguna)"}</span>
-      </label>
-    </div>
-  </div>
-)}
-
-{/* Productor Asociado - para crear nueva asociación */}
-{tipoVenta === "asociada" && modoAsociacion === "crear" && (
-  <div style={{ marginBottom: "20px" }}>
-    <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-      Productor Asociado *
-    </label>
-    <select
-      className="tabar-input"
-      value={productorAsociado}
-      onChange={(e) => setProductorAsociado(e.target.value)}
-      disabled={loading || showConfirm || loadingProductores}
-      style={{ cursor: "pointer" }}
-    >
-      <option value="">{loadingProductores ? "Cargando productores..." : "Seleccionar productor asociado"}</option>
-      {productoresDisponibles.map(p => (
-        <option key={p.uid} value={JSON.stringify(p)}>
-          {p.firstName} {p.lastName} ({p.documentNumber})
-        </option>
-      ))}
-    </select>
-  </div>
-)}
-
-{/* Asociación Existente - para unirse */}
-{tipoVenta === "asociada" && modoAsociacion === "unirse" && (
-  <div style={{ marginBottom: "20px" }}>
-    <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-      Seleccionar Asociación *
-    </label>
-    <select
-      className="tabar-input"
-      value={asociacionSeleccionada}
-      onChange={(e) => setAsociacionSeleccionada(e.target.value)}
-      disabled={loading || showConfirm || loadingAsociaciones}
-      style={{ cursor: "pointer" }}
-    >
-      <option value="">{loadingAsociaciones ? "Cargando asociaciones..." : "Seleccionar asociación"}</option>
-      {asociacionesDelProductor.map(asoc => (
-        <option key={asoc.id} value={asoc.id}>
-          {asoc.nombre} - {asoc.productores?.length || 0} miembros, {asoc.inventario?.totalKgs || 0} Kgs
-        </option>
-      ))}
-    </select>
-  </div>
-)}
-
-
-        {/* Modo de asociación - para crear o unirse */}
+        {/* Asociación Existente - para Venta Asociada */}
         {tipoVenta === "asociada" && (
           <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-              ¿Cómo deseas asociarte? *
-            </label>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-                <input
-                  type="radio"
-                  name="modoAsociacion"
-                  value="crear"
-                  checked={modoAsociacion === "crear"}
-                  onChange={(e) => {
-                    setModoAsociacion(e.target.value);
-                    setAsociacionSeleccionada("");
-                  }}
-                  disabled={loading || showConfirm}
-                />
-                <span>Crear nueva asociación</span>
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-                <input
-                  type="radio"
-                  name="modoAsociacion"
-                  value="unirse"
-                  checked={modoAsociacion === "unirse"}
-                  onChange={(e) => {
-                    setModoAsociacion(e.target.value);
-                    setProductorAsociado("");
-                  }}
-                  disabled={loading || showConfirm || asociacionesDisponibles.length === 0}
-                />
-                <span>Unirme a asociación existente {asociacionesDisponibles.length > 0 ? `(${asociacionesDisponibles.length} disponibles)` : "(ninguna disponible)"}</span>
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* Productor Asociado - para crear nueva */}
-        {tipoVenta === "asociada" && modoAsociacion === "crear" && (
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-              Productor Asociado *
-            </label>
-            <select
-              className="tabar-input"
-              value={productorAsociado}
-              onChange={(e) => setProductorAsociado(e.target.value)}
-              disabled={loading || showConfirm || loadingProductores}
-              style={{ cursor: "pointer" }}
-            >
-              <option value="">{loadingProductores ? "Cargando productores..." : "Seleccionar productor asociado"}</option>
-              {productoresDisponibles.map(p => (
-                <option key={p.uid} value={JSON.stringify(p)}>{p.firstName} {p.lastName} ({p.documentNumber}) - {p.email}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Asociación Existente - para unirse */}
-        {tipoVenta === "asociada" && modoAsociacion === "unirse" && (
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-              Seleccionar Asociación *
+              Seleccionar Asociación de Venta *
             </label>
             <select
               className="tabar-input"
@@ -707,13 +464,16 @@ const isFormValid = totalKgs && tamanoFardo && tipoTabaco && calidad && tipoVent
               disabled={loading || showConfirm || loadingAsociaciones}
               style={{ cursor: "pointer" }}
             >
-              <option value="">{loadingAsociaciones ? "Cargando asociaciones..." : "Seleccionar asociación"}</option>
+              <option value="">{loadingAsociaciones ? "Cargando asociaciones..." : "Seleccionar asociación de productores"}</option>
               {asociacionesDisponibles.map(asoc => (
                 <option key={asoc.id} value={asoc.id}>
-                  {asoc.nombre} - {asoc.totalKgs} Kgs, {asoc.totalFardos} fardos ({asoc.productores})
+                  {asoc.nombre} - {asoc.inventario?.totalKgs || 0} Kgs, {asoc.inventario?.totalFardos || 0} fardos (Miembros: {asoc.productores?.map(p => p.nombre).join(", ") || ""})
                 </option>
               ))}
             </select>
+            <p style={{ fontSize: "11px", color: "#8B949E", marginTop: "6px" }}>
+              ¿No encuentras una asociación? Crea una nueva en la pestaña <Link to="/producer/asociaciones" style={{ color: "#3FB950", textDecoration: "underline" }}>Mis Asociaciones</Link>.
+            </p>
           </div>
         )}
 

@@ -278,14 +278,16 @@ export function DataProvider({ children }) {
         nombre: nombreAsociacion,
         productores: [{
           uid: user.uid,
-          nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+          nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user.email || "Productor",
           email: user.email,
-          rol: "creador"
+          rol: "coordinador"
         }],
         productoresUIDs: [user.uid],
         inventario: {
           totalKgs: 0,
           totalFardos: 0,
+          usdFinanciamientoTotal: 0,
+          tipoTabaco: "Ninguno",
           tiposTabaco: []
         },
         estado: "activa",
@@ -297,6 +299,7 @@ export function DataProvider({ children }) {
       await addHistorial(`✅ Productor creó asociación: "${nombreAsociacion}"`, "success");
       return { ok: true, associationId: newAssociationRef.id };
     } catch (e) {
+      console.error("Error creating asociación:", e);
       return { ok: false, error: e.message };
     }
   };
@@ -308,22 +311,23 @@ export function DataProvider({ children }) {
     try {
       if (!user?.uid) return { ok: false, asociaciones: [] };
 
-      const allAssoc = await getDocs(collection(db, "producer_associations"));
+      const q = query(
+        collection(db, "producer_associations"),
+        where("productoresUIDs", "array-contains", user.uid)
+      );
+      const querySnapshot = await getDocs(q);
       const miasAsociaciones = [];
 
-      allAssoc.forEach((doc) => {
-        const data = doc.data();
-        const esMiembro = data.productores?.some(p => p.uid === user.uid);
-        if (esMiembro) {
-          miasAsociaciones.push({
-            id: doc.id,
-            ...data
-          });
-        }
+      querySnapshot.forEach((doc) => {
+        miasAsociaciones.push({
+          id: doc.id,
+          ...doc.data()
+        });
       });
 
       return { ok: true, asociaciones: miasAsociaciones };
     } catch (e) {
+      console.error("Error fetching producer asociaciones:", e);
       return { ok: false, error: e.message, asociaciones: [] };
     }
   };
@@ -340,9 +344,9 @@ export function DataProvider({ children }) {
 
       allAssoc.forEach((doc) => {
         const data = doc.data();
-        const yaEsMiembro = data.productores?.some(p => p.uid === user.uid);
+        const yaEsMiembro = data.productoresUIDs?.includes(user.uid);
 
-        if (!yaEsMiembro) {
+        if (!yaEsMiembro && data.estado === "activa") {
           asociacionesDisponibles.push({
             id: doc.id,
             nombre: data.nombre,
@@ -356,6 +360,24 @@ export function DataProvider({ children }) {
 
       return { ok: true, asociaciones: asociacionesDisponibles };
     } catch (e) {
+      console.error("Error fetching available asociaciones:", e);
+      return { ok: false, error: e.message, asociaciones: [] };
+    }
+  };
+
+  // ========================================================================
+  // NUEVA FUNCIÓN: obtenerTodasLasAsociaciones
+  // ========================================================================
+  const obtenerTodasLasAsociaciones = async () => {
+    try {
+      const snap = await getDocs(collection(db, "producer_associations"));
+      const data = snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { ok: true, asociaciones: data };
+    } catch (e) {
+      console.error("Error fetching all asociaciones:", e);
       return { ok: false, error: e.message, asociaciones: [] };
     }
   };
@@ -376,51 +398,73 @@ export function DataProvider({ children }) {
 
       const assoc = assocSnap.data();
 
-      // Verificar si el usuario ya está en la asociación
-      const yaEstá = assoc.productores.some(p => p.uid === user.uid);
-
-      if (!yaEstá) {
-        const nuevoProductor = {
+      // 1. Manejar membresía de productores
+      let nuevosProductores = [...(assoc.productores || [])];
+      let nuevosProductoresUIDs = assoc.productoresUIDs
+        ? [...assoc.productoresUIDs]
+        : nuevosProductores.map(p => p.uid).filter(Boolean);
+      
+      const yaEsta = nuevosProductoresUIDs.includes(user.uid);
+      if (!yaEsta) {
+        nuevosProductores.push({
           uid: user.uid,
-          nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
+          nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || user.email || "Productor",
           email: user.email,
           rol: "miembro"
-        };
+        });
+        nuevosProductoresUIDs.push(user.uid);
+      }
 
-        // Actualizar inventario según tipo de tabaco
-        let nuevoInventario = { ...assoc.inventario };
-        const tipoTabaco = datosTokenizacion.tipoTabaco;
-        const tiposTabaco = nuevoInventario.tiposTabaco || [];
+      // 2. Actualizar inventario según tipo de tabaco (siempre)
+      let nuevoInventario = assoc.inventario ? { ...assoc.inventario } : {
+        totalKgs: 0,
+        totalFardos: 0,
+        usdFinanciamientoTotal: 0,
+        tipoTabaco: "",
+        tiposTabaco: []
+      };
 
-        let tabacoencontrado = tiposTabaco.find(t => t.tipo === tipoTabaco);
-        if (tabacoencontrado) {
-          tabacoencontrado.kgs += datosTokenizacion.kgs || 0;
-          tabacoencontrado.fardos += datosTokenizacion.cantidadFardos || 0;
-          tabacoencontrado.usdTotal += datosTokenizacion.usdTotal || 0;
-        } else {
-          tiposTabaco.push({
-            tipo: tipoTabaco,
-            calidades: [datosTokenizacion.calidad],
-            kgs: datosTokenizacion.kgs || 0,
-            fardos: datosTokenizacion.cantidadFardos || 0,
-            usdTotal: datosTokenizacion.usdTotal || 0
-          });
+      const tipoTabacoInput = datosTokenizacion.tipoTabaco;
+      const tiposTabaco = nuevoInventario.tiposTabaco ? [...nuevoInventario.tiposTabaco] : [];
+
+      let tabacoEncontrado = tiposTabaco.find(t => t.tipo === tipoTabacoInput);
+      if (tabacoEncontrado) {
+        tabacoEncontrado.kgs = (tabacoEncontrado.kgs || 0) + (datosTokenizacion.kgs || 0);
+        tabacoEncontrado.fardos = (tabacoEncontrado.fardos || 0) + (datosTokenizacion.cantidadFardos || 0);
+        tabacoEncontrado.usdTotal = (tabacoEncontrado.usdTotal || 0) + (datosTokenizacion.usdTotal || 0);
+        if (datosTokenizacion.calidad && !tabacoEncontrado.calidades.includes(datosTokenizacion.calidad)) {
+          tabacoEncontrado.calidades.push(datosTokenizacion.calidad);
         }
-
-        nuevoInventario.tiposTabaco = tiposTabaco;
-        nuevoInventario.totalKgs = (nuevoInventario.totalKgs || 0) + (datosTokenizacion.kgs || 0);
-        nuevoInventario.totalFardos = (nuevoInventario.totalFardos || 0) + (datosTokenizacion.cantidadFardos || 0);
-
-        await updateDoc(assocRef, {
-          productores: arrayUnion(nuevoProductor),
-          productoresUIDs: arrayUnion(user.uid),
-          inventario: nuevoInventario,
-          actualizadoEn: serverTimestamp()
+      } else {
+        tiposTabaco.push({
+          tipo: tipoTabacoInput,
+          calidades: [datosTokenizacion.calidad],
+          kgs: datosTokenizacion.kgs || 0,
+          fardos: datosTokenizacion.cantidadFardos || 0,
+          usdTotal: datosTokenizacion.usdTotal || 0
         });
       }
 
+      nuevoInventario.tiposTabaco = tiposTabaco;
+      nuevoInventario.totalKgs = (nuevoInventario.totalKgs || 0) + (datosTokenizacion.kgs || 0);
+      nuevoInventario.totalFardos = (nuevoInventario.totalFardos || 0) + (datosTokenizacion.cantidadFardos || 0);
+      nuevoInventario.usdFinanciamientoTotal = (nuevoInventario.usdFinanciamientoTotal || 0) + (datosTokenizacion.usdTotal || 0);
+
+      // Actualizar el string general de tipo de tabaco para compatibilidad
+      const nombresTabacos = tiposTabaco.map(t => t.tipo.charAt(0).toUpperCase() + t.tipo.slice(1));
+      nuevoInventario.tipoTabaco = nombresTabacos.join(", ");
+
+      await updateDoc(assocRef, {
+        productores: nuevosProductores,
+        productoresUIDs: nuevosProductoresUIDs,
+        inventario: nuevoInventario,
+        actualizadoEn: serverTimestamp()
+      });
+
+      await addHistorial(`🌿 Productor aportó ${datosTokenizacion.cantidadFardos} fardos a la asociación "${assoc.nombre}"`, "success");
       return { ok: true, associationId };
     } catch (e) {
+      console.error("Error in unirseAAsociacion:", e);
       return { ok: false, error: e.message };
     }
   };
@@ -442,7 +486,7 @@ export function DataProvider({ children }) {
             uid: user.uid,
             nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
             email: user.email,
-            rol: "creador"
+            rol: "coordinador"
           },
           {
             uid: productorAsociadoUID,
@@ -455,6 +499,8 @@ export function DataProvider({ children }) {
         inventario: {
           totalKgs: datosTokenizacion.kgs || 0,
           totalFardos: datosTokenizacion.cantidadFardos || 0,
+          usdFinanciamientoTotal: datosTokenizacion.usdTotal || 0,
+          tipoTabaco: datosTokenizacion.tipoTabaco.charAt(0).toUpperCase() + datosTokenizacion.tipoTabaco.slice(1),
           tiposTabaco: [{
             tipo: datosTokenizacion.tipoTabaco,
             calidades: [datosTokenizacion.calidad],
@@ -496,6 +542,7 @@ export function DataProvider({ children }) {
       crearAsociacion,
       obtenerAsociacionesDelProductor,
       obtenerAsociacionesDisponiblesParaUnirse,
+      obtenerTodasLasAsociaciones,
       unirseAAsociacion,
       crearOUnirseAsociacion,
       resetDemo,
