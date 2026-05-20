@@ -134,19 +134,19 @@ export default function ProducerAsociaciones() {
                   borderRadius: "4px",
                   fontSize: "11px",
                   fontWeight: 600,
-                  background: asoc.estado === "activa" ? "rgba(63,185,80,0.2)" : "rgba(248,81,73,0.2)",
-                  color: asoc.estado === "activa" ? "#3FB950" : "#F85149"
+                  background: (asoc.estado || "activa") === "activa" ? "rgba(63,185,80,0.2)" : "rgba(248,81,73,0.2)",
+                  color: (asoc.estado || "activa") === "activa" ? "#3FB950" : "#F85149"
                 }}>
-                  {asoc.estado.toUpperCase()}
+                  {(asoc.estado || "activa").toUpperCase()}
                 </span>
               </div>
 
               <div style={{ marginBottom: "16px" }}>
                 <p style={{ fontSize: "12px", color: "#8B949E", margin: "0 0 8px 0" }}>
-                  Coordinador: <strong>{coorObj?.nombre || "No asignado"}</strong>
+                  Coordinador: <strong>{asoc.productores?.find(p => p.rol === "coordinador")?.nombre || "N/A"}</strong>
                 </p>
                 <p style={{ fontSize: "12px", color: "#8B949E", margin: 0 }}>
-                  Miembros: <span style={{ color: "#C9D1D9" }}>{asoc.productores?.map(p => p.nombre).join(", ") || "Ninguno"}</span>
+                  Miembros: <span style={{ color: "#C9D1D9" }}>{asoc.productores?.map(p => p.nombre)?.join(", ") || "Sin miembros"}</span>
                 </p>
               </div>
 
