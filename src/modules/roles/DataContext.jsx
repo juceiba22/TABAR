@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, addDoc, serverTimestamp, query, orderBy, limit, getDoc, getDocs, where, runTransaction, arrayUnion } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { getDocs, where, arrayUnion } from "firebase/firestore";
 import { useRole } from "./RoleContext";
 
 const DataContext = createContext(null);
@@ -260,67 +259,6 @@ export function DataProvider({ children }) {
   // ========================================================================
   // NUEVAS FUNCIONES PARA ASOCIACIONES DE PRODUCTORES
   // ========================================================================
-const unirseAAsociacion = async (associationId, datosTokenizacion) => {
-  try {
-    if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
-
-    const assocRef = doc(db, "producer_associations", associationId);
-    const assocSnap = await getDoc(assocRef);
-
-    if (!assocSnap.exists()) {
-      return { ok: false, error: "Asociación no encontrada" };
-    }
-
-    const assoc = assocSnap.data();
-
-    // Verificar si el usuario ya está en la asociación
-    const yaEstá = assoc.productores.some(p => p.uid === user.uid);
-
-    if (!yaEstá) {
-      const nuevoProductor = {
-        uid: user.uid,
-        nombre: `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim(),
-        email: user.email,
-        rol: "miembro"
-      };
-
-      // Actualizar inventario según tipo de tabaco
-      let nuevoInventario = { ...assoc.inventario };
-      const tipoTabaco = datosTokenizacion.tipoTabaco;
-      const tiposTabaco = nuevoInventario.tiposTabaco || [];
-
-      let tabacoencontrado = tiposTabaco.find(t => t.tipo === tipoTabaco);
-      if (tabacoencontrado) {
-        tabacoencontrado.kgs += datosTokenizacion.kgs || 0;
-        tabacoencontrado.fardos += datosTokenizacion.cantidadFardos || 0;
-        tabacoencontrado.usdTotal += datosTokenizacion.usdTotal || 0;
-      } else {
-        tiposTabaco.push({
-          tipo: tipoTabaco,
-          calidades: [datosTokenizacion.calidad],
-          kgs: datosTokenizacion.kgs || 0,
-          fardos: datosTokenizacion.cantidadFardos || 0,
-          usdTotal: datosTokenizacion.usdTotal || 0
-        });
-      }
-
-      nuevoInventario.tiposTabaco = tiposTabaco;
-      nuevoInventario.totalKgs = (nuevoInventario.totalKgs || 0) + (datosTokenizacion.kgs || 0);
-      nuevoInventario.totalFardos = (nuevoInventario.totalFardos || 0) + (datosTokenizacion.cantidadFardos || 0);
-
-      await updateDoc(assocRef, {
-        productores: arrayUnion(nuevoProductor),
-        productoresUIDs: arrayUnion(user.uid),  // ← AGREGADO
-        inventario: nuevoInventario,
-        actualizadoEn: serverTimestamp()
-      });
-    }
-
-    return { ok: true, associationId };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-};
   const venderAsociacionEnBloque = async (associationId, precioVenta) => {
     try {
       const assocRef = doc(db, "producer_associations", associationId);
