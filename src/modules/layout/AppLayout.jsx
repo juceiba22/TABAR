@@ -37,7 +37,7 @@ const NAV_LINKS = {
     { path: "/market", label: "Mercado Tabacalero" }
   ],
   producer: [
-    { path: "/producer", label: "Mi Dashboard Finca" },
+    { path: "/producer", label: "Mi tabaco" },
     { path: "/producer/tokenizar", label: "Certificar Tabaco" },
     { path: "/producer/asociaciones", label: "Mis Asociaciones" },
     { path: "/market", label: "Mercado Tabacalero" }
