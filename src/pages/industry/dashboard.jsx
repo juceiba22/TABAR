@@ -7,6 +7,19 @@ import { Link } from "react-router-dom";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
+// Formateador de moneda en pesos.
+const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Lee el monto de una orden de compra.
+// buy.jsx lo guarda como `montoTotal` (string, por .toFixed(2)).
+// Se mantiene compatibilidad con `usdTotal` por si quedó algún documento viejo.
+const getMontoOrden = (d) => parseFloat(d?.montoTotal ?? d?.usdTotal ?? 0) || 0;
+
+// Lee el monto de una solicitud de financiamiento.
+// financing.jsx lo guarda como `montoFinanciamiento` (number).
+// Se mantiene compatibilidad con `montoSolicitado` por si quedó algún documento viejo.
+const getMontoFinanciamiento = (d) => Number(d?.montoFinanciamiento ?? d?.montoSolicitado ?? 0) || 0;
+
 export default function IndustryDashboard() {
   const { user } = useRole();
   const [loading, setLoading] = useState(true);
@@ -48,14 +61,16 @@ export default function IndustryDashboard() {
 
         poSnap.forEach(doc => {
           const d = doc.data();
+          const monto = getMontoOrden(d);
+
           ordenesCount++;
-          ordenesMontoTotal += d.usdTotal || 0;
+          ordenesMontoTotal += monto;
 
           interaccionesList.push({
             id: `po-${doc.id}`,
             date: parseDate(doc),
             title: `Orden de compra`,
-            description: `Orden de compra emitida por ${(d.cantidadKgs || 0).toLocaleString("es-AR")} kgs y a un monto total de $${(d.usdTotal || 0).toLocaleString("es-AR")}`,
+            description: `Orden de compra emitida por ${(d.cantidadKgs || 0).toLocaleString("es-AR")} kgs y a un monto total de $${fmtMoney(monto)}`,
             icon: "▣"
           });
         });
@@ -67,8 +82,10 @@ export default function IndustryDashboard() {
 
         frSnap.forEach(doc => {
           const d = doc.data();
+          const monto = getMontoFinanciamiento(d);
+
           financiamientoCount++;
-          financiamientoMontoTotal += d.montoSolicitado || 0;
+          financiamientoMontoTotal += monto;
 
           if (d.motivoFinanciamiento) {
             motivosSet.add(d.motivoFinanciamiento);
@@ -78,7 +95,7 @@ export default function IndustryDashboard() {
             id: `fr-${doc.id}`,
             date: parseDate(doc),
             title: `Solicitud de financiamiento`,
-            description: `Solicitud de financiamiento para ${d.motivoFinanciamiento?.toLowerCase() || "fines generales"} por un monto total de $${(d.montoSolicitado || 0).toLocaleString("es-AR")}`,
+            description: `Solicitud de financiamiento para ${d.motivoFinanciamiento?.toLowerCase() || "fines generales"} por un monto total de $${fmtMoney(monto)}`,
             icon: "◇"
           });
         });
@@ -104,8 +121,8 @@ export default function IndustryDashboard() {
     fetchData();
   }, [user]);
 
-  const motivosStr = stats.motivos.length > 0 
-    ? stats.motivos.join(", ") 
+  const motivosStr = stats.motivos.length > 0
+    ? stats.motivos.join(", ")
     : "fines generales";
 
   return (
@@ -121,35 +138,35 @@ export default function IndustryDashboard() {
       {!loading && (
         <div style={{ background: "rgba(88,166,255,0.05)", border: "1px solid rgba(88,166,255,0.2)", borderRadius: "12px", padding: "24px", marginBottom: "32px", backdropFilter: "blur(10px)" }}>
           <p style={{ margin: 0, color: "#C9D1D9", fontSize: "16px", lineHeight: 1.6 }}>
-            Usted ha emitido hasta el momento <strong style={{ color: C.accent }}>{stats.ordenesCount}</strong> de órdenes de compra por un monto total de <strong style={{ color: "#F0F6FC" }}>${stats.ordenesMontoTotal.toLocaleString("es-AR")}</strong>. Asimismo ha solicitado financiamiento <strong style={{ color: C.accent }}>{stats.financiamientoCount}</strong> veces por un total de <strong style={{ color: "#F0F6FC" }}>${stats.financiamientoMontoTotal.toLocaleString("es-AR")}</strong>. El motivo del financiamiento han sido: <strong style={{ color: "#F0F6FC" }}>{motivosStr}</strong>.
+            Usted ha emitido hasta el momento <strong style={{ color: C.accent }}>{stats.ordenesCount}</strong> de órdenes de compra por un monto total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.ordenesMontoTotal)}</strong>. Asimismo ha solicitado financiamiento <strong style={{ color: C.accent }}>{stats.financiamientoCount}</strong> veces por un total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.financiamientoMontoTotal)}</strong>. El motivo del financiamiento han sido: <strong style={{ color: "#F0F6FC" }}>{motivosStr}</strong>.
           </p>
         </div>
       )}
 
       <div className="tabar-grid-4">
-        <MetricCard 
-          label="Financiamiento solicitado" 
-          value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`} 
-          unit="monto total" 
-          color="#3FB950" bg="rgba(63,185,80,0.10)" glyph="$" 
+        <MetricCard
+          label="Financiamiento solicitado"
+          value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`}
+          unit="monto total"
+          color="#3FB950" bg="rgba(63,185,80,0.10)" glyph="$"
         />
-        <MetricCard 
-          label="Motivos" 
-          value={stats.motivos.length > 0 ? stats.motivos.length : "0"} 
-          unit="tipos de financiamiento" 
-          color="#BC8CFF" bg="rgba(188,140,255,0.10)" glyph="◱" 
+        <MetricCard
+          label="Motivos"
+          value={stats.motivos.length > 0 ? stats.motivos.length : "0"}
+          unit="tipos de financiamiento"
+          color="#BC8CFF" bg="rgba(188,140,255,0.10)" glyph="◱"
         />
-        <MetricCard 
-          label="Órdenes de compra" 
-          value={stats.ordenesCount} 
-          unit="emitidas" 
-          color={C.accent} bg={C.dim} glyph="▣" 
+        <MetricCard
+          label="Órdenes de compra"
+          value={stats.ordenesCount}
+          unit="emitidas"
+          color={C.accent} bg={C.dim} glyph="▣"
         />
-        <MetricCard 
-          label="Monto de compras" 
-          value={`$${(stats.ordenesMontoTotal / 1000).toFixed(1)}k`} 
-          unit="total acumulado" 
-          color="#E3B64F" bg="rgba(227,182,79,0.10)" glyph="◈" 
+        <MetricCard
+          label="Monto de compras"
+          value={`$${(stats.ordenesMontoTotal / 1000).toFixed(1)}k`}
+          unit="total acumulado"
+          color="#E3B64F" bg="rgba(227,182,79,0.10)" glyph="◈"
         />
       </div>
 
@@ -163,8 +180,8 @@ export default function IndustryDashboard() {
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {stats.interacciones.map((item, index) => (
-                <li key={item.id} style={{ 
-                  padding: "20px", 
+                <li key={item.id} style={{
+                  padding: "20px",
                   borderBottom: index !== stats.interacciones.length - 1 ? "1px solid #30363D" : "none",
                   display: "flex",
                   gap: "16px",
