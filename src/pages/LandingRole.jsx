@@ -343,19 +343,18 @@ export default function LandingRole() {
 
             <div className="lr-brand-copy">
               <h1 className="lr-brand-title">
-                Tokenización<br />agroindustrial<br />tabacalera.
+                La solución<br />a los problemas del<br />sector tabacalero.
               </h1>
               <p className="lr-brand-desc">
-                Plataforma institucional de financiamiento y comercialización de activos
-                tabacaleros bajo protocolo blockchain.
+                TABAR, la plataforma digital para los tabacaleros de ley.
               </p>
             </div>
 
             <div className="lr-brand-stats">
               {[
-                { label: "Tasa anual FET", value: "8.5%" },
-                { label: "Respaldo", value: "Real" },
-                { label: "Trazabilidad", value: "On-chain" },
+                { label: "+ Velocidad ", value: "FET" },
+                { label: "Acopio", value: "Financiamiento" },
+                { label: "Tabacaleros", value: "E-Commerce" },
               ].map(s => (
                 <div key={s.label} className="lr-stat">
                   <div className="lr-stat-value">{s.value}</div>
