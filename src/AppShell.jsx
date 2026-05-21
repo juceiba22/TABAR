@@ -29,7 +29,6 @@ import StateInvest from "./pages/state/invest";
 import StateReturns from "./pages/state/returns";
 import DealerDashboard from "./pages/dealer/dashboard";
 import DealerTrade from "./pages/dealer/trade";
-import DealerMarkets from "./pages/dealer/markets";
 import ProducerDashboard from "./pages/producer/dashboard";
 import IndustryFinancing from "./pages/industry/financing";
 import ProducerTokenizar from "./pages/producer/tokenizar";
@@ -235,14 +234,6 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["dealer"]}>
               <DealerTrade />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dealer/markets"
-          element={
-            <ProtectedRoute allowedRoles={["dealer"]}>
-              <DealerMarkets />
             </ProtectedRoute>
           }
         />

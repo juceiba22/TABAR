@@ -1,11 +1,36 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../config/firebase";
+import { useRole } from "../../modules/roles/RoleContext";
 import "./market.css";
 
 export default function MarketPage() {
+  const { role, user } = useRole();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleOperar = async (item) => {
+    if (!user?.uid) return;
+    try {
+      const operationRef = doc(db, "dealer_operations", `${Date.now()}_${user.uid}`);
+      await setDoc(operationRef, {
+        dealerId: user.uid,
+        targetId: item.rawId || item.id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        roleOrigin: item.roleLabel,
+        color: item.color,
+        icon: item.icon,
+        rawDoc: item.rawDoc || {},
+        creadoEn: serverTimestamp()
+      });
+      alert("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.");
+    } catch (err) {
+      console.error("Error al marcar operación:", err);
+      alert("Error al marcar operación.");
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -41,6 +66,8 @@ export default function MarketPage() {
           const d = doc.data();
           allItems.push({
             id: `po-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "industry",
             roleLabel: "Acopiador",
@@ -57,6 +84,8 @@ export default function MarketPage() {
           const d = doc.data();
           allItems.push({
             id: `fr-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "industry",
             roleLabel: "Acopiador",
@@ -73,6 +102,8 @@ export default function MarketPage() {
           const d = doc.data();
           allItems.push({
             id: `pt-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "producer",
             roleLabel: "Productor",
@@ -89,6 +120,8 @@ export default function MarketPage() {
           const d = doc.data();
           allItems.push({
             id: `pa-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "producer",
             roleLabel: "Productor",
@@ -105,6 +138,8 @@ export default function MarketPage() {
           const d = doc.data();
           allItems.push({
             id: `poa-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "state",
             roleLabel: "Estado Nacional",
@@ -128,6 +163,8 @@ export default function MarketPage() {
             
           allItems.push({
             id: `fet-${doc.id}`,
+            rawId: doc.id,
+            rawDoc: d,
             date: parseDate(doc),
             role: "state",
             roleLabel: "Estado Nacional (FET)",
@@ -188,8 +225,26 @@ export default function MarketPage() {
                 </div>
                 <h3 className="market-card-title">{item.title}</h3>
                 <p className="market-card-desc">{item.description}</p>
-                <div className="market-card-footer">
+                <div className="market-card-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className="market-card-role">{item.roleLabel}</span>
+                  {role === "dealer" && item.type !== "Novedad FET" && (
+                    <button 
+                      onClick={() => handleOperar(item)}
+                      style={{
+                        background: "#E3B64F",
+                        color: "#000",
+                        border: "none",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "opacity 0.2s"
+                      }}
+                    >
+                      Operar
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

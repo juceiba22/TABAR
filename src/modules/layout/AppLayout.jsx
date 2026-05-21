@@ -33,7 +33,6 @@ const NAV_LINKS = {
   dealer: [
     { path: "/dealer", label: "Mi Dashboard" },
     { path: "/dealer/trade", label: "Operar" },
-    { path: "/dealer/markets", label: "Mercados" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
   producer: [
