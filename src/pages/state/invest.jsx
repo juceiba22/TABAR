@@ -154,9 +154,9 @@ export default function StateInvest() {
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
           <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>▣</div>
-          <h1>Crear asignación FET</h1>
+          <h1> POA disponible para adelanto </h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Gestión de Plan Operativo Anual para entidades beneficiarias</p>
+        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Usted debe cargar un POA con firma del Coordinador Nacional </p>
       </div>
 
       {step === "form" && (
