@@ -6,6 +6,29 @@ import { db } from "../../config/firebase";
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
 
+// Formateadores
+const fmtKgs = (n) => Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Lee kgs de un documento de producer_tokenizations (soporta ambos nombres por compatibilidad)
+const getKgs = (d) => Number(d?.totalKgs ?? d?.kgs ?? 0);
+
+// Lee monto de un documento (soporta ambos nombres)
+const getMonto = (d) => Number(d?.usdTotal ?? d?.montoTotal ?? 0);
+
+// Lee fecha de un documento
+const parseDocDate = (data) => {
+  const src = data.creadoEn || data.timestamp || data.actualizadoEn || data.fechaCreacion;
+  if (!src) return null;
+  try {
+    const d = src.toDate ? src.toDate() : new Date(src);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+};
+
 export default function ProducerAsociaciones() {
   const { user } = useRole();
   const { crearAsociacion, obtenerTodasLasAsociaciones } = useData();
@@ -17,6 +40,9 @@ export default function ProducerAsociaciones() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newAssocName, setNewAssocName] = useState("");
   const [creating, setCreating] = useState(false);
+
+  // Estado del modal de detalles
+  const [detailsAsoc, setDetailsAsoc] = useState(null); // asociación seleccionada
 
   const fetchAsociaciones = async () => {
     try {
@@ -88,8 +114,8 @@ export default function ProducerAsociaciones() {
             Visualizá y participá en las asociaciones fiduciarias de productores
           </p>
         </div>
-        <button 
-          className="tabar-btn tabar-btn-primary" 
+        <button
+          className="tabar-btn tabar-btn-primary"
           onClick={() => setShowCreateModal(true)}
           style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", height: "fit-content" }}
         >
@@ -163,19 +189,19 @@ export default function ProducerAsociaciones() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "12px" }}>
                   <div>
                     <span style={{ color: "#8B949E" }}>Total Kgs:</span>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{(asoc.inventario?.totalKgs || 0).toLocaleString("es-AR")} kg</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{fmtKgs(asoc.inventario?.totalKgs)} kg</p>
                   </div>
                   <div>
                     <span style={{ color: "#8B949E" }}>Total Fardos:</span>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{asoc.inventario?.totalFardos || 0}</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{fmtFardos(asoc.inventario?.totalFardos)}</p>
                   </div>
                   <div>
                     <span style={{ color: "#8B949E" }}>Tipos de Tabaco:</span>
                     <p style={{ margin: 0, fontWeight: 600 }}>{asoc.inventario?.tipoTabaco || "Ninguno"}</p>
                   </div>
                   <div>
-                    <span style={{ color: "#8B949E" }}>Financiamiento USD:</span>
-                    <p style={{ margin: 0, fontWeight: 600, color: C.accent }}>USD ${(asoc.inventario?.usdFinanciamientoTotal || 0).toLocaleString("es-AR")}</p>
+                    <span style={{ color: "#8B949E" }}>Total Ventas:</span>
+                    <p style={{ margin: 0, fontWeight: 600, color: C.accent }}>${fmtMoney(asoc.inventario?.usdFinanciamientoTotal)}</p>
                   </div>
                 </div>
 
@@ -188,8 +214,8 @@ export default function ProducerAsociaciones() {
                         <div key={idx} style={{ display: "flex", justifyContent: "space-between", background: "rgba(255,255,255,0.02)", padding: "6px 12px", borderRadius: "4px", fontSize: "11px" }}>
                           <span style={{ textTransform: "capitalize", fontWeight: 500 }}>🌿 {t.tipo}</span>
                           <span>
-                            <strong>{(t.kgs || 0).toLocaleString("es-AR")} kg</strong> ({t.fardos || 0} fardos)
-                            <span style={{ color: C.accent, marginLeft: "10px", fontWeight: "bold" }}>USD ${(t.usdTotal || 0).toLocaleString("es-AR")}</span>
+                            <strong>{fmtKgs(t.kgs)} kg</strong> ({fmtFardos(t.fardos)} fardos)
+                            <span style={{ color: C.accent, marginLeft: "10px", fontWeight: "bold" }}>${fmtMoney(t.usdTotal)}</span>
                           </span>
                         </div>
                       ))}
@@ -206,7 +232,11 @@ export default function ProducerAsociaciones() {
               )}
 
               <div style={{ display: "flex", gap: "10px" }}>
-                <button className="tabar-btn tabar-btn-ghost" style={{ fontSize: "12px" }}>
+                <button
+                  className="tabar-btn tabar-btn-ghost"
+                  style={{ fontSize: "12px" }}
+                  onClick={() => setDetailsAsoc(asoc)}
+                >
                   Ver detalles completos
                 </button>
                 {asoc.estado === "vendida" && (
@@ -289,6 +319,14 @@ export default function ProducerAsociaciones() {
           </div>
         </div>
       )}
+
+      {/* Modal: Ver detalles completos */}
+      {detailsAsoc && (
+        <DetailsModal
+          asoc={detailsAsoc}
+          onClose={() => setDetailsAsoc(null)}
+        />
+      )}
     </div>
   );
 }
@@ -316,16 +354,8 @@ function AportesDetalle({ asociacionId, productorUID }) {
   }, [asociacionId, productorUID]);
 
   const formatAporteFecha = (aporte) => {
-    const dateSource = aporte.creadoEn || aporte.timestamp || aporte.actualizadoEn;
-    if (!dateSource) return "Fecha no disponible";
-    
-    try {
-      const dateObj = dateSource.toDate ? dateSource.toDate() : new Date(dateSource);
-      if (isNaN(dateObj.getTime())) return "Fecha no disponible";
-      return dateObj.toLocaleDateString("es-AR");
-    } catch (err) {
-      return "Fecha no disponible";
-    }
+    const dateObj = parseDocDate(aporte);
+    return dateObj ? dateObj.toLocaleDateString("es-AR") : "Fecha no disponible";
   };
 
   return (
@@ -345,7 +375,7 @@ function AportesDetalle({ asociacionId, productorUID }) {
           >
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "#8B949E" }}>Aporte {idx + 1}</span>
-              <span style={{ fontWeight: 600 }}>{(aporte.totalKgs || 0).toLocaleString("es-AR")} kg en {aporte.cantidadFardos || 0} fardos</span>
+              <span style={{ fontWeight: 600 }}>{fmtKgs(getKgs(aporte))} kg en {fmtFardos(aporte.cantidadFardos)} fardos</span>
             </div>
             <p style={{ margin: "4px 0 0 0", color: "#8B949E", fontSize: "11px" }}>
               📅 {formatAporteFecha(aporte)}
@@ -356,3 +386,197 @@ function AportesDetalle({ asociacionId, productorUID }) {
     </div>
   );
 }
+
+/* =========================================================================
+   Modal: detalles completos de una asociación
+   - Trae todos los producer_tokenizations con associationId == asoc.id
+   - Resuelve nombre del productor desde asoc.productores (por UID)
+   - Muestra tabla de transacciones + sumatoria al pie
+   ========================================================================= */
+function DetailsModal({ asoc, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [transacciones, setTransacciones] = useState([]);
+
+  useEffect(() => {
+    const fetchTransacciones = async () => {
+      setLoading(true);
+      try {
+        const q = query(
+          collection(db, "producer_tokenizations"),
+          where("associationId", "==", asoc.id)
+        );
+        const snap = await getDocs(q);
+        const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Orden descendente por fecha
+        lista.sort((a, b) => {
+          const da = parseDocDate(a)?.getTime() || 0;
+          const db = parseDocDate(b)?.getTime() || 0;
+          return db - da;
+        });
+        setTransacciones(lista);
+      } catch (err) {
+        console.error("Error fetching transacciones:", err);
+      }
+      setLoading(false);
+    };
+    fetchTransacciones();
+  }, [asoc.id]);
+
+  // Mapa UID → nombre, usando los miembros ya conocidos de la asociación
+  const nombreDe = (uid) => {
+    if (!uid) return "Desconocido";
+    const p = asoc.productores?.find(p => p.uid === uid);
+    return p?.nombre || `${uid.substring(0, 8)}…`;
+  };
+
+  // Sumatoria
+  const totales = transacciones.reduce(
+    (acc, t) => {
+      acc.kgs += getKgs(t);
+      acc.fardos += Number(t.cantidadFardos || 0);
+      acc.monto += getMonto(t);
+      return acc;
+    },
+    { kgs: 0, fardos: 0, monto: 0 }
+  );
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)",
+        display: "flex", justifyContent: "center", alignItems: "center",
+        zIndex: 1000, padding: "20px"
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="tabar-card"
+        style={{
+          maxWidth: "880px", width: "100%", maxHeight: "85vh",
+          background: "#161B22", border: "1px solid #30363D",
+          borderRadius: "12px", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          padding: "24px", display: "flex", flexDirection: "column"
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          marginBottom: "16px", paddingBottom: "12px",
+          borderBottom: "1px solid rgba(255,255,255,0.1)"
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "18px", color: "#FFF" }}>
+              Detalles de "{asoc.nombre}"
+            </h3>
+            <p style={{ margin: "4px 0 0 0", color: "#8B949E", fontSize: "12px" }}>
+              {asoc.productores?.length || 0} miembros · estado: {(asoc.estado || "activa").toUpperCase()}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "transparent", border: "none", color: "#8B949E",
+              fontSize: "20px", cursor: "pointer", lineHeight: 1, padding: "4px 8px"
+            }}
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Tabla scrolleable */}
+        <div style={{ overflowY: "auto", flex: 1, minHeight: "100px" }}>
+          {loading ? (
+            <div style={{ padding: "30px", textAlign: "center", color: "#8B949E" }}>
+              Cargando transacciones...
+            </div>
+          ) : transacciones.length === 0 ? (
+            <div style={{ padding: "30px", textAlign: "center", color: "#8B949E" }}>
+              Esta asociación todavía no tiene transacciones registradas.
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ color: "#8B949E", textAlign: "left" }}>
+                  <th style={thStyle}>Fecha</th>
+                  <th style={thStyle}>Productor</th>
+                  <th style={thStyle}>Tipo</th>
+                  <th style={thStyle}>Calidad</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>Kgs</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>Fardos</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transacciones.map((t) => {
+                  const fecha = parseDocDate(t);
+                  return (
+                    <tr key={t.id} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={tdStyle}>{fecha ? fecha.toLocaleDateString("es-AR") : "—"}</td>
+                      <td style={tdStyle}>{nombreDe(t.productorOwner)}</td>
+                      <td style={{ ...tdStyle, textTransform: "capitalize" }}>{t.tipoTabaco || "—"}</td>
+                      <td style={tdStyle}>{t.calidad || "—"}</td>
+                      <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)" }}>{fmtKgs(getKgs(t))}</td>
+                      <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)" }}>{fmtFardos(t.cantidadFardos)}</td>
+                      <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)", color: C.accent, fontWeight: 600 }}>
+                        ${fmtMoney(getMonto(t))}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid rgba(63,185,80,0.4)", background: "rgba(63,185,80,0.05)" }}>
+                  <td style={{ ...tdStyle, fontWeight: 700, color: "#C9D1D9" }} colSpan={4}>
+                    TOTALES ({transacciones.length} transacciones)
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)", fontWeight: 700 }}>
+                    {fmtKgs(totales.kgs)}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)", fontWeight: 700 }}>
+                    {fmtFardos(totales.fardos)}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--tb-mono)", fontWeight: 700, color: C.accent }}>
+                    ${fmtMoney(totales.monto)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: "16px", paddingTop: "12px",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          display: "flex", justifyContent: "flex-end"
+        }}>
+          <button
+            className="tabar-btn tabar-btn-ghost"
+            onClick={onClose}
+            style={{ fontSize: "13px" }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const thStyle = {
+  padding: "8px 10px",
+  fontSize: "11px",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.5px"
+};
+
+const tdStyle = {
+  padding: "8px 10px",
+  color: "#C9D1D9"
+};
