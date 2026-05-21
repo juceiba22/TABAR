@@ -111,7 +111,7 @@ export default function ProducerAsociaciones() {
             <h1 style={{ margin: 0 }}>Asociaciones de Venta</h1>
           </div>
           <p style={{ margin: "6px 0 0 0", color: "#8B949E", fontSize: "13px" }}>
-            Visualizá y participá en las asociaciones fiduciarias de productores
+            Visualizá y participá en las asociaciones de productores para vender a mejor precio
           </p>
         </div>
         <button
