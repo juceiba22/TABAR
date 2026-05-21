@@ -8,6 +8,16 @@ import { Link } from "react-router-dom";
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
 
+// Formateadores
+const fmtKgs = (n) => Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Helper: lee los kgs de un documento de producer_tokenizations
+// Soporta el nombre nuevo (`totalKgs`, que es como lo guarda tokenizar.jsx)
+// y el viejo (`kgs`) por compatibilidad con documentos antiguos.
+const getKgs = (d) => Number(d?.totalKgs ?? d?.kgs ?? 0);
+
 export default function ProducerDashboard() {
   const { user } = useRole();
   const { balances } = useData();
@@ -49,10 +59,12 @@ export default function ProducerDashboard() {
 
         tokSnap.forEach(doc => {
           const d = doc.data();
-          totalKgs += d.kgs || 0;
+          const kgs = getKgs(d);
+
+          totalKgs += kgs;
           totalFardos += d.cantidadFardos || 0;
           totalUsd += d.usdTotal || 0;
-          
+
           if (d.tipoTabaco) {
             // Unir tipo y calidad si está disponible, ej: "Virginia B1F"
             const tipoDesc = d.calidad ? `${d.tipoTabaco} ${d.calidad}` : d.tipoTabaco;
@@ -63,7 +75,7 @@ export default function ProducerDashboard() {
             id: `tok-${doc.id}`,
             date: parseDate(doc),
             title: `Certificación`,
-            description: `Se certificaron ${d.cantidadFardos || 0} fardos (${d.kgs?.toLocaleString() || 0} Kgs) de ${d.tipoTabaco}.`,
+            description: `Se certificaron ${fmtFardos(d.cantidadFardos)} fardos (${fmtKgs(kgs)} Kgs) de ${d.tipoTabaco}.`,
             icon: "🌿",
             type: 'tok'
           });
@@ -72,13 +84,13 @@ export default function ProducerDashboard() {
         const assocRef = collection(db, "producer_associations");
         const qAssoc = query(assocRef, where("productoresUIDs", "array-contains", user.uid));
         const assocSnap = await getDocs(qAssoc);
-        
+
         let asociacionesCount = 0;
 
         assocSnap.forEach(doc => {
           const d = doc.data();
           asociacionesCount++;
-          
+
           interaccionesList.push({
             id: `assoc-${doc.id}`,
             date: parseDate(doc),
@@ -97,7 +109,7 @@ export default function ProducerDashboard() {
             item.title = `Certificación ${tokCounter++}`;
           }
         });
-        
+
         // Ordenar descendente final para mostrar la más reciente primero
         sortedAsc.sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -123,8 +135,8 @@ export default function ProducerDashboard() {
   const kgEquivalente = myBalance * 200;
   const financiamientoEstimado = myBalance * 85;
 
-  const tiposStr = stats.tiposTabaco.length > 0 
-    ? stats.tiposTabaco.join(", ") 
+  const tiposStr = stats.tiposTabaco.length > 0
+    ? stats.tiposTabaco.join(", ")
     : "Tabaco";
 
   return (
@@ -140,7 +152,7 @@ export default function ProducerDashboard() {
       {!loading && (
         <div style={{ background: "rgba(63,185,80,0.05)", border: "1px solid rgba(63,185,80,0.2)", borderRadius: "12px", padding: "24px", marginBottom: "32px", backdropFilter: "blur(10px)" }}>
           <p style={{ margin: 0, color: "#C9D1D9", fontSize: "16px", lineHeight: 1.6 }}>
-            Ud. ha certificado hasta el momento <strong style={{ color: C.accent }}>{stats.totalKgs.toLocaleString("es-AR")}</strong> kgs de tabaco del tipo <strong style={{ color: "#F0F6FC" }}>{tiposStr}</strong> en <strong style={{ color: "#F0F6FC" }}>{stats.totalFardos.toLocaleString("es-AR")}</strong> fardos. El valor de sus órdenes totales de venta ascienden a <strong style={{ color: C.accent }}>${stats.totalUsd.toLocaleString("es-AR")}</strong>. Usted ha hecho hasta ahora <strong style={{ color: "#F0F6FC" }}>{stats.asociacionesCount}</strong> asociaciones.
+            Ud. ha certificado hasta el momento <strong style={{ color: C.accent }}>{fmtKgs(stats.totalKgs)}</strong> kgs de tabaco del tipo <strong style={{ color: "#F0F6FC" }}>{tiposStr}</strong> en <strong style={{ color: "#F0F6FC" }}>{fmtFardos(stats.totalFardos)}</strong> fardos. El valor de sus órdenes totales de venta ascienden a <strong style={{ color: C.accent }}>${fmtMoney(stats.totalUsd)}</strong>. Usted ha hecho hasta ahora <strong style={{ color: "#F0F6FC" }}>{stats.asociacionesCount}</strong> asociaciones.
           </p>
         </div>
       )}
@@ -162,8 +174,8 @@ export default function ProducerDashboard() {
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {stats.interacciones.map((item, index) => (
-                <li key={item.id} style={{ 
-                  padding: "20px", 
+                <li key={item.id} style={{
+                  padding: "20px",
                   borderBottom: index !== stats.interacciones.length - 1 ? "1px solid #30363D" : "none",
                   display: "flex",
                   gap: "16px",
