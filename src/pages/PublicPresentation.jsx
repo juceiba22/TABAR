@@ -11,7 +11,7 @@ const DIAGNOSIS = [
     dim: "rgba(227,182,79,0.10)",
     border: "rgba(227,182,79,0.25)",
     title: "Asimetría de Mercado",
-    text: "Todos los años miles de productores enfrentan venden su tabaco a un mal precio. Las grandes tabacaleras y los acopiadores locales imponen  reglas de juego que perjudican al productor tabacalero.",
+    text: "Todos los años miles de productores venden su tabaco a un mal precio. Las grandes tabacaleras y las Cooperativas aliadas imponen  reglas de juego que perjudican al productor tabacalero.",
   },
   {
     icon: "⏳",
@@ -38,11 +38,11 @@ const MODULES = [
   },
   {
     role: "Módulo Acopiador",
-    desc: "Los acopiadores pueden solicitar financiamiento en el mercado financiero y/ cripto (por medio de Warrants) para afrontar la campaña o adelantos para las exportaciones",
+    desc: "Los acopiadores pueden solicitar financiamiento en el mercado financiero y/o cripto (por medio de Warrants) para afrontar la campaña o conseguir adelantos para las exportaciones",
   },
   {
     role: "Módulo Gestión Estatal (FET)",
-    desc: "Cuando un POA tiene firma y su asignación esta asegurada pero los tiempos se retrasan, los acopiadores pueden conseguir un adelante gracias a los Dealers.",
+    desc: "Cuando un POA tiene firma y su asignación esta asegurada pero los tiempos se retrasan, los acopiadores pueden conseguir un adelanto gracias a los Dealers.",
   }
 
 ];
