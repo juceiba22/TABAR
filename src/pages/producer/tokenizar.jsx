@@ -26,7 +26,7 @@ const OPCIONES_CALIDAD = [
 
 // Formateadores
 const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtUsd = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function ProducerTokenizar() {
   const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
@@ -55,8 +55,10 @@ export default function ProducerTokenizar() {
   // Cálculos de la orden de venta
   // - Kgs y tamaño del fardo se trabajan como enteros (input del usuario).
   // - La cantidad de fardos se mantiene con decimales (sin redondeo).
-  // - El precio de venta es exclusivamente el cargado por el usuario (USD por kg).
-  // - El total en USD = kgs totales * precio de venta por kg.
+  // - El precio de venta es exclusivamente el cargado por el usuario (pesos por kg).
+  // - El total en pesos = kgs totales * precio de venta por kg.
+  // NOTA: el campo `usdTotal` se conserva como nombre interno por compatibilidad
+  // con los documentos previos en Firestore, pero representa pesos (ARS).
   const numTotalKgs = parseInt(totalKgs) || 0;
   const numTamanoFardo = parseInt(tamanoFardo) || 0;
   const cantidadFardos = numTamanoFardo > 0 ? numTotalKgs / numTamanoFardo : 0;
@@ -163,7 +165,7 @@ export default function ProducerTokenizar() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Precio de Venta (USD/kg): $${fmtUsd(precioFinal)}`, 20, 137);
+    doc.text(`Precio de Venta ($/kg): $${fmtMoney(precioFinal)}`, 20, 137);
 
     let yPos = 150;
 
@@ -175,7 +177,7 @@ export default function ProducerTokenizar() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Monto Total: USD ${fmtUsd(usdTotal)}`, 20, yPos);
+    doc.text(`Monto Total: $${fmtMoney(usdTotal)}`, 20, yPos);
     yPos += 7;
     doc.text(`Activos TABAR Generados: ${fmtFardos(cantidadFardos)}`, 20, yPos);
     yPos += 11;
@@ -382,7 +384,7 @@ export default function ProducerTokenizar() {
         {/* Precio de venta (obligatorio) */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
-            Precio de venta (USD/kg) *
+            Precio de venta ($/kg) *
           </label>
           <input
             type="number"
@@ -395,7 +397,7 @@ export default function ProducerTokenizar() {
             disabled={loading || showConfirm}
           />
           <p style={{ fontSize: "11px", color: "#484F58", marginTop: "6px" }}>
-            Precio en dólares por kilogramo que querés cobrar
+            Precio en pesos por kilogramo que querés cobrar
           </p>
         </div>
 
@@ -517,13 +519,13 @@ export default function ProducerTokenizar() {
               <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>{fmtFardos(cantidadFardos)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Precio de Venta (USD/kg)</span>
-              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>${fmtUsd(precioFinal)}</span>
+              <span style={{ color: "#8B949E" }}>Precio de Venta ($/kg)</span>
+              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>${fmtMoney(precioFinal)}</span>
             </div>
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", margin: "12px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Total orden de venta (USD)</span>
-              <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>USD {fmtUsd(usdTotal)}</span>
+              <span style={{ color: "#8B949E" }}>Total orden de venta ($)</span>
+              <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>${fmtMoney(usdTotal)}</span>
             </div>
           </div>
         )}
@@ -553,7 +555,7 @@ export default function ProducerTokenizar() {
           }}>
             <h4 style={{ color: "#E3B64F", margin: "0 0 10px 0" }}>Confirmar Orden de Venta</h4>
             <p style={{ fontSize: "12px", color: "#8B949E", marginBottom: "20px" }}>
-              Estás por registrar una orden de venta de {fmtFardos(cantidadFardos)} fardos ({numTotalKgs} kg) de {tipoTabaco === "virginia" ? "Virginia" : tipoTabaco === "burley" ? "Burley" : "Criollo"} a USD {fmtUsd(precioFinal)}/kg.
+              Estás por registrar una orden de venta de {fmtFardos(cantidadFardos)} fardos ({numTotalKgs} kg) de {tipoTabaco === "virginia" ? "Virginia" : tipoTabaco === "burley" ? "Burley" : "Criollo"} a ${fmtMoney(precioFinal)}/kg.
               <br />
               Esta acción quedará registrada en el sistema y generará un PDF con el código de la orden.
             </p>
