@@ -19,6 +19,7 @@ import LandingRole from "./pages/LandingRole";
 import CampaignPage from "./pages/campaign/index";
 import AdminDashboard from "./pages/admin/dashboard";
 import AdminControl from "./pages/admin/control";
+import AdminLogin from "./pages/admin/AdminLogin";
 import IndustryDashboard from "./pages/industry/dashboard";
 import IndustryBuy from "./pages/industry/buy";
 import IndustryPosition from "./pages/industry/position";
@@ -119,6 +120,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<SmartRoot />} />
         <Route path="/login" element={<SmartLogin />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         {/* Cualquier otra ruta sin auth → landing pública */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -133,6 +135,7 @@ function AppRoutes() {
       {/* ── Rutas públicas accesibles también estando auth ── */}
       <Route path="/" element={<Navigate to={roleHome} replace />} />
       <Route path="/login" element={<Navigate to={roleHome} replace />} />
+      <Route path="/admin/login" element={<Navigate to={roleHome} replace />} />
 
       {/* ── Rutas protegidas dentro del AppLayout ── */}
       <Route element={<AppLayout />}>

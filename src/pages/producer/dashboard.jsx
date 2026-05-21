@@ -37,7 +37,7 @@ export default function ProducerDashboard() {
         <div className="tabar-grid-3">
           <ActionCard to="/producer/tokenizar" glyph="▣" title="Certificar Tabaco" desc="Certificá tu producción física para recibir financiamiento digital" color={C.accent} bg={C.dim} />
           <ActionCard to="/producer/asociaciones" glyph="👥" title="Mis Asociaciones" desc="Formá parte de grupos de venta para consolidar stock y vender en bloque" color={C.accent} bg={C.dim} />
-          <ActionCard to="/campaign" glyph="◈" title="Estado de Campaña" desc="Consultá el progreso del fondo tabacalero y disponibilidad" color={C.accent} bg={C.dim} />
+
         </div>
       </div>
     </div>

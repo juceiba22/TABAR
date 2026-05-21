@@ -36,7 +36,6 @@ const ROLES_INFO = [
   { id: "industry", title: "Acopiador", subtitle: "Entidad/Acopio" },
   { id: "state", title: "Estado", subtitle: "Ente Nacional / FET" },
   { id: "dealer", title: "Dealer", subtitle: "Revendedor / Trader" },
-  { id: "admin", title: "Administración", subtitle: "Fideicomiso / Admin" },
 ];
 
 /* ─── Tipos de documento ────────────────────────────────────────────────── */
@@ -252,6 +251,14 @@ export default function LandingRole() {
           window.location.reload();
           return;
         }
+
+        if (userSnap.data().role === "admin") {
+          await signOut(auth);
+          setError("Acceso denegado. Utilice el portal de administración en /admin/login");
+          setLoading(false);
+          return;
+        }
+
         // RoleContext (onAuthStateChanged) se encarga del resto
 
         /* ── REGISTER ── */

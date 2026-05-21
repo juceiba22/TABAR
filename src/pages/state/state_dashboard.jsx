@@ -39,7 +39,7 @@ export default function StateDashboard() {
         <div className="tabar-grid-3">
           <ActionCard to="/state/invest"  glyph="▣" title="Invertir vía FET"       desc="Participar en la campaña TABAR con fondos del Fondo Especial del Tabaco" color={C.accent} bg={C.dim} />
           <ActionCard to="/state/returns" glyph="△" title="Información del FET"        desc="Novedades del Fondo Especial del Tabaco"                color={C.accent} bg={C.dim} />
-          <ActionCard to="/campaign"      glyph="◈" title="Estado de campaña"       desc="Progreso general del financiamiento tabacalero"                          color={C.accent} bg={C.dim} />
+
         </div>
       </div>
     </div>

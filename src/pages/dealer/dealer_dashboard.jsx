@@ -36,7 +36,7 @@ export default function DealerDashboard() {
         <div className="tabar-grid-3">
           <ActionCard to="/dealer/trade"   glyph="▣" title="Operar TABAR"       desc="Comprar y vender fardos digitales en el mercado secundario"   color={C.accent} bg={C.dim} />
           <ActionCard to="/dealer/markets" glyph="◈" title="Mercados"            desc="Precios, spreads y oportunidades de arbitraje"                color={C.accent} bg={C.dim} />
-          <ActionCard to="/campaign"       glyph="◉" title="Estado de campaña"  desc="Progreso del financiamiento y disponibilidad"                 color={C.accent} bg={C.dim} />
+
         </div>
       </div>
     </div>

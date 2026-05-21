@@ -20,26 +20,22 @@ const NAV_LINKS = {
     { path: "/industry", label: "Mi Dashboard" },
     { path: "/industry/buy", label: "Orden de Compra" },
     { path: "/industry/position", label: "Mi Posición" },
-    { path: "/industry/financing", label: "Solicitar Financiamiento" },
-    { path: "/campaign", label: "Estado Campaña" },
+    { path: "/industry/financing", label: "Solicitar Financiamiento" }
   ],
   state: [
     { path: "/state", label: "Mi Dashboard" },
     { path: "/state/invest", label: "Cargar POAs" },
-    { path: "/state/returns", label: "FET" },
-    { path: "/campaign", label: "Estado Campaña" },
+    { path: "/state/returns", label: "FET" }
   ],
   dealer: [
     { path: "/dealer", label: "Mi Dashboard" },
     { path: "/dealer/trade", label: "Operar" },
-    { path: "/dealer/markets", label: "Mercados" },
-    { path: "/campaign", label: "Estado Campaña" },
+    { path: "/dealer/markets", label: "Mercados" }
   ],
   producer: [
     { path: "/producer", label: "Mi Dashboard Finca" },
     { path: "/producer/tokenizar", label: "Certificar Tabaco" },
-    { path: "/producer/asociaciones", label: "Mis Asociaciones" },
-    { path: "/campaign", label: "Estado Campaña" },
+    { path: "/producer/asociaciones", label: "Mis Asociaciones" }
   ],
 };
 

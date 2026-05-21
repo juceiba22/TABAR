@@ -39,7 +39,7 @@ export default function IndustryDashboard() {
         <div className="tabar-grid-3">
           <ActionCard to="/industry/buy"      glyph="▣" title="Comprar producción anticipada" desc="Adquirí fardos digitales TABAR con descuento sobre precio de mercado" color={C.accent} bg={C.dim} />
           <ActionCard to="/industry/position" glyph="◇" title="Ver mi posición completa"       desc="Detalle de adquisiciones, fechas y equivalentes en producción"        color={C.accent} bg={C.dim} />
-          <ActionCard to="/campaign"          glyph="◈" title="Estado de la campaña"           desc="Progreso general del financiamiento y disponibilidad de fardos"       color={C.accent} bg={C.dim} />
+
         </div>
       </div>
     </div>
