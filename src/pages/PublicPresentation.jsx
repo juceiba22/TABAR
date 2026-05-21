@@ -44,10 +44,7 @@ const MODULES = [
     role: "Módulo Gestión Estatal (FET)",
     desc: "Cuando un POA tiene firma y su asignación esta asegurada pero los tiempos se retrasan, los acopiadores pueden conseguir un adelante gracias a los Dealers.",
   }
-  {
-   role: "Usuario 'dealer'",
-    desc: "Los inversores externos tienen la posibilidad de generar rentabilidad intermediando con cada uno de los otros tres usuarios adelantando dinero o comprando y vendiendo. ",
-  }
+
 ];
 
 const ROADMAP = [
