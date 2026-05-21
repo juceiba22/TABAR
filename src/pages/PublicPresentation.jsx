@@ -11,7 +11,7 @@ const DIAGNOSIS = [
     dim: "rgba(227,182,79,0.10)",
     border: "rgba(227,182,79,0.25)",
     title: "Asimetría de Mercado",
-    text: "Base productiva altamente atomizada (16.000-18.000 productores) frente a un eslabón de acopio e industria manufacturera altamente concentrado que impone las reglas de juego y determina los precios sin competencia real.",
+    text: "Todos los años miles de productores enfrentan venden su tabaco a un mal precio. Las grandes tabacaleras y los acopiadores locales imponen  reglas de juego que perjudican al productor tabacalero.",
   },
   {
     icon: "⏳",
@@ -19,7 +19,7 @@ const DIAGNOSIS = [
     dim: "rgba(240,136,62,0.10)",
     border: "rgba(240,136,62,0.25)",
     title: "Retrasos y reducción sistemática del FET",
-    text: "Los Planes Operativos Anuales (POA) del Fondo Especial del Tabaco sufren retrasos crónicos y barreras burocráticas que asfixian económicamente al minifundista, licuando su rentabilidad por inflación y devaluación.",
+    text: "Los Planes Operativos Anuales (POA) del Fondo Especial del Tabaco sufren retrasos crónicos y barreras burocráticas que asfixian económicamente al productor, licuando su rentabilidad por inflación y devaluación.",
   },
   {
     icon: "⚖",
@@ -34,15 +34,18 @@ const DIAGNOSIS = [
 const MODULES = [
   {
     role: "Módulo Productor",
-    desc: "Tokenización de fardos físicos en unidades digitales líquidas para acceder a financiamiento adelantado sin intermediación política.",
+    desc: "Posibilidad inmediata de crear asociaciones y cooperativas digitales. Los tabacaleros pueden asociarse y vender a los acopiadores en bloque pudiendo así mejorar su precio de venta",
   },
   {
-    role: "Módulo Industria / Acopiador",
-    desc: "Emisión de órdenes de compra estandarizadas y gestión de garantías físicas (Warrants) con trazabilidad absoluta.",
+    role: "Módulo Acopiador",
+    desc: "Los acopiadores pueden solicitar financiamiento en el mercado financiero y/ cripto (por medio de Warrants) para afrontar la campaña o adelantos para las exportaciones",
   },
   {
     role: "Módulo Gestión Estatal (FET)",
-    desc: "Digitalización y auditoría en tiempo real de los Planes Operativos Anuales para acelerar la transferencia directa de recursos.",
+    desc: "Cuando un POA tiene firma y su asignación esta asegurada pero los tiempos se retrasan, los acopiadores pueden conseguir un adelante gracias a los Dealers.",
+  }
+   role: "Usuario 'dealer'",
+    desc: "Los inversores externos tienen la posibilidad de generar rentabilidad intermediando con cada uno de los otros tres usuarios adelantando dinero o comprando y vendiendo. ",
   }
 ];
 
@@ -101,12 +104,12 @@ export default function PublicPresentation() {
       {/* ══════════ HERO ══════════ */}
       <section className="pp-hero">
         <div className="pp-hero-inner">
-          <span className="pp-hero-tag"> PLATAFORMA PARA EL MERCADO ARGENTINO DE TABACO  </span>
+          <span className="pp-hero-tag"> MERCADO DIGITAL DE TABACO ARGENTINO  </span>
           <h1 className="pp-hero-title">
             La solución a los problemas del sector tabacalero.
           </h1>
           <p className="pp-hero-sub">
-            La caída sistemática de la producción y del FET demuestran que el sistema tradicional está agotado. Por eso creamos TABAR, la plataforma que va a revolucionar el mercado del tabaco.
+            La caída sistemática de la producción y del FET demuestran que el sistema tradicional está agotado. Por eso creamos TABAR, una plataforma para los tabacaleros de ley.
           </p>
 
           <div className="pp-hero-actions">
