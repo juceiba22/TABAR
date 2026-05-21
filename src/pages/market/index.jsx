@@ -21,36 +21,24 @@ export default function MarketPage() {
   const { role, user } = useRole();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
 
   const handleOperar = async (item) => {
     if (!user?.uid) return;
-    setSelectedItem(item);
-    setShowConfirm(true);
-  };
-
-  const confirmOperar = async () => {
-    if (!selectedItem || !user?.uid) return;
     try {
       const operationRef = doc(db, "dealer_operations", `${Date.now()}_${user.uid}`);
       await setDoc(operationRef, {
         dealerId: user.uid,
-        targetId: selectedItem.rawId || selectedItem.id,
-        type: selectedItem.type,
-        title: selectedItem.title,
-        description: selectedItem.description,
-        roleOrigin: selectedItem.roleLabel,
-        color: selectedItem.color,
-        icon: selectedItem.icon,
-        rawDoc: selectedItem.rawDoc || {},
+        targetId: item.rawId || item.id,
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        roleOrigin: item.roleLabel,
+        color: item.color,
+        icon: item.icon,
+        rawDoc: item.rawDoc || {},
         creadoEn: serverTimestamp()
       });
-      setSuccessMessage("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.");
-        setShowSuccess(true);
-        setShowConfirm(false);
+      alert("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.");
     } catch (err) {
       console.error("Error al marcar operación:", err);
       alert("Error al marcar operación.");
@@ -73,10 +61,14 @@ export default function MarketPage() {
 
         const allItems = [];
 
-        // Función auxiliar para extraer de forma segura el Timestamp o Date de un documento
+        // Función auxiliar para extraer de forma segura el Timestamp o Date de un documento.
+        // Cubre todos los nombres de campo de fecha usados en la app:
+        //   - creadoEn / createdAt / timestamp: Firestore Timestamp (tienen .toDate())
+        //   - fecha / fechaTransferencia / fechaCreacion: strings/dates planos
         const parseDate = (doc) => {
           const data = doc.data();
           if (data.creadoEn?.toDate) return data.creadoEn.toDate();
+          if (data.createdAt?.toDate) return data.createdAt.toDate();
           if (data.timestamp?.toDate) return data.timestamp.toDate();
           if (data.fecha) return new Date(data.fecha);
           if (data.fechaTransferencia) return new Date(data.fechaTransferencia);
@@ -186,14 +178,38 @@ export default function MarketPage() {
         });
 
         // 6. Novedades FET (State)
+        // state/returns.jsx guarda el discriminador como `tipo` (no `tipoA`) con valores "A", "B" o "C":
+        //   - "A" Precio FET:        { precioFet, monto, fecha, comentarios }
+        //   - "B" Novedades Campaña: { informacion, fileUrl }
+        //   - "C" Transferencia:     { provincia, nroResolucion, anio, monto, informacionAdicional }
+        // Se mantiene compatibilidad con docs viejos (tipoA, comentariosA, comentariosB, montoC).
         nfSnap.forEach(doc => {
           const d = doc.data();
-          const tipoNovedad = d.tipoA === "A" ? `Precio FET Actualizado` : d.tipoA === "B" ? `Novedades Campaña FET` : `Transferencia a Provincia`;
-          const desc = d.tipoA === "A"
-            ? `${d.tipoTabaco}: $${fmtMoney(d.monto)} | Comentarios: ${d.comentariosA}`
-            : d.tipoA === "B"
-            ? d.comentariosB
-            : `Resolución: ${d.nroResolucion} | Año: ${d.anio} | Provincia: ${d.provincia} | Monto: $${fmtMoney(d.montoC)}`;
+          const tipo = d.tipo ?? d.tipoA;
+          // Monto: en tipo C el escritor usa `monto`; docs viejos pueden tener `montoC`.
+          const montoTransferencia = Number(d.monto ?? d.montoC ?? 0);
+          // Comentarios A
+          const comentariosTipoA = d.comentarios ?? d.comentariosA ?? "";
+          // Texto del cuerpo en tipo B
+          const textoTipoB = d.informacion ?? d.comentariosB ?? "Novedad sin detalle";
+
+          const tipoNovedad =
+            tipo === "A" ? "Precio FET Actualizado" :
+            tipo === "B" ? "Novedades Campaña FET" :
+            tipo === "C" ? "Transferencia a Provincia" :
+            "Novedad FET";
+
+          let desc;
+          if (tipo === "A") {
+            const precio = d.precioFet ? `Precio FET: ${d.precioFet}` : "Precio FET";
+            desc = `${precio} | Monto equivalente: $${fmtMoney(d.monto)}${comentariosTipoA ? ` | Comentarios: ${comentariosTipoA}` : ""}`;
+          } else if (tipo === "B") {
+            desc = textoTipoB;
+          } else if (tipo === "C") {
+            desc = `Resolución: ${d.nroResolucion ?? "—"} | Año: ${d.anio ?? "—"} | Provincia: ${d.provincia ?? "—"} | Monto: $${fmtMoney(montoTransferencia)}`;
+          } else {
+            desc = "Novedad sin tipo identificado";
+          }
 
           allItems.push({
             id: `fet-${doc.id}`,
@@ -285,30 +301,6 @@ export default function MarketPage() {
           ))
         )}
       </div>
-        {/* Confirmation Modal */}
-        {showConfirm && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2>Confirmar operación</h2>
-              <p>¿Desea marcar esta operación como "Operar"?</p>
-              <div className="modal-actions">
-                <button className="btn-confirm" onClick={confirmOperar}>Confirmar</button>
-                <button className="btn-cancel" onClick={() => setShowConfirm(false)}>Cancelar</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showSuccess && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2>Éxito</h2>
-              <p>{successMessage}</p>
-              <div className="modal-actions">
-                <button className="btn-close" onClick={() => setShowSuccess(false)}>Cerrar</button>
-              </div>
-            </div>
-          </div>
-        )}
     </div>
   );
 }
