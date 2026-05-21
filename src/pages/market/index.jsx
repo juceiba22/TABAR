@@ -133,7 +133,7 @@ export default function MarketPage() {
             date: parseDate(doc),
             role: "producer",
             roleLabel: "Productor",
-            type: "Certificación de Fardos",
+            type: "Orden de Venta",
             title: `Certificados ${fmtFardos(d.cantidadFardos)} Fardos (TABAR)`,
             description: `Tabaco ${d.tipoTabaco} | Calidad: ${d.calidad} | Kgs Totales: ${fmtKgs(getKgs(d))}`,
             icon: "🌿",

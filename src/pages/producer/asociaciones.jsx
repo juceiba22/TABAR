@@ -119,7 +119,7 @@ export default function ProducerAsociaciones() {
           onClick={() => setShowCreateModal(true)}
           style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: "8px", height: "fit-content" }}
         >
-          <span>➕</span> Crear Asociación
+          <span>➕</span> Crear Cooperativa Digital
         </button>
       </div>
 
@@ -276,7 +276,7 @@ export default function ProducerAsociaciones() {
             padding: "24px",
             animation: "fadeIn 0.2s ease-out"
           }}>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#FFF" }}>Crear Nueva Asociación</h3>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", color: "#FFF" }}>Crear una cooperativa digital</h3>
             <p style={{ color: "#8B949E", fontSize: "12px", margin: "0 0 20px 0", lineHeight: "1.5" }}>
               Creá un grupo de venta colectiva. Otros productores del sistema podrán seleccionar esta asociación al certificar sus fardos para consolidar stock y vender en bloque.
             </p>
