@@ -26,7 +26,7 @@ const NAV_LINKS = {
   state: [
     { path: "/state", label: "Mi Dashboard" },
     { path: "/state/invest", label: "Cargar POAs" },
-    { path: "/state/returns", label: "Rendimientos" },
+    { path: "/state/returns", label: "FET" },
     { path: "/campaign", label: "Estado Campaña" },
   ],
   dealer: [

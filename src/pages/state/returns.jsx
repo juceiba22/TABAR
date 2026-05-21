@@ -1,100 +1,220 @@
+import { useState } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
-import { useData } from "../../modules/roles/DataContext";
+import { db, storage } from "../../config/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const C = { accent: "#F0883E", dim: "rgba(240,136,62,0.10)" };
 
 export default function StateReturns() {
   const { user } = useRole();
-  const { balances, campana } = useData();
-  const myBalance = balances?.state || 0;
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
-  const TASA = 8.5;
-  const rendimiento = (myBalance * TASA) / 100;
-  const totalConRendimiento = myBalance + rendimiento;
-  const kgEquivOriginal = myBalance * 200;
-  const kgEquivTotal = totalConRendimiento * 200;
+  // Form State
+  const [novedad, setNovedad] = useState("");
   
-  const diasTotales = campana?.diasTotales || 180;
-  let diasTranscurridos = 0;
-  if (campana?.inicio) {
-    const inicioDate = new Date(campana.inicio);
-    const msDiff = Date.now() - inicioDate.getTime();
-    diasTranscurridos = Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
-    if (diasTranscurridos > diasTotales) diasTranscurridos = diasTotales;
-  }
-  
-  const rendDevengado = diasTotales > 0 ? (rendimiento * diasTranscurridos) / diasTotales : 0;
+  // Option A State
+  const [precioFet, setPrecioFet] = useState("");
+  const [montoA, setMontoA] = useState("");
+  const [fechaA, setFechaA] = useState("");
+  const [comentariosA, setComentariosA] = useState("");
+
+  // Option B State
+  const [infoB, setInfoB] = useState("");
+  const [fileB, setFileB] = useState(null);
+
+  // Option C State
+  const [provincia, setProvincia] = useState("");
+  const [nroResolucion, setNroResolucion] = useState("");
+  const [anio, setAnio] = useState(new Date().getFullYear());
+  const [montoC, setMontoC] = useState("");
+  const [infoAdicionalC, setInfoAdicionalC] = useState("");
+
+  const resetForm = () => {
+    setNovedad("");
+    setPrecioFet(""); setMontoA(""); setFechaA(""); setComentariosA("");
+    setInfoB(""); setFileB(null);
+    setProvincia(""); setNroResolucion(""); setAnio(new Date().getFullYear()); setMontoC(""); setInfoAdicionalC("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      let data = {
+        tipo: novedad,
+        createdAt: serverTimestamp(),
+        userId: user?.uid || "unknown",
+      };
+
+      if (novedad === "A") {
+        data = {
+          ...data,
+          precioFet,
+          monto: Number(montoA),
+          fecha: fechaA,
+          comentarios: comentariosA,
+        };
+      } else if (novedad === "B") {
+        let fileUrl = null;
+        if (fileB) {
+          const fileRef = ref(storage, `novedades_fet/${Date.now()}_${fileB.name}`);
+          const snapshot = await uploadBytes(fileRef, fileB);
+          fileUrl = await getDownloadURL(snapshot.ref);
+        }
+        data = {
+          ...data,
+          informacion: infoB,
+          fileUrl,
+        };
+      } else if (novedad === "C") {
+        data = {
+          ...data,
+          provincia,
+          nroResolucion: Number(nroResolucion),
+          anio: Number(anio),
+          monto: Number(montoC),
+          informacionAdicional: infoAdicionalC,
+        };
+      } else {
+        throw new Error("Debe seleccionar un tipo de novedad válido.");
+      }
+
+      await addDoc(collection(db, "novedades_fet"), data);
+      
+      setSuccess(true);
+      resetForm();
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setError("Hubo un error al guardar la información. " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
           <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>△</div>
-          <h1>Mis Rendimientos</h1>
+          <h1>Información del FET</h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Proyección y detalle de rendimiento sobre tu inversión FET</p>
+        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Novedades del Fondo Especial del Tabaco</p>
       </div>
 
-      <div className="tabar-summary-grid">
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-label">Inversión original</div>
-          <div className="tabar-metric-value" style={{ color: C.accent }}>{myBalance.toLocaleString("es-AR")}</div>
-          <div className="tabar-metric-unit">TABAR</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-label">Rendimiento estimado</div>
-          <div className="tabar-metric-value" style={{ color: "#3FB950" }}>+{rendimiento.toFixed(1)}</div>
-          <div className="tabar-metric-unit">TABAR ({TASA}% anual)</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-label">Total al cierre</div>
-          <div className="tabar-metric-value" style={{ color: "#E3B64F" }}>{totalConRendimiento.toFixed(1)}</div>
-          <div className="tabar-metric-unit">TABAR proyectado</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-label">Devengado a hoy</div>
-          <div className="tabar-metric-value" style={{ color: "#58A6FF" }}>+{rendDevengado.toFixed(2)}</div>
-          <div className="tabar-metric-unit">TABAR ({diasTranscurridos}/{diasTotales} días)</div>
-        </div>
-      </div>
+      <div className="tabar-card" style={{ maxWidth: "600px" }}>
+        {success && (
+          <div style={{ padding: "12px", background: "rgba(63,185,80,0.1)", color: "#3FB950", borderRadius: "6px", marginBottom: "16px", fontSize: "14px" }}>
+            ¡Información guardada exitosamente!
+          </div>
+        )}
+        {error && (
+          <div style={{ padding: "12px", background: "rgba(248,81,73,0.1)", color: "#F85149", borderRadius: "6px", marginBottom: "16px", fontSize: "14px" }}>
+            {error}
+          </div>
+        )}
 
-      <div className="tabar-card" style={{ marginBottom: "16px" }}>
-        <h3 className="tabar-card-title">Progreso de campaña</h3>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "6px" }}>
-          <span style={{ color: "#484F58" }}>Día {diasTranscurridos} de {diasTotales}</span>
-          <span style={{ color: C.accent }}>{((diasTranscurridos / diasTotales) * 100).toFixed(1)}%</span>
-        </div>
-        <div style={{ background: "#1C2330", borderRadius: "4px", height: "6px", overflow: "hidden" }}>
-          <div style={{ background: C.accent, height: "100%", borderRadius: "4px", width: `${(diasTranscurridos / diasTotales) * 100}%`, transition: "width 0.3s" }} />
-        </div>
-      </div>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="tabar-form-group">
+            <label className="tabar-label">Nueva Novedad</label>
+            <select className="tabar-input" value={novedad} onChange={(e) => setNovedad(e.target.value)} required>
+              <option value="">Seleccione una opción...</option>
+              <option value="A">A) Precio FET</option>
+              <option value="B">B) Novedades Campaña 2026/2027</option>
+              <option value="C">C) Transferencias a Provincias</option>
+            </select>
+          </div>
 
-      <div className="tabar-card">
-        <h3 className="tabar-card-title">Desglose de rendimiento</h3>
-        <div className="tabar-table-wrap">
-          <table className="tabar-table">
-            <thead><tr>
-              <th>Concepto</th><th>TABAR</th><th>Equivalente</th>
-            </tr></thead>
-            <tbody>
-              <tr>
-                <td>Inversión original</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#F0F6FC" }}>{myBalance.toLocaleString("es-AR")}</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#8B949E" }}>{(kgEquivOriginal / 1000).toFixed(1)} ton</td>
-              </tr>
-              <tr>
-                <td>Rendimiento ({TASA}%)</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#3FB950" }}>+{rendimiento.toFixed(1)}</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#3FB950" }}>+{((rendimiento * 200) / 1000).toFixed(2)} ton</td>
-              </tr>
-              <tr>
-                <td style={{ color: "#E3B64F", fontWeight: 500 }}>Total proyectado</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#E3B64F", fontWeight: 600 }}>{totalConRendimiento.toFixed(1)}</td>
-                <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: "#E3B64F" }}>{(kgEquivTotal / 1000).toFixed(2)} ton</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          {/* OPCIÓN A */}
+          {novedad === "A" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid var(--tb-border)" }}>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Informar precio FET</label>
+                <select className="tabar-input" value={precioFet} onChange={(e) => setPrecioFet(e.target.value)} required>
+                  <option value="">Seleccione tipo...</option>
+                  <option value="virginia">1.a) Precio FET virginia</option>
+                  <option value="burley">1.b) Precio FET Burley</option>
+                  <option value="criollo">1.c) Precio FET Criollo</option>
+                </select>
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Monto ($)</label>
+                <input type="number" step="0.01" className="tabar-input" value={montoA} onChange={(e) => setMontoA(e.target.value)} placeholder="0.00" required />
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Fecha de la transferencia</label>
+                <input type="date" className="tabar-input" value={fechaA} onChange={(e) => setFechaA(e.target.value)} required />
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Comentarios adicionales</label>
+                <textarea className="tabar-input" value={comentariosA} onChange={(e) => setComentariosA(e.target.value)} rows={3} placeholder="Ingrese comentarios (opcional)"></textarea>
+              </div>
+            </div>
+          )}
+
+          {/* OPCIÓN B */}
+          {novedad === "B" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid var(--tb-border)" }}>
+              <div className="tabar-form-group">
+                <label className="tabar-label">¿Qué querés informar?</label>
+                <textarea className="tabar-input" value={infoB} onChange={(e) => setInfoB(e.target.value)} rows={5} maxLength={2500} placeholder="Escriba aquí (máx 2500 caracteres)..." required></textarea>
+                <div style={{ fontSize: "11px", color: "#8B949E", textAlign: "right", marginTop: "4px" }}>
+                  {infoB.length}/2500
+                </div>
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Cargar imagen o video (Opcional)</label>
+                <input type="file" className="tabar-input" accept="image/*,video/*" onChange={(e) => setFileB(e.target.files[0])} style={{ padding: "8px" }} />
+              </div>
+            </div>
+          )}
+
+          {/* OPCIÓN C */}
+          {novedad === "C" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid var(--tb-border)" }}>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Informar transferencia a Provincia</label>
+                <select className="tabar-input" value={provincia} onChange={(e) => setProvincia(e.target.value)} required>
+                  <option value="">Seleccione provincia...</option>
+                  <option value="Salta">Salta</option>
+                  <option value="Jujuy">Jujuy</option>
+                  <option value="Misiones">Misiones</option>
+                  <option value="Tucuman">Tucumán</option>
+                  <option value="Corrientes">Corrientes</option>
+                  <option value="Catamarca">Catamarca</option>
+                  <option value="Chaco">Chaco</option>
+                </select>
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Nro Resolución</label>
+                <input type="number" className="tabar-input" value={nroResolucion} onChange={(e) => setNroResolucion(e.target.value)} required />
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Año</label>
+                <input type="number" className="tabar-input" value={anio} onChange={(e) => setAnio(e.target.value)} required />
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Monto ($)</label>
+                <input type="number" step="0.01" className="tabar-input" value={montoC} onChange={(e) => setMontoC(e.target.value)} placeholder="0.00" required />
+              </div>
+              <div className="tabar-form-group">
+                <label className="tabar-label">Información adicional</label>
+                <textarea className="tabar-input" value={infoAdicionalC} onChange={(e) => setInfoAdicionalC(e.target.value)} rows={3}></textarea>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: "8px" }}>
+            <button type="submit" disabled={!novedad || loading} className="tabar-btn tabar-btn-primary" style={{ width: "100%", opacity: (!novedad || loading) ? 0.6 : 1, cursor: (!novedad || loading) ? "not-allowed" : "pointer" }}>
+              {loading ? "Guardando..." : "Guardar Información"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -87,6 +87,13 @@ service cloud.firestore {
       allow delete: if request.auth.uid == resource.data.creadoPor;
     }
 
+    // Novedades FET (State)
+    match /novedades_fet/{novedadId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
