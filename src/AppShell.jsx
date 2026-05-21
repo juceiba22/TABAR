@@ -17,6 +17,7 @@ import AppLayout from "./modules/layout/AppLayout";
 import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
 import CampaignPage from "./pages/campaign/index";
+import MarketPage from "./pages/market/index";
 import AdminDashboard from "./pages/admin/dashboard";
 import AdminControl from "./pages/admin/control";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -141,6 +142,14 @@ function AppRoutes() {
       <Route element={<AppLayout />}>
         {/* Ruta compartida */}
         <Route path="/campaign" element={<CampaignPage />} />
+        <Route 
+          path="/market" 
+          element={
+            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+              <MarketPage />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* Admin */}
         <Route

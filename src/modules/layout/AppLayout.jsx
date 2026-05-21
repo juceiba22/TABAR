@@ -15,27 +15,32 @@ const NAV_LINKS = {
     { path: "/admin", label: "Panel Principal" },
     { path: "/admin/control", label: "Control del Sistema" },
     { path: "/campaign", label: "Campaña" },
+    { path: "/market", label: "Mercado Tabacalero" }
   ],
   industry: [
     { path: "/industry", label: "Mi Dashboard" },
     { path: "/industry/buy", label: "Orden de Compra" },
     { path: "/industry/position", label: "Mi Posición" },
-    { path: "/industry/financing", label: "Solicitar Financiamiento" }
+    { path: "/industry/financing", label: "Solicitar Financiamiento" },
+    { path: "/market", label: "Mercado Tabacalero" }
   ],
   state: [
     { path: "/state", label: "Mi Dashboard" },
     { path: "/state/invest", label: "Cargar POAs" },
-    { path: "/state/returns", label: "FET" }
+    { path: "/state/returns", label: "FET" },
+    { path: "/market", label: "Mercado Tabacalero" }
   ],
   dealer: [
     { path: "/dealer", label: "Mi Dashboard" },
     { path: "/dealer/trade", label: "Operar" },
-    { path: "/dealer/markets", label: "Mercados" }
+    { path: "/dealer/markets", label: "Mercados" },
+    { path: "/market", label: "Mercado Tabacalero" }
   ],
   producer: [
     { path: "/producer", label: "Mi Dashboard Finca" },
     { path: "/producer/tokenizar", label: "Certificar Tabaco" },
-    { path: "/producer/asociaciones", label: "Mis Asociaciones" }
+    { path: "/producer/asociaciones", label: "Mis Asociaciones" },
+    { path: "/market", label: "Mercado Tabacalero" }
   ],
 };
 
