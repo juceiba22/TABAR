@@ -260,7 +260,7 @@ export default function AppLayout({ children }) {
         <header className="tabar-header">
           <div className="tabar-system-name">Financiamiento Agroindustrial</div>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px", marginLeft: "auto" }}>
             {/* Notification Center */}
             <div ref={notifRef} style={{ position: "relative" }}>
               <button
@@ -308,23 +308,7 @@ export default function AppLayout({ children }) {
               </button>
 
               {showNotifications && (
-                <div style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: "0",
-                  width: "320px",
-                  maxHeight: "400px",
-                  background: "rgba(22, 27, 34, 0.9)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  border: "1px solid #30363D",
-                  borderRadius: "12px",
-                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-                  zIndex: 999,
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden"
-                }}>
+                <div className="tabar-notif-dropdown">
                   {/* Dropdown Header */}
                   <div style={{
                     display: "flex",
