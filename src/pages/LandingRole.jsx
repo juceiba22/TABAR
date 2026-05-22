@@ -304,6 +304,8 @@ export default function LandingRole() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const fbUser = userCredential.user;
 
+        // Enviar correo de verificación técnica obligatorio de Firebase Auth
+        await sendEmailVerification(fbUser);
 
         // ① FIX: Guardar datos temporales en localStorage en lugar de Firestore
         // Evita cuelgues (bugg sin fin) por race conditions con reglas de seguridad
