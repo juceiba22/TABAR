@@ -323,10 +323,10 @@ export default function MiPerfil() {
             <div className="profile-info-banner" style={{ borderLeftColor: roleColor }}>
               <span style={{ fontSize: "16px" }}>ℹ️</span>
               <div style={{ fontSize: "12px", color: "var(--tb-text-2)", lineHeight: "1.4" }}>
-                {role === "producer" && "Como productor tabacalero, puedes tokenizar tus fardos de tabaco verde, asociarte con otros productores del sector y publicar ofertas en el marketplace."}
+                {role === "producer" && "Como productor tabacalero, podes crear cooperativas digitales, asociarte con otros productores del sector y publicar ofertas en el marketplace."}
                 {role === "industry" && "Como acopiador / cooperativa, estás habilitado para emitir órdenes de compra de tabaco certificado y solicitar financiamiento anticipado en la red."}
-                {role === "state" && "Como representante del Estado Nacional o administrador del FET, puedes supervisar las certificaciones, auditar la liquidez de la red y publicar Planes Operativos Anuales (POAs)."}
-                {role === "dealer" && "Como Dealer o inversor, tienes la capacidad de explorar el marketplace completo de órdenes y solicitudes activas para operar, inyectando financiamiento directo."}
+                {role === "state" && "Como representante del Estado Nacional o administrador del FET, podes publicar novedades sobre el precio FET, informar sobre transferencias o cargar POAs firmados en garantía."}
+                {role === "dealer" && "Como Dealer o inversor, podes arbitrar entre las órdenes de compra-venta e intermediar en las necesidades de financiamiento de acopiadres y el Estado (FET)."}
               </div>
             </div>
 
