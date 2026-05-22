@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "../../modules/roles/RoleContext";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function DealerTrade() {
-  const { user } = useRole();
+  const { user, profile } = useRole();
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +42,65 @@ export default function DealerTrade() {
     }
     fetchOperations();
   }, [user]);
+
+  const handleAction = async (op, actionBtn) => {
+    if (!user?.uid) return;
+    try {
+      const recipientId = op.rawDoc?.userId || op.rawDoc?.productorOwner || op.rawDoc?.creadoPor;
+      if (!recipientId) {
+        alert("No se pudo determinar el destinatario para esta acción.");
+        return;
+      }
+
+      const isVenta = op.type === "Orden de Venta Individual" || op.type === "Orden de Venta Asociada" || op.type === "Certificación de Fardos" || op.type === "Orden de Venta";
+      const isFinanciacion = op.type === "Solicitud Financiamiento" || op.type === "Solicitud de Financiamiento" || op.type === "Solicitud de financiamiento" || op.type === "Solicitud financiamiento";
+      const isPoa = op.type === "Carga POA" || op.type === "Presentación POA" || op.type === "Presentación de POA";
+
+      let messageText = "";
+      const dealerName = profile?.displayName || user.email || "Un dealer";
+
+      if (isVenta) {
+        if (actionBtn === "btn1") {
+          messageText = `El usuario ${dealerName} quiere comprar tu tabaco`;
+        } else {
+          messageText = `El usuario ${dealerName} puede conseguir compradores para tu tabaco`;
+        }
+      } else if (isFinanciacion) {
+        if (actionBtn === "btn1") {
+          messageText = `El usuario ${dealerName} puede financiar tu solicitud`;
+        } else {
+          messageText = `El usuario ${dealerName} puede conseguir financistas para tu solicitud`;
+        }
+      } else if (isPoa) {
+        if (actionBtn === "btn1") {
+          messageText = `El usuario ${dealerName} puede adelantar dinero para tu POA`;
+        } else {
+          messageText = `El usuario ${dealerName} puede conseguir financistas para tu POA`;
+        }
+      }
+
+      if (!messageText) return;
+
+      const notifId = `${Date.now()}_notif_${user.uid}_${actionBtn}`;
+      const notificationRef = doc(db, "notifications", notifId);
+      await setDoc(notificationRef, {
+        recipientId,
+        senderId: user.uid,
+        senderName: dealerName,
+        type: actionBtn,
+        message: messageText,
+        itemId: op.targetId || op.id,
+        itemType: op.type,
+        read: false,
+        creadoEn: serverTimestamp()
+      });
+
+      alert(`Propuesta enviada con éxito:\n"${messageText}"`);
+    } catch (err) {
+      console.error("Error al procesar la acción:", err);
+      alert("Error al procesar la acción.");
+    }
+  };
 
   const renderActionButtons = (op) => {
     const isVenta = op.type === "Orden de Venta Individual" || op.type === "Orden de Venta Asociada" || op.type === "Certificación de Fardos" || op.type === "Orden de Venta";
@@ -82,6 +141,7 @@ export default function DealerTrade() {
     return (
       <div style={{ display: "flex", gap: "12px", marginTop: "8px", width: "100%" }}>
         <button
+          onClick={() => handleAction(op, "btn1")}
           style={{
             ...btnStyle,
             background: "#E3B64F",
@@ -94,6 +154,7 @@ export default function DealerTrade() {
           {btn1Text}
         </button>
         <button
+          onClick={() => handleAction(op, "btn2")}
           style={{
             ...btnStyle,
             background: "rgba(255,255,255,0.05)",

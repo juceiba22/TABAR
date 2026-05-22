@@ -18,7 +18,7 @@ const getMontoFinanciamiento = (d) => Number(d?.montoFinanciamiento ?? d?.montoS
 const getKgs = (d) => Number(d?.totalKgs ?? d?.kgs ?? 0);
 
 export default function MarketPage() {
-  const { role, user } = useRole();
+  const { role, user, profile } = useRole();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +38,36 @@ export default function MarketPage() {
         rawDoc: item.rawDoc || {},
         creadoEn: serverTimestamp()
       });
+
+      // Send notification to the owner of the publication
+      const recipientId = item.rawDoc?.userId || item.rawDoc?.productorOwner || item.rawDoc?.creadoPor;
+      if (recipientId && recipientId !== user.uid) {
+        // Map item.type to the requested format (x)
+        const getNotificationItemName = (type) => {
+          const t = type?.toLowerCase() || "";
+          if (t.includes("solicitud") && t.includes("financiamiento")) return "Solicitud de financiamiento";
+          if (t.includes("asociada")) return "orden de venta asociada";
+          if (t.includes("individual") || t.includes("venta")) return "orden de venta";
+          if (t.includes("compra")) return "orden de compra";
+          if (t.includes("poa")) return "Presentación POA";
+          return type || "publicación";
+        };
+
+        const x = getNotificationItemName(item.type);
+        const notificationRef = doc(db, "notifications", `${Date.now()}_notif_${user.uid}`);
+        await setDoc(notificationRef, {
+          recipientId,
+          senderId: user.uid,
+          senderName: profile?.displayName || user.email || "Un dealer",
+          type: "operar",
+          message: `Un dealer está interesado en operar tu ${x}`,
+          itemId: item.rawId || item.id,
+          itemType: item.type,
+          read: false,
+          creadoEn: serverTimestamp()
+        });
+      }
+
       alert("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.");
     } catch (err) {
       console.error("Error al marcar operación:", err);

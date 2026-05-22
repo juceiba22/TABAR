@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRole, ROLE_LABELS } from "../roles/RoleContext";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
+import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { db } from "../../config/firebase";
 
 const ROLE_PALETTE = {
   admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" },
@@ -54,6 +56,70 @@ export default function AppLayout({ children }) {
   const handleNavClick = () => setNavOpen(false);
 
   const displayName = profile?.displayName || user?.email || "Usuario";
+
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", user.uid)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = [];
+      snapshot.forEach((doc) => {
+        items.push({ id: doc.id, ...doc.data() });
+      });
+      // Client-side sort by creadoEn desc
+      items.sort((a, b) => {
+        const timeA = a.creadoEn?.toDate ? a.creadoEn.toDate().getTime() : 0;
+        const timeB = b.creadoEn?.toDate ? b.creadoEn.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
+      setNotifications(items);
+    }, (err) => {
+      console.error("Error fetching notifications:", err);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifRef]);
+
+  const handleMarkAsRead = async (notifId) => {
+    try {
+      const ref = doc(db, "notifications", notifId);
+      await updateDoc(ref, { read: true });
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unread = notifications.filter(n => !n.read);
+    if (unread.length === 0) return;
+    try {
+      const batch = writeBatch(db);
+      unread.forEach(n => {
+        const ref = doc(db, "notifications", n.id);
+        batch.update(ref, { read: true });
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error("Error marking all as read:", err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="tabar-shell">
@@ -194,9 +260,173 @@ export default function AppLayout({ children }) {
       <div className="tabar-main">
         <header className="tabar-header">
           <div className="tabar-system-name">Financiamiento Agroindustrial</div>
-          <div className="tabar-connected-badge">
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
-            Conectado
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            {/* Notification Center */}
+            <div ref={notifRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: unreadCount > 0 ? "#E3B64F" : "#8B949E",
+                  fontSize: "18px",
+                  cursor: "pointer",
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "50%",
+                  transition: "all 0.2s ease",
+                  outline: "none"
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                🔔
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: "absolute",
+                    top: "-2px",
+                    right: "-2px",
+                    background: "#FF453A",
+                    color: "#FFFFFF",
+                    fontSize: "9px",
+                    fontWeight: "bold",
+                    borderRadius: "50%",
+                    minWidth: "15px",
+                    height: "15px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "2px",
+                    boxShadow: "0 0 8px #FF453A"
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: "0",
+                  width: "320px",
+                  maxHeight: "400px",
+                  background: "rgba(22, 27, 34, 0.9)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid #30363D",
+                  borderRadius: "12px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+                  zIndex: 999,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden"
+                }}>
+                  {/* Dropdown Header */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #30363D",
+                    background: "rgba(255, 255, 255, 0.02)"
+                  }}>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#F0F6FC" }}>Notificaciones</span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#E3B64F",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                          fontWeight: "500",
+                          padding: "0"
+                        }}
+                      >
+                        Limpiar todas
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown List */}
+                  <div style={{
+                    overflowY: "auto",
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column"
+                  }}>
+                    {notifications.length === 0 ? (
+                      <div style={{
+                        padding: "32px 16px",
+                        textAlign: "center",
+                        color: "#8B949E",
+                        fontSize: "13px"
+                      }}>
+                        No tienes notificaciones
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          style={{
+                            padding: "12px 16px",
+                            borderBottom: "1px solid rgba(255,255,255,0.04)",
+                            background: notif.read ? "transparent" : "rgba(227, 182, 79, 0.03)",
+                            cursor: "pointer",
+                            transition: "background 0.2s ease",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px"
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.background = notif.read ? "rgba(255,255,255,0.02)" : "rgba(227, 182, 79, 0.05)"; }}
+                          onMouseOut={(e) => { e.currentTarget.style.background = notif.read ? "transparent" : "rgba(227, 182, 79, 0.03)"; }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                            <span style={{
+                              fontSize: "12px",
+                              color: notif.read ? "#8B949E" : "#F0F6FC",
+                              fontWeight: notif.read ? "400" : "500",
+                              lineHeight: "1.4",
+                              flex: 1
+                            }}>
+                              {notif.message}
+                            </span>
+                            {!notif.read && (
+                              <span style={{
+                                width: "6px",
+                                height: "6px",
+                                borderRadius: "50%",
+                                background: "#E3B64F",
+                                marginTop: "5px",
+                                flexShrink: 0
+                              }} />
+                            )}
+                          </div>
+                          <span style={{ fontSize: "10px", color: "#8B949E" }}>
+                            {notif.creadoEn?.toDate 
+                              ? new Date(notif.creadoEn.toDate()).toLocaleDateString("es-AR", { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) 
+                              : "Reciente"
+                            }
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="tabar-connected-badge">
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
+              Conectado
+            </div>
           </div>
         </header>
         <main className="tabar-content">{children || <Outlet />}</main>

@@ -98,6 +98,13 @@ service cloud.firestore {
       allow update: if isAuthenticated();
     }
 
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
