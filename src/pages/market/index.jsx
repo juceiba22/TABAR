@@ -275,6 +275,22 @@ export default function MarketPage() {
                 </div>
                 <h3 className="market-card-title">{item.title}</h3>
                 <p className="market-card-desc">{item.description}</p>
+                {item.rawDoc?.fotoUrl && (
+                  <div style={{ marginTop: "12px", marginBottom: "12px" }}>
+                    <img 
+                      src={item.rawDoc.fotoUrl} 
+                      alt="Muestra de tabaco" 
+                      style={{ 
+                        maxWidth: "100%", 
+                        maxHeight: "160px", 
+                        borderRadius: "8px", 
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        objectFit: "cover",
+                        display: "block"
+                      }} 
+                    />
+                  </div>
+                )}
                 <div className="market-card-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className="market-card-role">{item.roleLabel}</span>
                   {role === "dealer" && item.type !== "Novedad FET" && (

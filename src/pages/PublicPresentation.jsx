@@ -27,7 +27,7 @@ const DIAGNOSIS = [
     dim: "rgba(188,140,255,0.10)",
     border: "rgba(188,140,255,0.25)",
     title: "Desplazamiento del Valor",
-    text: "Regulaciones complejas y un marco legal obsoleto transforman el precio de sustentación en una disputa política territorial, desplazando el incentivo real para el agro hacia estructuras de intermediación ineficientes.",
+    text: "Regulaciones complejas y un marco legal obsoleto distorsionan el mercado a una disputa política territorial, desplazando el incentivo de la producción hacia estructuras de intermediación ineficientes.",
   }
 ];
 

@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Reglas para novedades_fet
+    match /novedades_fet/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Reglas para fotos de muestra de tabaco (muestras_tabaco)
+    match /muestras_tabaco/{allPaths=**} {
+      allow read: if true; // Lectura pública para que se pueda ver en el marketplace
+      allow write: if request.auth != null; // Solo productores autenticados pueden subir fotos
+    }
+  }
+}

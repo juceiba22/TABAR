@@ -622,9 +622,9 @@ export default function LandingRole() {
                   <div className="lr-form-footer">
                     {mode === "login" && (
                       <>
-                        <span>¿No tenés cuenta institucional?</span>
+                        <span>¿No tenés cuenta aún?</span>
                         <button type="button" className="lr-text-btn lr-text-btn--accent" onClick={() => setMode("register")} disabled={loading}>
-                          Registrar entidad
+                          Registrarse 
                         </button>
                       </>
                     )}

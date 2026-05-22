@@ -4,7 +4,8 @@ import { useRole } from "../../modules/roles/RoleContext";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../config/firebase";
+import { db, storage } from "../../config/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
 
@@ -37,6 +38,8 @@ export default function ProducerTokenizar() {
   const [tamanoFardo, setTamanoFardo] = useState("");
   const [tipoTabaco, setTipoTabaco] = useState("");
   const [calidad, setCalidad] = useState("");
+  const [fotoFile, setFotoFile] = useState(null);
+  const [fotoPreview, setFotoPreview] = useState("");
   const [tipoVenta, setTipoVenta] = useState("");
   const [precioVenta, setPrecioVenta] = useState("");
 
@@ -86,6 +89,17 @@ export default function ProducerTokenizar() {
       fetchAsociaciones();
     }
   }, [user, tipoVenta]);
+
+  // Preview de foto
+  useEffect(() => {
+    if (!fotoFile) {
+      setFotoPreview("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(fotoFile);
+    setFotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [fotoFile]);
 
   // Validar que todos los campos estén completos.
   // Precio de venta pasa a ser OBLIGATORIO y mayor a 0.
@@ -239,6 +253,13 @@ export default function ProducerTokenizar() {
     let associationId = null;
 
     try {
+      let uploadedFotoUrl = "";
+      if (fotoFile) {
+        const fileRef = ref(storage, `muestras_tabaco/${Date.now()}_${fotoFile.name}`);
+        const snapshot = await uploadBytes(fileRef, fotoFile);
+        uploadedFotoUrl = await getDownloadURL(snapshot.ref);
+      }
+
       if (tipoVenta === "asociada") {
         // Unirse/Aportar a la asociación seleccionada
         const res = await unirseAAsociacion(asociacionSeleccionada, {
@@ -270,6 +291,7 @@ export default function ProducerTokenizar() {
         usdTotal,
         productorOwner: user.uid,
         associationId: associationId,
+        fotoUrl: uploadedFotoUrl
       };
 
       // Llamar a tokenizarProducer (registra la orden de venta)
@@ -437,6 +459,37 @@ export default function ProducerTokenizar() {
               <option key={opcion} value={opcion}>{opcion}</option>
             ))}
           </select>
+        </div>
+
+        {/* Foto de Muestra */}
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
+            Foto de muestra de tabaco (Opcional)
+          </label>
+          <input
+            type="file"
+            className="tabar-input"
+            accept="image/*"
+            onChange={(e) => setFotoFile(e.target.files[0] || null)}
+            disabled={loading || showConfirm}
+            style={{ padding: "8px" }}
+          />
+          {fotoPreview && (
+            <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "11px", color: "#8B949E" }}>Vista previa:</span>
+              <img
+                src={fotoPreview}
+                alt="Muestra de tabaco"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "180px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  objectFit: "cover"
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Tipo de Venta */}
