@@ -76,13 +76,13 @@ export default async function handler(req, res) {
 
   const baseOrigin = origin || "https://agrotabaco-labs.com";
   const firebaseLink = await adminAuth.generateEmailVerificationLink(email, {
-    url: `${baseOrigin}/?mode=login`,
+    url: `${baseOrigin}/login?mode=login`,
   });
   
   // Extraemos el oobCode generado por Firebase para armar nuestro propio link directo al cliente
   const parsedUrl = new URL(firebaseLink);
   const oobCode = parsedUrl.searchParams.get("oobCode");
-  const verificationUrl = `${baseOrigin}/?mode=verifyEmail&oobCode=${oobCode}`;
+  const verificationUrl = `${baseOrigin}/login?mode=verifyEmail&oobCode=${oobCode}`;
   
   const hasNames = firstName && lastName;
   const greetingName = hasNames ? `${firstName.trim()} ${lastName.trim()}` : "Miembro de TABAR";
