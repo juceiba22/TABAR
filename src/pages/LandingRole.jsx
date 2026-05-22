@@ -16,6 +16,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
+  applyActionCode,
   signOut,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -100,8 +101,31 @@ export default function LandingRole() {
   }, [user, role, authLoading, navigate]);
 
   /* ─── Modos de la pantalla ──────────────────────────────────────────── */
-  // "login" | "register" | "forgot" | "verify-email" | "no-role"
+  // "login" | "register" | "forgot" | "verify-email" | "no-role" | "verifying" | "verified"
   const [mode, setMode] = useState("login");
+
+  // Efecto para capturar el link personalizado de validación de correo
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get("mode");
+    const oobCode = params.get("oobCode");
+
+    if (urlMode === "verifyEmail" && oobCode) {
+      setMode("verifying");
+      applyActionCode(auth, oobCode)
+        .then(() => {
+          setMode("verified");
+          setMessage("¡Correo verificado con éxito! Ahora puedes iniciar sesión con tu contraseña.");
+        })
+        .catch((err) => {
+          console.error("Error al verificar correo:", err);
+          setError("El enlace de verificación es inválido o ha expirado. Por favor, solicita uno nuevo.");
+          setMode("login");
+        });
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   /* ─── Campos de autenticación ──────────────────────────────────────── */
   const [email, setEmail] = useState("");
@@ -470,6 +494,15 @@ export default function LandingRole() {
         {/* ── Panel derecho (formulario) ── */}
         <main className="lr-form-panel">
           <div className="lr-form-wrap">
+
+            {/* ═══ MODOS: VERIFICACIÓN PERSONALIZADA ═══ */}
+            {mode === "verifying" && (
+              <VerifyingScreen />
+            )}
+
+            {mode === "verified" && (
+              <VerifiedScreen onLogin={() => setMode("login")} />
+            )}
 
             {/* ═══ MODO: VERIFICAR EMAIL ═══ */}
             {mode === "verify-email" && (
@@ -939,6 +972,42 @@ function VerifyEmailScreen({ email, cooldown, message, error, onResend, onBack }
           Volver
         </button>
       </div>
+    </div>
+  );
+}
+
+function VerifyingScreen() {
+  return (
+    <div className="lr-status-screen">
+      <div className="lr-status-icon lr-status-icon--info" style={{ animation: "lr-spin 1.5s linear infinite" }}>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      <h2 className="lr-status-title">Verificando tu enlace...</h2>
+      <p className="lr-status-desc">
+        Por favor espera mientras validamos de forma segura tu correo electrónico en nuestros servidores institucionales.
+      </p>
+    </div>
+  );
+}
+
+function VerifiedScreen({ onLogin }) {
+  return (
+    <div className="lr-status-screen">
+      <div className="lr-status-icon lr-status-icon--success" style={{ color: "var(--tb-green)", borderColor: "rgba(63,185,80,0.3)" }}>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+      <h2 className="lr-status-title" style={{ color: "var(--tb-green)" }}>¡Correo verificado!</h2>
+      <p className="lr-status-desc">
+        Tu identidad ha sido confirmada exitosamente. Tu perfil institucional en TABAR ya está activo y validado.
+      </p>
+      <button type="button" className="lr-btn-primary" onClick={onLogin}>
+        Iniciar sesión
+      </button>
     </div>
   );
 }
