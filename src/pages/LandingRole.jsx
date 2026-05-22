@@ -15,6 +15,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   signOut,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -207,6 +208,17 @@ export default function LandingRole() {
     return null;
   }, [firstName, lastName, documentNumber, documentType, displayName, companyName, password, passwordConfirm, validateDocumentNumber]);
 
+  /* ─── Reenviar email de verificación ──────────────────────────────── */
+  const handleResendVerification = async () => {
+    if (!pendingUser || resendCooldown > 0) return;
+    try {
+      await sendEmailVerification(pendingUser);
+      setMessage("Correo reenviado. Revisá tu bandeja (y carpeta de SPAM).");
+      setResendCooldown(60);
+    } catch {
+      setError("No se pudo reenviar el correo. Intentá más tarde.");
+    }
+  };
 
   /* ─── Handler principal ─────────────────────────────────────────── */
   const handleAuth = async (e) => {
