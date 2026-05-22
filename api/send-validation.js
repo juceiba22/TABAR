@@ -11,9 +11,18 @@ export default async function handler(req, res) {
   let adminAuth;
   try {
     if (!admin.apps.length) {
+      const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      if (!rawKey) {
+        throw new Error("La variable de entorno FIREBASE_PRIVATE_KEY no existe o está vacía en Vercel.");
+      }
+
       // Intentamos procesar la private key limpiando comillas o saltos de línea extraños
-      const rawKey = process.env.FIREBASE_PRIVATE_KEY || "";
       const formattedKey = rawKey.replace(/\\n/g, "\n").replace(/^"|"$/g, "");
+
+      if (!formattedKey) {
+        throw new Error("La clave privada formateada resultó vacía.");
+      }
 
       admin.initializeApp({
         credential: admin.credential.cert({
