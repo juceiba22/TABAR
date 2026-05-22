@@ -17,9 +17,9 @@ export default async function handler(req, res) {
 
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: process.env.VITE_FIREBASE_PROJECT_ID || "tabar-token-mvp-2026",
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: formattedKey,
+          project_id: process.env.VITE_FIREBASE_PROJECT_ID || "tabar-token-mvp-2026",
+          client_email: process.env.FIREBASE_CLIENT_EMAIL,
+          private_key: formattedKey,
         }),
       });
     }
