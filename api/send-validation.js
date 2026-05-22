@@ -1,3 +1,4 @@
+import { adminAuth } from "../lib/firebase-admin";
 export default async function handler(req, res) {
   // Configuración de CORS y método
   if (req.method !== "POST") {
@@ -42,7 +43,10 @@ export default async function handler(req, res) {
   }
 
   const baseOrigin = origin || "https://agrotabaco-labs.com";
-  const loginUrl = `${baseOrigin}/?mode=login`;
+  const verificationUrl = await adminAuth.generateEmailVerificationLink(email, {
+  url: `${baseOrigin}/?mode=login`,
+  handleCodeInApp: true,
+});
   
   const hasNames = firstName && lastName;
   const greetingName = hasNames ? `${firstName.trim()} ${lastName.trim()}` : "Miembro de TABAR";
@@ -135,7 +139,7 @@ export default async function handler(req, res) {
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="background-color: #e5c158; border-radius: 8px;">
-                    <a href="${loginUrl}" target="_blank" style="display: inline-block; font-size: 15px; font-weight: 700; color: #0F0F0F; text-decoration: none; padding: 14px 35px; border-radius: 8px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
+                    <a href="${verificationUrl}" target="_blank" style="display: inline-block; font-size: 15px; font-weight: 700; color: #0F0F0F; text-decoration: none; padding: 14px 35px; border-radius: 8px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
                       Validar y Acceder al Portal
                     </a>
                   </td>
