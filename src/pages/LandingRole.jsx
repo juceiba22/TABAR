@@ -123,6 +123,37 @@ export default function LandingRole() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /* ─── PWA Installation ──────────────────────────────────────────────── */
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
   /* ─── Verificación email: reenvío con cooldown ─────────────────────── */
   const [resendCooldown, setResendCooldown] = useState(0);
   const [pendingUser, setPendingUser] = useState(null);
@@ -599,6 +630,44 @@ export default function LandingRole() {
                         </span>
                       )}
                     </Field>
+                  )}
+
+                  {/* ── PWA Install Button ── */}
+                  {isInstallable && (
+                    <button
+                      type="button"
+                      onClick={handleInstallClick}
+                      className="lr-btn-secondary"
+                      style={{
+                        width: "100%",
+                        background: "rgba(227, 182, 79, 0.08)",
+                        color: "#E3B64F",
+                        border: "1.5px solid rgba(227, 182, 79, 0.3)",
+                        padding: "12px 20px",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        marginBottom: "14px",
+                        transition: "all 0.25s ease"
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = "rgba(227, 182, 79, 0.15)";
+                        e.currentTarget.style.borderColor = "rgba(227, 182, 79, 0.6)";
+                        e.currentTarget.style.boxShadow = "0 0 12px rgba(227, 182, 79, 0.15)";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = "rgba(227, 182, 79, 0.08)";
+                        e.currentTarget.style.borderColor = "rgba(227, 182, 79, 0.3)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      📲 Instalar Aplicación Móvil
+                    </button>
                   )}
 
                   {/* ── Submit ── */}
