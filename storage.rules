@@ -11,5 +11,11 @@ service firebase.storage {
       allow read: if true; // Lectura pública para que se pueda ver en el marketplace
       allow write: if request.auth != null; // Solo productores autenticados pueden subir fotos
     }
+
+    // Reglas para fotos de perfil
+    match /profile_pictures/{userId}/{allPaths=**} {
+      allow read: if true; // Permitir lectura pública de avatares
+      allow write: if request.auth != null && request.auth.uid == userId; // Solo el propio usuario puede subir/modificar
+    }
   }
 }

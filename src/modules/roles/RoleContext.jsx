@@ -153,6 +153,13 @@ export function RoleProvider({ children }) {
     }
   };
 
+  const updateProfile = async (updates) => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, updates);
+    setProfile((prev) => (prev ? { ...prev, ...updates } : updates));
+  };
+
   return (
     <RoleContext.Provider value={{
       user,
@@ -161,6 +168,7 @@ export function RoleProvider({ children }) {
       loading,
       authReady,
       logout,
+      updateProfile,
     }}>
       {children}
     </RoleContext.Provider>

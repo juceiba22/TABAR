@@ -33,6 +33,7 @@ import ProducerDashboard from "./pages/producer/dashboard";
 import IndustryFinancing from "./pages/industry/financing";
 import ProducerTokenizar from "./pages/producer/tokenizar";
 import ProducerAssociations from "./pages/producer/asociaciones";
+import MiPerfil from "./pages/miPerfil";
 
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
 function SplashScreen() {
@@ -141,6 +142,14 @@ function AppRoutes() {
       <Route element={<AppLayout />}>
         {/* Ruta compartida */}
         <Route path="/campaign" element={<CampaignPage />} />
+        <Route 
+          path="/miPerfil" 
+          element={
+            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+              <MiPerfil />
+            </ProtectedRoute>
+          } 
+        />
         <Route 
           path="/market" 
           element={

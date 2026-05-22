@@ -107,19 +107,77 @@ export default function AppLayout({ children }) {
           </nav>
 
           <div className="tabar-sidebar-bottom">
-            <div style={{
+            <NavLink to="/miPerfil" style={{
               background: "var(--tb-surface-2)",
               border: "1px solid var(--tb-border)",
               borderRadius: "6px",
               padding: "8px 10px",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "8px",
               marginBottom: "8px",
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--tb-mono)", fontSize: "11px", color: "var(--tb-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
-            </div>
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = palette.color;
+              e.currentTarget.style.boxShadow = `0 0 10px ${palette.dim}`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--tb-border)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            >
+              {profile?.profilePicUrl ? (
+                <img 
+                  src={profile.profilePicUrl} 
+                  alt="Avatar" 
+                  style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    objectFit: "cover", 
+                    border: `1.5px solid ${palette.color}`,
+                    flexShrink: 0
+                  }} 
+                />
+              ) : (
+                <div style={{ 
+                  width: "24px", 
+                  height: "24px", 
+                  borderRadius: "50%", 
+                  background: palette.dim, 
+                  border: `1.5px solid ${palette.border}`, 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  color: palette.color, 
+                  fontSize: "10px", 
+                  fontWeight: "bold",
+                  fontFamily: "var(--tb-mono)",
+                  flexShrink: 0
+                }}>
+                  {displayName.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                <span style={{ 
+                  fontFamily: "var(--tb-mono)", 
+                  fontSize: "11px", 
+                  color: "var(--tb-text-2)", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis", 
+                  whiteSpace: "nowrap",
+                  lineHeight: "1.2"
+                }}>
+                  {displayName}
+                </span>
+                <span style={{ fontSize: "9px", color: "var(--tb-text-3)", lineHeight: "1" }}>
+                  Ver mi perfil
+                </span>
+              </div>
+            </NavLink>
             <button onClick={handleLogout} style={{
               width: "100%", background: "transparent",
               border: "1px solid var(--tb-border)",
