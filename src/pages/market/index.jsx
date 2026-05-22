@@ -122,10 +122,27 @@ export default function MarketPage() {
           });
         });
 
-        // 3. Certificaciones (Producer)
+        // 3. Certificaciones (Producer) - Orden de Venta
         // tokenizar.jsx guarda los kgs como `totalKgs` (no `kgs`).
         ptSnap.forEach(doc => {
           const d = doc.data();
+          const isAsociada = d.tipoVenta === "asociada";
+          
+          let precio = parseFloat(d.precioVenta) || 0;
+          const totalVal = parseFloat(d.usdTotal) || 0;
+          
+          if (isAsociada && d.associationId) {
+            const assocDoc = paSnap.docs.find(a => a.id === d.associationId);
+            if (assocDoc) {
+              const assocData = assocDoc.data();
+              const totalKgsAssoc = parseFloat(assocData.inventario?.totalKgs) || 0;
+              const totalUsdAssoc = parseFloat(assocData.inventario?.usdFinanciamientoTotal) || 0;
+              if (totalKgsAssoc > 0) {
+                precio = totalUsdAssoc / totalKgsAssoc;
+              }
+            }
+          }
+
           allItems.push({
             id: `pt-${doc.id}`,
             rawId: doc.id,
@@ -133,11 +150,11 @@ export default function MarketPage() {
             date: parseDate(doc),
             role: "producer",
             roleLabel: "Productor",
-            type: "Orden de Venta",
+            type: isAsociada ? "Orden de Venta Asociada" : "Orden de Venta Individual",
             title: `Certificados ${fmtFardos(d.cantidadFardos)} Fardos (TABAR)`,
-            description: `Tabaco ${d.tipoTabaco} | Calidad: ${d.calidad} | Kgs Totales: ${fmtKgs(getKgs(d))}`,
-            icon: "🌿",
-            color: "#3FB950"
+            description: `Tabaco ${d.tipoTabaco} | Calidad: ${d.calidad} | Kgs Totales: ${fmtKgs(getKgs(d))} | Precio/Kg: $${fmtMoney(precio)}${isAsociada ? " (Promedio)" : ""} | Valor Total: $${fmtMoney(totalVal)}`,
+            icon: isAsociada ? "👥" : "🌿",
+            color: isAsociada ? "#1f883d" : "#3FB950"
           });
         });
 
