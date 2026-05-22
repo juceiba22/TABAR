@@ -22,7 +22,6 @@ const NAV_LINKS = {
   industry: [
     { path: "/industry", label: "Mi Dashboard" },
     { path: "/industry/buy", label: "Orden de Compra" },
-    { path: "/industry/position", label: "Mi Posición" },
     { path: "/industry/financing", label: "Solicitar Financiamiento" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
