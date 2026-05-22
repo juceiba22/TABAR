@@ -1,22 +1,32 @@
 import admin from "firebase-admin";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID || "tabar-token-mvp-2026",
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
-
-const adminAuth = admin.auth();
-
 export default async function handler(req, res) {
   // Configuración de CORS y método
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  // Inicializar Firebase Admin SDK de forma segura
+  let adminAuth;
+  try {
+    if (!admin.apps.length) {
+      // Intentamos procesar la private key limpiando comillas o saltos de línea extraños
+      const rawKey = process.env.FIREBASE_PRIVATE_KEY || "";
+      const formattedKey = rawKey.replace(/\\n/g, "\n").replace(/^"|"$/g, "");
+
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.VITE_FIREBASE_PROJECT_ID || "tabar-token-mvp-2026",
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: formattedKey,
+        }),
+      });
+    }
+    adminAuth = admin.auth();
+  } catch (initErr) {
+    console.error("Error inicializando Firebase Admin:", initErr);
+    return res.status(500).json({ error: "Configuración de credenciales de Firebase en Vercel incompleta o inválida: " + initErr.message });
   }
 
   const { email, firstName, lastName, role, companyName, origin } = req.body;
