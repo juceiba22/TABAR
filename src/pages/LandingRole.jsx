@@ -212,11 +212,50 @@ export default function LandingRole() {
   const handleResendVerification = async () => {
     if (!pendingUser || resendCooldown > 0) return;
     try {
-      await sendEmailVerification(pendingUser);
-      setMessage("Correo reenviado. Revisá tu bandeja (y carpeta de SPAM).");
+      // Intentar recuperar los datos del localStorage para reenviar el mail con toda su info
+      const savedStr = localStorage.getItem(`pending_profile_${pendingUser.uid}`);
+      let firstNameVal = "";
+      let lastNameVal = "";
+      let companyNameVal = "";
+      let roleVal = "industry";
+
+      if (savedStr) {
+        try {
+          const parsed = JSON.parse(savedStr);
+          firstNameVal = parsed.firstName || "";
+          lastNameVal = parsed.lastName || "";
+          companyNameVal = parsed.companyName || "";
+          roleVal = parsed.role || "industry";
+        } catch (e) {
+          console.error("Error al decodificar perfil temporal para reenvío:", e);
+        }
+      }
+
+      const emailRes = await fetch("/api/send-validation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: pendingUser.email.trim(),
+          firstName: firstNameVal.trim(),
+          lastName: lastNameVal.trim(),
+          role: roleVal,
+          companyName: companyNameVal.trim(),
+          origin: window.location.origin,
+        }),
+      });
+
+      if (!emailRes.ok) {
+        const errData = await emailRes.json();
+        throw new Error(errData.error || "Error al enviar el mail.");
+      }
+
+      setMessage("Correo de validación institucional reenviado. Revisá tu bandeja.");
       setResendCooldown(60);
-    } catch {
-      setError("No se pudo reenviar el correo. Intentá más tarde.");
+    } catch (err) {
+      console.error("Error al reenviar email de validación:", err);
+      setError("No se pudo reenviar el correo de validación. Intentá más tarde.");
     }
   };
 
@@ -304,13 +343,6 @@ export default function LandingRole() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const fbUser = userCredential.user;
 
-        // Enviar correo de verificación técnica obligatorio de Firebase Auth (con salvaguarda)
-        try {
-          await sendEmailVerification(fbUser);
-        } catch (verificationErr) {
-          console.error("Error al enviar el correo de verificación técnica de Firebase:", verificationErr);
-        }
-
         // ① FIX: Guardar datos temporales en localStorage en lugar de Firestore
         // Evita cuelgues (bugg sin fin) por race conditions con reglas de seguridad
         const pendingProfile = {
@@ -330,7 +362,7 @@ export default function LandingRole() {
 
         // Enviar email de validación institucional con Resend a través de Serverless Function
         try {
-          await fetch("/api/send-validation", {
+          const emailRes = await fetch("/api/send-validation", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -344,6 +376,10 @@ export default function LandingRole() {
               origin: window.location.origin,
             }),
           });
+          if (!emailRes.ok) {
+            const errData = await emailRes.json();
+            throw new Error(errData.error || "Error al disparar el email con Resend");
+          }
         } catch (emailErr) {
           console.error("Error al enviar email de validación institucional:", emailErr);
         }
