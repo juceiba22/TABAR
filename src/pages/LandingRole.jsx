@@ -324,6 +324,26 @@ export default function LandingRole() {
         };
         localStorage.setItem(`pending_profile_${fbUser.uid}`, JSON.stringify(pendingProfile));
 
+        // Enviar email de validación institucional con Resend a través de Serverless Function
+        try {
+          await fetch("/api/send-validation", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: email.trim(),
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              role: selectedRole,
+              companyName: companyName.trim(),
+              origin: window.location.origin,
+            }),
+          });
+        } catch (emailErr) {
+          console.error("Error al enviar email de validación institucional:", emailErr);
+        }
+
         setPendingUser(fbUser);
         await signOut(auth);
         setResendCooldown(60);
