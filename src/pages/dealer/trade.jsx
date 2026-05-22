@@ -43,6 +43,77 @@ export default function DealerTrade() {
     fetchOperations();
   }, [user]);
 
+  const renderActionButtons = (op) => {
+    const isVenta = op.type === "Orden de Venta Individual" || op.type === "Orden de Venta Asociada" || op.type === "Certificación de Fardos" || op.type === "Orden de Venta";
+    const isFinanciacion = op.type === "Solicitud Financiamiento" || op.type === "Solicitud de Financiamiento" || op.type === "Solicitud de financiamiento" || op.type === "Solicitud financiamiento";
+    const isPoa = op.type === "Carga POA" || op.type === "Presentación POA" || op.type === "Presentación de POA";
+
+    if (!isVenta && !isFinanciacion && !isPoa) return null;
+
+    let btn1Text = "";
+    let btn2Text = "";
+
+    if (isVenta) {
+      btn1Text = "Quiero comprar";
+      btn2Text = "Puedo conseguir compradores";
+    } else if (isFinanciacion) {
+      btn1Text = "Puedo Financiar";
+      btn2Text = "Puedo conseguir financistas";
+    } else if (isPoa) {
+      btn1Text = "Puedo Adelantar $";
+      btn2Text = "Puedo conseguir financista";
+    }
+
+    const btnStyle = {
+      flex: 1,
+      padding: "10px 16px",
+      borderRadius: "8px",
+      border: "1px solid rgba(255,255,255,0.08)",
+      fontSize: "13px",
+      fontWeight: "600",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px"
+    };
+
+    return (
+      <div style={{ display: "flex", gap: "12px", marginTop: "8px", width: "100%" }}>
+        <button
+          style={{
+            ...btnStyle,
+            background: "#E3B64F",
+            color: "#000000",
+            border: "none",
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+          onMouseOut={(e) => { e.currentTarget.style.opacity = "1"; }}
+        >
+          {btn1Text}
+        </button>
+        <button
+          style={{
+            ...btnStyle,
+            background: "rgba(255,255,255,0.05)",
+            color: "#F0F6FC",
+          }}
+          onMouseOver={(e) => { 
+            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+          }}
+          onMouseOut={(e) => { 
+            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+          }}
+        >
+          {btn2Text}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div>
       <div className="tabar-page-header">
@@ -108,6 +179,7 @@ export default function DealerTrade() {
                       <InfoRow label="Tipo de Tabaco / Posición Arancelaria" value={tipoTabaco} />
                     )}
                   </div>
+                  {renderActionButtons(op)}
                 </div>
               );
             })}
