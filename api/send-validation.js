@@ -1,4 +1,4 @@
-import { adminAuth } from "../lib/firebase-admin";
+import { adminAuth } from "../src/lib/firebase-admin";
 export default async function handler(req, res) {
   // Configuración de CORS y método
   if (req.method !== "POST") {
