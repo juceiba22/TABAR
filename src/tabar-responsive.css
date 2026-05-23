@@ -879,8 +879,9 @@
 .tabar-notif-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: -10px;
-  width: 290px;
+  right: -50px;
+  width: calc(100vw - 32px);
+  max-width: 320px;
   max-height: 400px;
   background: rgba(22, 27, 34, 0.9);
   backdrop-filter: blur(12px);
