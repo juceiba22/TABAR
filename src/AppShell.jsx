@@ -14,6 +14,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
 import { ToastProvider } from "./modules/layout/ToastContext";
+import { ChatProvider } from "./modules/chat/ChatContext";
 import AppLayout from "./modules/layout/AppLayout";
 import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
@@ -288,7 +289,9 @@ export default function AppShell() {
       <RoleProvider>
         <DataProvider>
           <ToastProvider>
-            <AppRoutes />
+            <ChatProvider>
+              <AppRoutes />
+            </ChatProvider>
           </ToastProvider>
         </DataProvider>
       </RoleProvider>

@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, setDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "../../modules/roles/RoleContext";
 import { useToast } from "../../modules/layout/ToastContext";
+import { useChat } from "../../modules/chat/ChatContext";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function DealerTrade() {
   const { user, profile } = useRole();
   const { showToast } = useToast();
+  const { openChat } = useChat();
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +99,53 @@ export default function DealerTrade() {
         creadoEn: serverTimestamp()
       });
 
-      showToast(`Propuesta enviada con éxito:\n"${messageText}"`, "success");
+      // --- LOGICA DE CHAT PRIVADO ---
+      const chatsRef = collection(db, "chats");
+      const qChat = query(
+        chatsRef, 
+        where("participants", "array-contains", user.uid)
+      );
+      const chatsSnap = await getDocs(qChat);
+      
+      let existingChatId = null;
+      chatsSnap.forEach(c => {
+        const data = c.data();
+        if (data.participants.includes(recipientId) && data.operationId === (op.targetId || op.id)) {
+          existingChatId = c.id;
+        }
+      });
+
+      if (existingChatId) {
+        openChat(existingChatId);
+      } else {
+        // Fetch recipient name if possible, or use a generic name
+        const recipientName = "Publicador"; // Lo ideal sería buscarlo, pero para no ralentizar usamos uno genérico
+
+        const newChatRef = doc(chatsRef);
+        await setDoc(newChatRef, {
+          participants: [user.uid, recipientId],
+          participantsData: {
+            [user.uid]: { name: dealerName },
+            [recipientId]: { name: recipientName }
+          },
+          operationId: op.targetId || op.id,
+          operationTitle: op.title || "Negociación",
+          updatedAt: serverTimestamp(),
+          lastMessage: messageText
+        });
+
+        // Seed initial message
+        const messagesRef = collection(db, "chats", newChatRef.id, "messages");
+        await addDoc(messagesRef, {
+          senderId: user.uid,
+          text: messageText,
+          creadoEn: serverTimestamp()
+        });
+
+        openChat(newChatRef.id);
+      }
+      
+      showToast(`Propuesta enviada y chat iniciado con éxito:\n"${messageText}"`, "success");
     } catch (err) {
       console.error("Error al procesar la acción:", err);
       showToast("Error al procesar la acción.", "error");
