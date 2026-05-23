@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useToast } from "../../modules/layout/ToastContext";
 
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function DealerTrade() {
   const { user, profile } = useRole();
+  const { showToast } = useToast();
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +50,7 @@ export default function DealerTrade() {
     try {
       const recipientId = op.rawDoc?.userId || op.rawDoc?.productorOwner || op.rawDoc?.creadoPor;
       if (!recipientId) {
-        alert("No se pudo determinar el destinatario para esta acción.");
+        showToast("No se pudo determinar el destinatario para esta acción.", "error");
         return;
       }
 
@@ -95,10 +97,10 @@ export default function DealerTrade() {
         creadoEn: serverTimestamp()
       });
 
-      alert(`Propuesta enviada con éxito:\n"${messageText}"`);
+      showToast(`Propuesta enviada con éxito:\n"${messageText}"`, "success");
     } catch (err) {
       console.error("Error al procesar la acción:", err);
-      alert("Error al procesar la acción.");
+      showToast("Error al procesar la acción.", "error");
     }
   };
 

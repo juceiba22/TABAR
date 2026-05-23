@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
+import { useToast } from "../../modules/layout/ToastContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebase";
 
@@ -32,6 +33,7 @@ const parseDocDate = (data) => {
 export default function ProducerAsociaciones() {
   const { user } = useRole();
   const { crearAsociacion, obtenerTodasLasAsociaciones } = useData();
+  const { showToast } = useToast();
   const [asociaciones, setAsociaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -80,12 +82,13 @@ export default function ProducerAsociaciones() {
         setNewAssocName("");
         setShowCreateModal(false);
         await fetchAsociaciones();
+        showToast("Asociación creada exitosamente.", "success");
       } else {
-        alert(res.error || "Error al crear la asociación");
+        showToast(res.error || "Error al crear la asociación", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Error al procesar la solicitud");
+      showToast("Error al procesar la solicitud", "error");
     }
     setCreating(false);
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useToast } from "../../modules/layout/ToastContext";
 import "./market.css";
 
 // Formateadores
@@ -19,6 +20,7 @@ const getKgs = (d) => Number(d?.totalKgs ?? d?.kgs ?? 0);
 
 export default function MarketPage() {
   const { role, user, profile } = useRole();
+  const { showToast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,10 +70,10 @@ export default function MarketPage() {
         });
       }
 
-      alert("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.");
+      showToast("Operación marcada exitosamente. Puedes verla en la pestaña 'Operar'.", "success");
     } catch (err) {
       console.error("Error al marcar operación:", err);
-      alert("Error al marcar operación.");
+      showToast("Error al marcar operación.", "error");
     }
   };
 

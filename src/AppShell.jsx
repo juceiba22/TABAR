@@ -13,6 +13,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
+import { ToastProvider } from "./modules/layout/ToastContext";
 import AppLayout from "./modules/layout/AppLayout";
 import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
@@ -286,7 +287,9 @@ export default function AppShell() {
     <BrowserRouter>
       <RoleProvider>
         <DataProvider>
-          <AppRoutes />
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
         </DataProvider>
       </RoleProvider>
 
