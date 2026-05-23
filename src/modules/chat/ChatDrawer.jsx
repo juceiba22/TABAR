@@ -7,7 +7,7 @@ import "./chat.css";
 
 export default function ChatDrawer() {
   const { user } = useRole();
-  const { isDrawerOpen, activeChatId, closeDrawer, clearActiveChat } = useChat();
+  const { isDrawerOpen, activeChatId, closeDrawer, clearActiveChat, openChat } = useChat();
   
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -168,7 +168,7 @@ export default function ChatDrawer() {
                   const otherName = chat.participantsData?.[otherId]?.name || "Usuario";
                   
                   return (
-                    <div key={chat.id} className="chat-list-item" onClick={() => useChat().openChat(chat.id)}>
+                    <div key={chat.id} className="chat-list-item" onClick={() => openChat(chat.id)}>
                       <div className="chat-avatar">
                         {otherName.substring(0, 2).toUpperCase()}
                       </div>
