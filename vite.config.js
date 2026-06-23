@@ -5,6 +5,12 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    global: 'globalThis',
+    process: {
+      env: {}
+    }
+  },
   plugins: [
     nodePolyfills({
       globals: {
