@@ -35,7 +35,7 @@ import ProducerAssociations from "./pages/producer/asociaciones";
 import MiPerfil from "./pages/miPerfil";
 
 // ① IMPORTAR EL PROVEEDOR DE PRIVY
-import { PrivyProvider } from '@privy-io/react-auth';
+//import { PrivyProvider } from '@privy-io/react-auth';
 
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
 function SplashScreen() {
@@ -264,7 +264,7 @@ function AppRoutes() {
  * Si el usuario viene desde un enlace de confirmación de email institucional,
  * evitamos inicializar Privy para que Firebase Auth procese la sesión sin bloqueos.
  */
-function ConditionalWeb3Provider({ children }) {
+/*function ConditionalWeb3Provider({ children }) {
   const params = new URLSearchParams(window.location.search);
   const isVerifyEmailMode = params.get("mode") === "verifyEmail" || params.has("oobCode");
 
@@ -293,7 +293,7 @@ function ConditionalWeb3Provider({ children }) {
     </PrivyProvider>
   );
 }
-
+*/
 /* ─── AppShell Principal ─────────────────────────────────────────────────── */
 export default function AppShell() {
   return (
