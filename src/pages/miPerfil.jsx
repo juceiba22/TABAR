@@ -4,6 +4,74 @@ import { db, storage } from "../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc } from "firebase/firestore";
 
+import { useState, useEffect, useRef } from "react";
+// 1. Importar hooks de Privy
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useRole, ROLE_LABELS, ROLE_COLORS } from "../modules/roles/RoleContext";
+// ... (tus otros imports de firebase se mantienen)
+
+export default function MiPerfil() {
+  const { user: firebaseUser, role, profile, updateProfile } = useRole();
+  
+  // 2. Traer el estado de Privy
+  const { ready, authenticated, login, user: privyUser, createWallet } = usePrivy();
+  const { wallets } = useWallets();
+
+  // Encontrar la billetera embebida creada por Privy
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+
+  // ... (tus otros states y funciones se mantienen iguales)
+
+  return (
+    <div style={{ maxWidth: "900px", margin: "0 auto", paddingBottom: "40px" }}>
+      {/* ... (Páginas de Header y Hero Card se mantienen iguales) */}
+
+      <div className="profile-grid">
+        {/* Columna 1: Datos Personales (se mantiene igual) */}
+        <div className="profile-column-card">
+          {/* ... tu formulario actual */}
+        </div>
+
+        {/* Columna 2: Organización + CAPA WEB2.5 PRIVY */}
+        <div className="profile-column-card">
+          <h3 className="profile-section-title">Infraestructura Web2.5 (Privy)</h3>
+          
+          <div className="form-group">
+            <label className="profile-field-label">Billetera Institucional</label>
+            
+            {embeddedWallet ? (
+              // Si la billetera ya existe, mostramos la dirección (cumpliendo la pág 8 del WP)
+              <div className="read-only-field-wrap institutional-badge-wrap" style={{ border: '1px solid #3FB950' }}>
+                <span className="read-only-text" style={{ fontFamily: 'var(--tb-mono)', color: '#3FB950', fontSize: '11px' }}>
+                  {embeddedWallet.address}
+                </span>
+                <span className="lock-icon" title="Wallet criptográfica asegurada">🔑</span>
+              </div>
+            ) : (
+              // Si no existe (ej. migración de cuenta vieja), permitimos crearla con 1 clic
+              <button 
+                type="button"
+                className="tabar-btn tabar-btn-primary"
+                onClick={createWallet}
+                style={{ background: 'transparent', border: '1px solid var(--tb-accent)', color: 'var(--tb-accent)' }}
+              >
+                Generar Dirección Criptográfica Cerrada
+              </button>
+            )}
+            <span className="field-helper-text">
+              Dirección criptográfica utilizada para firmar digitalmente los Warrants y la emisión de deuda[cite: 2].
+            </span>
+          </div>
+
+          {/* ... (El resto de los datos de la organización y banners se mantienen iguales) */}
+        </div>
+      </div>
+      
+      {/* ... (El resto del componente y los estilos <style> se mantienen iguales) */}
+    </div>
+  );
+}
+
 export default function MiPerfil() {
   const { user, role, profile, updateProfile } = useRole();
   

@@ -5,6 +5,120 @@ import { jsPDF } from "jspdf";
 import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+
+// 1. Importar el hook de Privy para acceder a las wallets
+import { useWallets } from '@privy-io/react-auth';
+
+const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
+const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];
+const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
+
+export default function IndustryBuy() {
+  const { user, profile } = useRole();
+  const { comprarIndustry } = useData();
+  
+  // 2. Obtener las wallets activas de Privy
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+
+  const [tipoTabaco, setTipoTabaco] = useState("");
+  const [calidadSolicitada, setCalidadSolicitada] = useState("");
+  const [cantidadKgs, setCantidadKgs] = useState("");
+  const [precioDisponible, setPrecioDisponible] = useState("");
+  const [notaAdicional, setNotaAdicional] = useState("");
+
+  const [step, setStep] = useState("form");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const isFormValid = tipoTabaco && calidadSolicitada && cantidadKgs && precioDisponible;
+
+  // ... (tu función generatePDF se mantiene exactamente igual)
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      // 3. VALIDACIÓN WEB2.5: Verificar si el acopiador tiene su wallet institucional activa
+      if (!embeddedWallet) {
+        throw new Error("No se detectó tu firma criptográfica institucional. Por favor, ve a 'Mi Perfil' para generarla.");
+      }
+
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 9);
+      const numSolicitud = `ORD-${timestamp}-${randomId}`;
+      const montoTotal = (parseInt(cantidadKgs) * parseFloat(precioDisponible)).toFixed(2);
+
+      // 4. FIRMA CRIPTOGRÁFICA (On-Chain Proof): 
+      // Creamos un mensaje único estructurado con los datos del contrato físico/Warrant
+      const mensajeAFilmar = `
+        TABAR Protocol - Orden de Compra
+        Emisor: ${user?.email}
+        Lote: ${cantidadKgs} Kg de Tabaco ${tipoTabaco} (${calidadSolicitada})
+        Monto Total: $${montoTotal} ARS
+        Nonce: ${numSolicitud}
+      `.trim();
+
+      // Solicitamos al proveedor de Privy que firme el mensaje de forma nativa e invisible
+      const provider = await embeddedWallet.getEthereumProvider();
+      const firmaCriptografica = await provider.request({
+        method: 'personal_sign',
+        params: [mensajeAFilmar, embeddedWallet.address],
+      });
+
+      // 5. Proceder con el PDF (Tu flujo Web2 original)
+      const doc = await generatePDF();
+      const pdfFileName = `orden_compra_${timestamp}_${randomId}.pdf`;
+      doc.save(pdfFileName);
+
+      const pdfData = doc.output("arraybuffer");
+      const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
+      const storageRef = ref(storage, `purchase_orders/${pdfFileName}`);
+      await uploadBytes(storageRef, pdfBlob);
+      const pdfUrl = await getDownloadURL(storageRef);
+
+      // 6. Guardar todo en Firestore INCLUYENDO la firma y la wallet emisora
+      const ordenData = {
+        numeroOrden: numSolicitud,
+        tipoTabaco: tipoTabaco,
+        calidadSolicitada: calidadSolicitada,
+        cantidadKgs: parseInt(cantidadKgs),
+        precioDisponible: parseFloat(precioDisponible),
+        montoTotal: montoTotal,
+        notaAdicional: notaAdicional,
+        pdfUrl: pdfUrl,
+        pdfNombre: pdfFileName,
+        userId: user?.uid,
+        estado: "emitida",
+        fechaCreacion: new Date().toISOString(),
+        creadoPor: user?.email,
+        
+        // Atributos de Gobernanza Web3 agregados (Cumpliendo pág 7 y 8 del WP)
+        walletEmisora: embeddedWallet.address,
+        firmaDigitalWarrant: firmaCriptografica, 
+        datosFirmadosRaw: mensajeAFilmar
+      };
+
+      const res = await comprarIndustry(ordenData);
+
+      setLoading(false);
+      if (res?.ok) {
+        setStep("done");
+      } else {
+        setError(res?.error || "Error al procesar la solicitud");
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error("Error:", err);
+      setError(err.message || "Error al generar la orden y la firma criptográfica.");
+    }
+  };
+
+  // ... (El resto del componente de confirmación y renderizado se mantiene igual)
+}
+
+
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
 
 const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];

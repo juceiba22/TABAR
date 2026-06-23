@@ -7,6 +7,118 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db, storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+// 1. Importar el hook de Privy para acceder a la billetera embebida
+import { useWallets } from '@privy-io/react-auth';
+
+const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" };
+const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];
+const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
+const KG_POR_FARDO = 200;
+
+export default function TokenizarProducer() {
+  const { user, profile } = useRole();
+  const { tokenizarProducer } = useData();
+  
+  // 2. Obtener las wallets activas de Privy
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+
+  const [tipoTabaco, setTipoTabaco] = useState("");
+  const [calidad, setCalidad] = useState("");
+  const [kilos, setKilos] = useState("");
+  const [observaciones, setObservaciones] = useState("");
+
+  const [step, setStep] = useState("form");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const fardosEstimados = kilos ? (parseInt(kilos) / KG_POR_FARDO).toFixed(1) : 0;
+  const isFormValid = tipoTabaco && calidad && kilos && parseInt(kilos) > 0;
+
+  // ... (Tu función de generación de PDF 'generatePDF' se mantiene exactamente igual)
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      // 3. VALIDACIÓN WEB2.5: Verificar si el productor tiene su wallet Privy inicializada
+      if (!embeddedWallet) {
+        throw new Error(
+          "Falta tu Firma Digital Institucional. Por favor, ve a 'Mi Perfil' para activar tu entorno cerrado."
+        );
+      }
+
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 9);
+      const numCertificado = `CERT-${timestamp}-${randomId}`;
+
+      // 4. ESTRUCTURACIÓN DEL MENSAJE PARA FIRMA CRIPTOGRÁFICA
+      // Creamos la cadena de texto exacta que representa el lote físico real
+      const mensajeAFirmar = `
+        TABAR Protocol - Certificación de Lote
+        Productor Custodio: ${user?.email}
+        Detalle: ${kilos} Kg de Tabaco ${tipoTabaco} (${calidad})
+        Fardos Equivalentes: ${fardosEstimados}
+        ID de Trazabilidad: ${numCertificado}
+      `.trim();
+
+      // Solicitamos a Privy que firme el manifiesto del lote de forma transparente para el productor
+      const provider = await embeddedWallet.getEthereumProvider();
+      const firmaProductor = await provider.request({
+        method: 'personal_sign',
+        params: [mensajeAFirmar, embeddedWallet.address],
+      });
+
+      // 5. Generación y guardado del PDF (Flujo Web2 original)
+      const doc = await generatePDF();
+      const pdfFileName = `certificacion_${timestamp}_${randomId}.pdf`;
+      doc.save(pdfFileName);
+
+      const pdfData = doc.output("arraybuffer");
+      const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
+      const storageRef = ref(storage, `certifications/${pdfFileName}`);
+      await uploadBytes(storageRef, pdfBlob);
+      const pdfUrl = await getDownloadURL(storageRef);
+
+      // 6. Persistencia de datos en Firestore enriquecida con metadatos de Gobernanza Criptográfica
+      const certificacionData = {
+        numeroCertificado: numCertificado,
+        tipoTabaco: tipoTabaco,
+        calidad: calidad,
+        cantidadKgs: parseInt(kilos),
+        fardosEstimados: parseFloat(fardosEstimados),
+        observaciones: observaciones,
+        pdfUrl: pdfUrl,
+        pdfNombre: pdfFileName,
+        userId: user?.uid,
+        estado: "pendiente_acopio", // Queda a la espera de que el Acopiador/Fideicomiso valide
+        fechaCreacion: new Date().toISOString(),
+        creadoPor: user?.email,
+        
+        // Bloque de Auditoría Criptográfica Web2.5 (Págs. 7-8 del WP)
+        walletProductor: embeddedWallet.address,
+        firmaDigitalOrigen: firmaProductor,
+        datosCertificadosRaw: mensajeAFirmar
+      };
+
+      const res = await tokenizarProducer(certificacionData);
+
+      setLoading(false);
+      if (res?.ok) {
+        setStep("done");
+      } else {
+        setError(res?.error || "Error al registrar la certificación");
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error("Error en certificación:", err);
+      setError(err.message || "Error al procesar la certificación digital del fardo.");
+    }
+  };
+
+  // ... (El resto del renderizado y el diseño HTML/CSS se mantiene idéntico)
+}
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
 
 // Opciones de Tipo de Tabaco
