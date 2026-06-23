@@ -4,7 +4,6 @@ import { db, storage } from "../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc } from "firebase/firestore";
 
-import { useState, useEffect, useRef } from "react";
 // 1. Importar hooks de Privy
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useRole, ROLE_LABELS, ROLE_COLORS } from "../modules/roles/RoleContext";
