@@ -3,123 +3,11 @@ import { useData } from "../../modules/roles/DataContext";
 import { useRole } from "../../modules/roles/RoleContext";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db, storage } from "../../config/firebase";
+import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
-// 1. Importar el hook de Privy para acceder a la billetera embebida
 import { useWallets } from '@privy-io/react-auth';
 
-const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" };
-const TIPOS_TABACO = ["Virginia", "Burley", "Criollo", "Oriental"];
-const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
-const KG_POR_FARDO = 200;
-
-export default function TokenizarProducer() {
-  const { user, profile } = useRole();
-  const { tokenizarProducer } = useData();
-  
-  // 2. Obtener las wallets activas de Privy
-  const { wallets } = useWallets();
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
-
-  const [tipoTabaco, setTipoTabaco] = useState("");
-  const [calidad, setCalidad] = useState("");
-  const [kilos, setKilos] = useState("");
-  const [observaciones, setObservaciones] = useState("");
-
-  const [step, setStep] = useState("form");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const fardosEstimados = kilos ? (parseInt(kilos) / KG_POR_FARDO).toFixed(1) : 0;
-  const isFormValid = tipoTabaco && calidad && kilos && parseInt(kilos) > 0;
-
-  // ... (Tu función de generación de PDF 'generatePDF' se mantiene exactamente igual)
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      // 3. VALIDACIÓN WEB2.5: Verificar si el productor tiene su wallet Privy inicializada
-      if (!embeddedWallet) {
-        throw new Error(
-          "Falta tu Firma Digital Institucional. Por favor, ve a 'Mi Perfil' para activar tu entorno cerrado."
-        );
-      }
-
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 9);
-      const numCertificado = `CERT-${timestamp}-${randomId}`;
-
-      // 4. ESTRUCTURACIÓN DEL MENSAJE PARA FIRMA CRIPTOGRÁFICA
-      // Creamos la cadena de texto exacta que representa el lote físico real
-      const mensajeAFirmar = `
-        TABAR Protocol - Certificación de Lote
-        Productor Custodio: ${user?.email}
-        Detalle: ${kilos} Kg de Tabaco ${tipoTabaco} (${calidad})
-        Fardos Equivalentes: ${fardosEstimados}
-        ID de Trazabilidad: ${numCertificado}
-      `.trim();
-
-      // Solicitamos a Privy que firme el manifiesto del lote de forma transparente para el productor
-      const provider = await embeddedWallet.getEthereumProvider();
-      const firmaProductor = await provider.request({
-        method: 'personal_sign',
-        params: [mensajeAFirmar, embeddedWallet.address],
-      });
-
-      // 5. Generación y guardado del PDF (Flujo Web2 original)
-      const doc = await generatePDF();
-      const pdfFileName = `certificacion_${timestamp}_${randomId}.pdf`;
-      doc.save(pdfFileName);
-
-      const pdfData = doc.output("arraybuffer");
-      const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
-      const storageRef = ref(storage, `certifications/${pdfFileName}`);
-      await uploadBytes(storageRef, pdfBlob);
-      const pdfUrl = await getDownloadURL(storageRef);
-
-      // 6. Persistencia de datos en Firestore enriquecida con metadatos de Gobernanza Criptográfica
-      const certificacionData = {
-        numeroCertificado: numCertificado,
-        tipoTabaco: tipoTabaco,
-        calidad: calidad,
-        cantidadKgs: parseInt(kilos),
-        fardosEstimados: parseFloat(fardosEstimados),
-        observaciones: observaciones,
-        pdfUrl: pdfUrl,
-        pdfNombre: pdfFileName,
-        userId: user?.uid,
-        estado: "pendiente_acopio", // Queda a la espera de que el Acopiador/Fideicomiso valide
-        fechaCreacion: new Date().toISOString(),
-        creadoPor: user?.email,
-        
-        // Bloque de Auditoría Criptográfica Web2.5 (Págs. 7-8 del WP)
-        walletProductor: embeddedWallet.address,
-        firmaDigitalOrigen: firmaProductor,
-        datosCertificadosRaw: mensajeAFirmar
-      };
-
-      const res = await tokenizarProducer(certificacionData);
-
-      setLoading(false);
-      if (res?.ok) {
-        setStep("done");
-      } else {
-        setError(res?.error || "Error al registrar la certificación");
-      }
-    } catch (err) {
-      setLoading(false);
-      console.error("Error en certificación:", err);
-      setError(err.message || "Error al procesar la certificación digital del fardo.");
-    }
-  };
-
-  // ... (El resto del renderizado y el diseño HTML/CSS se mantiene idéntico)
-}
-const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)" };
+const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(227,182,79,0.25)" };
 
 // Opciones de Tipo de Tabaco
 const TIPOS_TABACO = [
@@ -145,6 +33,9 @@ export default function ProducerTokenizar() {
   const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
   const { user, profile } = useRole();
 
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+
   // Estados del formulario
   const [totalKgs, setTotalKgs] = useState("");
   const [tamanoFardo, setTamanoFardo] = useState("");
@@ -167,13 +58,6 @@ export default function ProducerTokenizar() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [transactionCode, setTransactionCode] = useState("");
 
-  // Cálculos de la orden de venta
-  // - Kgs y tamaño del fardo se trabajan como enteros (input del usuario).
-  // - La cantidad de fardos se mantiene con decimales (sin redondeo).
-  // - El precio de venta es exclusivamente el cargado por el usuario (pesos por kg).
-  // - El total en pesos = kgs totales * precio de venta por kg.
-  // NOTA: el campo `usdTotal` se conserva como nombre interno por compatibilidad
-  // con los documentos previos en Firestore, pero representa pesos (ARS).
   const numTotalKgs = parseInt(totalKgs) || 0;
   const numTamanoFardo = parseInt(tamanoFardo) || 0;
   const cantidadFardos = numTamanoFardo > 0 ? numTotalKgs / numTamanoFardo : 0;
@@ -214,7 +98,6 @@ export default function ProducerTokenizar() {
   }, [fotoFile]);
 
   // Validar que todos los campos estén completos.
-  // Precio de venta pasa a ser OBLIGATORIO y mayor a 0.
   const isFormValid =
     totalKgs &&
     tamanoFardo &&
@@ -233,9 +116,8 @@ export default function ProducerTokenizar() {
   };
 
   // Generar PDF con datos de la Orden de Venta
-  const generarOrdenVentaPDF = (producerObj) => {
+  const generarOrdenVentaPDF = async (producerObj, codigo) => {
     const doc = new jsPDF();
-    const codigo = generarCodigoTransaccion();
     const ahora = new Date();
     const fechaHora = ahora.toLocaleString("es-AR", {
       year: "numeric",
@@ -346,10 +228,7 @@ export default function ProducerTokenizar() {
     doc.text("Este documento es un comprobante digital de la orden de venta registrada en la plataforma TABAR.", 20, 250);
     doc.text("La existencia de este documento implica la aceptación de los términos y condiciones de la operación de venta.", 20, 256);
 
-    // Guardar el PDF
-    doc.save(`Orden_Venta_TABAR_${codigo}.pdf`);
-
-    return codigo;
+    return doc;
   };
 
   const handleTokenizar = async () => {
@@ -365,6 +244,28 @@ export default function ProducerTokenizar() {
     let associationId = null;
 
     try {
+      if (!embeddedWallet) {
+        throw new Error(
+          "Falta tu Firma Digital Institucional. Por favor, ve a 'Mi Perfil' para activar tu entorno cerrado."
+        );
+      }
+
+      const codigo = generarCodigoTransaccion();
+
+      const mensajeAFirmar = `
+        TABAR Protocol - Certificación de Lote
+        Productor Custodio: ${user?.email}
+        Detalle: ${numTotalKgs} Kg de Tabaco ${tipoTabaco} (${calidad})
+        Fardos Equivalentes: ${cantidadFardos}
+        ID de Trazabilidad: ${codigo}
+      `.trim();
+
+      const provider = await embeddedWallet.getEthereumProvider();
+      const firmaProductor = await provider.request({
+        method: 'personal_sign',
+        params: [mensajeAFirmar, embeddedWallet.address],
+      });
+
       let uploadedFotoUrl = "";
       if (fotoFile) {
         const fileRef = ref(storage, `muestras_tabaco/${Date.now()}_${fotoFile.name}`);
@@ -373,7 +274,6 @@ export default function ProducerTokenizar() {
       }
 
       if (tipoVenta === "asociada") {
-        // Unirse/Aportar a la asociación seleccionada
         const res = await unirseAAsociacion(asociacionSeleccionada, {
           tipoTabaco,
           calidad,
@@ -391,8 +291,30 @@ export default function ProducerTokenizar() {
         associationId = res.associationId;
       }
 
-      // Preparar datos de la orden de venta
+      let selectedAssoc = null;
+      if (associationId) {
+        selectedAssoc = asociacionesDisponibles.find(a => a.id === associationId);
+      }
+
+      const doc = await generarOrdenVentaPDF(selectedAssoc ? {
+        firstName: selectedAssoc.nombre,
+        lastName: "",
+        documentNumber: `ID: ${associationId.substring(0, 8)}`,
+        email: "Venta Asociada"
+      } : null, codigo);
+
+      const pdfFileName = `Orden_Venta_TABAR_${codigo}.pdf`;
+      doc.save(pdfFileName);
+
+      const pdfData = doc.output("arraybuffer");
+      const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
+      const storageRef = ref(storage, `certifications/${pdfFileName}`);
+      await uploadBytes(storageRef, pdfBlob);
+      const pdfUrl = await getDownloadURL(storageRef);
+
+      // Preparar datos de la orden de venta (Firestore)
       const tokenizationData = {
+        numeroCertificado: codigo,
         cantidadFardos,
         totalKgs: numTotalKgs,
         tamanoFardo: numTamanoFardo,
@@ -403,31 +325,28 @@ export default function ProducerTokenizar() {
         usdTotal,
         productorOwner: user.uid,
         associationId: associationId,
-        fotoUrl: uploadedFotoUrl
+        fotoUrl: uploadedFotoUrl,
+        pdfUrl: pdfUrl,
+        pdfNombre: pdfFileName,
+        estado: "pendiente_acopio", // Queda a la espera de que el Acopiador/Fideicomiso valide
+        fechaCreacion: new Date().toISOString(),
+        creadoPor: user?.email,
+        walletProductor: embeddedWallet.address,
+        firmaDigitalOrigen: firmaProductor,
+        datosCertificadosRaw: mensajeAFirmar
       };
 
       // Llamar a tokenizarProducer (registra la orden de venta)
       const res = await tokenizarProducer(tokenizationData);
+      
       if (res.ok) {
-        // Intentar obtener información de la asociación seleccionada para el PDF
-        let selectedAssoc = null;
-        if (associationId) {
-          selectedAssoc = asociacionesDisponibles.find(a => a.id === associationId);
-        }
-
-        const codigo = generarOrdenVentaPDF(selectedAssoc ? {
-          firstName: selectedAssoc.nombre,
-          lastName: "",
-          documentNumber: `ID: ${associationId.substring(0, 8)}`,
-          email: "Venta Asociada"
-        } : null);
-
         setTransactionCode(codigo);
         setSuccess(true);
       } else {
         setError(res.error || "Error al registrar la orden de venta");
       }
     } catch (err) {
+      console.error(err);
       setError(err.message || "Error al procesar");
     }
 

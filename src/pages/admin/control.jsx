@@ -21,6 +21,33 @@ export default function AdminControl() {
   const [duracionDias, setDuracionDias] = useState("180");
   const [campanaStatus, setCampanaStatus] = useState("");
 
+  const handleIniciarCampana = async () => {
+    try { 
+      await iniciarCampana(parseInt(fardosTotales), parseInt(duracionDias)); 
+      setCampanaStatus("Campaña iniciada con éxito"); 
+    } catch { 
+      setCampanaStatus("Error al iniciar"); 
+    }
+  };
+
+  const handleCerrarCampana = async () => {
+    try { 
+      await cerrarCampana(); 
+      setCampanaStatus("Campaña cerrada"); 
+    } catch { 
+      setCampanaStatus("Error al cerrar"); 
+    }
+  };
+
+  const handleReset = async () => {
+    try { 
+      await resetDemo(); 
+      setCampanaStatus("Sistema reseteado a cero"); 
+    } catch { 
+      setCampanaStatus("Error al resetear"); 
+    }
+  };
+
   // Cargar certificaciones Web2.5 pendientes de validación institucional
   const fetchCertificacionesPendientes = async () => {
     setCertisLoading(true);
@@ -42,7 +69,7 @@ export default function AdminControl() {
   // Función de aprobación del Fideicomiso: Convierte el lote físico en Token TABAR oficial
   const handleAprobarTokenizacion = async (cert) => {
     try {
-      if (!campana.activa) {
+      if (!campana || !campana.activa) {
         showToast("Error: No hay una campaña activa para respaldar la emisión.", "error");
         return;
       }
@@ -91,10 +118,42 @@ export default function AdminControl() {
     if (tab === "validaciones") fetchCertificacionesPendientes();
   }, [tab]);
 
+  // User management logic
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const q = query(collection(db, "users"), where("status", "==", "pending_approval"));
+      const snapshot = await getDocs(q);
+      const userList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setUsers(userList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleApprove = async (userId) => {
+    try {
+      await updateDoc(doc(db, "users", userId), { status: "active" });
+      setUsers(users.filter(u => u.id !== userId));
+      showToast("Usuario aprobado correctamente", "success");
+    } catch (error) {
+      console.error("Error approving user:", error);
+      showToast("Error al aprobar usuario", "error");
+    }
+  };
+
+  useEffect(() => { if (tab === "solicitudes") fetchUsers(); }, [tab]);
+
   const TABS = [
     { id: "campana", label: "Campaña" },
-    { id: "validaciones", label: "Validaciones Cripto (WP)" },
+    { id: "validaciones", label: "Validaciones Cripto" },
     { id: "estado", label: "Estado Global" },
+    { id: "solicitudes", label: "Solicitudes de Acceso" },
     { id: "auditoria", label: "Auditoría" },
   ];
 
@@ -118,14 +177,28 @@ export default function AdminControl() {
         ))}
       </div>
 
-      {/* PESTAÑA 1: GESTIÓN DE CAMPAÑA (Se mantiene intacta) */}
       {tab === "campana" && (
         <div className="tabar-card">
-          {/* ... Tu UI original de fardosTotales y duracionDias de control.jsx */}
+          <h3 className="tabar-card-title">Gestión de campaña</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Fardos totales a financiar</label>
+              <input type="number" value={fardosTotales} onChange={(e) => setFardosTotales(e.target.value)} className="tabar-input" />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Duración (días)</label>
+              <input type="number" value={duracionDias} onChange={(e) => setDuracionDias(e.target.value)} className="tabar-input" />
+            </div>
+            <div className="tabar-btn-row" style={{ marginTop: "10px" }}>
+              <button onClick={handleIniciarCampana} className="tabar-btn tabar-btn-primary">Iniciar Nueva</button>
+              <button onClick={handleCerrarCampana} className="tabar-btn tabar-btn-ghost" style={{ borderColor: "rgba(248,81,73,0.3)", color: "#F85149" }}>Cerrar Actual</button>
+              <button onClick={handleReset} className="tabar-btn tabar-btn-secondary" style={{ marginLeft: "auto" }}>Reset Sistema</button>
+            </div>
+            {campanaStatus && <p style={{ fontSize: "12px", color: "#8B949E", marginTop: "10px" }}>{campanaStatus}</p>}
+          </div>
         </div>
       )}
 
-      {/* NUEVA PESTAÑA: VALIDACIONES CRIPTOGRÁFICAS (MÉTODO A+I / REGISTRO CERRADO) */}
       {tab === "validaciones" && (
         <div className="tabar-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid var(--tb-border)", paddingBottom: "10px" }}>
@@ -188,132 +261,6 @@ export default function AdminControl() {
               <p style={{ fontSize: "13px" }}>{certsLoading ? "Leyendo firmas..." : "No hay certificados físicos esperando emisión de tokens."}</p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* PESTAÑA 3 Y 4: ESTADO GLOBAL Y AUDITORÍA (Se mantienen intactas para compatibilidad) */}
-      {/* ... Tu código original para tab === "estado" y tab === "auditoria" */}
-    </div>
-  );
-}
-
-const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
-
-export default function AdminControl() {
-  const { iniciarCampana, cerrarCampana, resetDemo, campana, balances, historial } = useData();
-  const [tab, setTab] = useState("campana");
-  const [fardosTotales, setFardosTotales] = useState("10000");
-  const [duracionDias, setDuracionDias] = useState("180");
-  const [campanaStatus, setCampanaStatus] = useState("");
-
-  const handleIniciarCampana = async () => {
-    try { 
-      await iniciarCampana(parseInt(fardosTotales), parseInt(duracionDias)); 
-      setCampanaStatus("Campaña iniciada con éxito"); 
-    } catch { 
-      setCampanaStatus("Error al iniciar"); 
-    }
-  };
-
-  const handleCerrarCampana = async () => {
-    try { 
-      await cerrarCampana(); 
-      setCampanaStatus("Campaña cerrada"); 
-    } catch { 
-      setCampanaStatus("Error al cerrar"); 
-    }
-  };
-
-  const handleReset = async () => {
-    try { 
-      await resetDemo(); 
-      setCampanaStatus("Sistema reseteado a cero"); 
-    } catch { 
-      setCampanaStatus("Error al resetear"); 
-    }
-  };
-
-  const TABS = [
-    { id: "campana", label: "Campaña" },
-    { id: "estado", label: "Estado Global" },
-    { id: "solicitudes", label: "Solicitudes de Acceso" },
-    { id: "auditoria", label: "Auditoría" },
-  ];
-
-  // User management logic
-  const [users, setUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      // In a real app we would use Firestore collection query
-      // For the MVP context, we'll assume the DataContext or a direct fetch handles it
-      // But let's try to fetch directly from Firestore for accuracy
-      const { collection, getDocs, query, where, updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("../../config/firebase");
-      
-      const q = query(collection(db, "users"), where("status", "==", "pending_approval"));
-      const snapshot = await getDocs(q);
-      const userList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setUsers(userList);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  const handleApprove = async (userId) => {
-    try {
-      const { updateDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("../../config/firebase");
-      await updateDoc(doc(db, "users", userId), { status: "active" });
-      setUsers(users.filter(u => u.id !== userId));
-    } catch (error) {
-      console.error("Error approving user:", error);
-    }
-  };
-
-  useEffect(() => { if (tab === "solicitudes") fetchUsers(); }, [tab]);
-
-  return (
-    <div>
-      <div className="tabar-page-header">
-        <div className="tabar-page-header-row">
-          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>▣</div>
-          <h1>Control del Sistema</h1>
-        </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Gestión del negocio fiduciario en tiempo real</p>
-      </div>
-
-      <div className="tabar-tabs">
-        {TABS.map((t) => (
-          <button key={t.id} className="tabar-tab" style={tab === t.id ? { borderColor: C.accent, color: C.accent } : {}} onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "campana" && (
-        <div className="tabar-card">
-          <h3 className="tabar-card-title">Gestión de campaña</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Fardos totales a financiar</label>
-              <input type="number" value={fardosTotales} onChange={(e) => setFardosTotales(e.target.value)} className="tabar-input" />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "6px" }}>Duración (días)</label>
-              <input type="number" value={duracionDias} onChange={(e) => setDuracionDias(e.target.value)} className="tabar-input" />
-            </div>
-            <div className="tabar-btn-row" style={{ marginTop: "10px" }}>
-              <button onClick={handleIniciarCampana} className="tabar-btn tabar-btn-primary">Iniciar Nueva</button>
-              <button onClick={handleCerrarCampana} className="tabar-btn tabar-btn-ghost" style={{ borderColor: "rgba(248,81,73,0.3)", color: "#F85149" }}>Cerrar Actual</button>
-              <button onClick={handleReset} className="tabar-btn tabar-btn-secondary" style={{ marginLeft: "auto" }}>Reset Sistema</button>
-            </div>
-            {campanaStatus && <p style={{ fontSize: "12px", color: "#8B949E", marginTop: "10px" }}>{campanaStatus}</p>}
-          </div>
         </div>
       )}
 
