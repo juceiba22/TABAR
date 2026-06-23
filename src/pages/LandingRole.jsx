@@ -15,7 +15,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendEmailVerification,
   applyActionCode,
   signOut,
 } from "firebase/auth";
@@ -93,39 +92,9 @@ export default function LandingRole() {
   const navigate = useNavigate();
   const { user, role, loading: authLoading } = useRole();
 
-  // Redirect si ya está autenticado y tiene rol
-  useEffect(() => {
-    if (!authLoading && user && role) {
-      navigate(`/${role}`, { replace: true });
-    }
-  }, [user, role, authLoading, navigate]);
-
   /* ─── Modos de la pantalla ──────────────────────────────────────────── */
   // "login" | "register" | "forgot" | "verify-email" | "no-role" | "verifying" | "verified"
   const [mode, setMode] = useState("login");
-
-  // Efecto para capturar el link personalizado de validación de correo
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlMode = params.get("mode");
-    const oobCode = params.get("oobCode");
-
-    if (urlMode === "verifyEmail" && oobCode) {
-      setMode("verifying");
-      applyActionCode(auth, oobCode)
-        .then(() => {
-          setMode("verified");
-          setMessage("¡Correo verificado con éxito! Ahora puedes iniciar sesión con tu contraseña.");
-        })
-        .catch((err) => {
-          console.error("Error al verificar correo:", err);
-          setError("El enlace de verificación es inválido o ha expirado. Por favor, solicita uno nuevo.");
-          setMode("login");
-        });
-      // Limpiar URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
 
   /* ─── Campos de autenticación ──────────────────────────────────────── */
   const [email, setEmail] = useState("");
@@ -150,6 +119,42 @@ export default function LandingRole() {
   /* ─── PWA Installation ──────────────────────────────────────────────── */
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
+
+  /* ─── Verificación email: reenvío con cooldown ─────────────────────── */
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [pendingUser, setPendingUser] = useState(null);
+
+  // Redirect si ya está autenticado y tiene rol
+  useEffect(() => {
+    if (!authLoading && user && role) {
+      navigate(`/${role}`, { replace: true });
+    }
+  }, [user, role, authLoading, navigate]);
+
+  // Efecto para capturar el link personalizado de validación de correo
+  // (declarado DESPUÉS de error/message/mode para que las funciones setX
+  // usadas dentro del .then()/.catch() siempre apunten al estado vigente)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get("mode");
+    const oobCode = params.get("oobCode");
+
+    if (urlMode === "verifyEmail" && oobCode) {
+      setMode("verifying");
+      applyActionCode(auth, oobCode)
+        .then(() => {
+          setMode("verified");
+          setMessage("¡Correo verificado con éxito! Ahora puedes iniciar sesión con tu contraseña.");
+        })
+        .catch((err) => {
+          console.error("Error al verificar correo:", err);
+          setError("El enlace de verificación es inválido o ha expirado. Por favor, solicita uno nuevo.");
+          setMode("login");
+        });
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -178,10 +183,6 @@ export default function LandingRole() {
     setIsInstallable(false);
   };
 
-  /* ─── Verificación email: reenvío con cooldown ─────────────────────── */
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [pendingUser, setPendingUser] = useState(null);
-
   useEffect(() => {
     setError("");
     setMessage("");
@@ -202,7 +203,7 @@ export default function LandingRole() {
   }, [user, role, authLoading]);
 
   /* ─── Validación client-side ─────────────────────────────────────── */
-  const validateDocumentNumber = useCallback((doc, type) => {
+  const validateDocumentNumber = useCallback((doc) => {
     if (!doc.trim()) return false;
     // Validación simple: debe contener al menos números
     return /\d/.test(doc);
@@ -216,7 +217,7 @@ export default function LandingRole() {
       return "El apellido es obligatorio.";
     if (!documentNumber.trim())
       return "El número de documento es obligatorio.";
-    if (!validateDocumentNumber(documentNumber, documentType))
+    if (!validateDocumentNumber(documentNumber))
       return "El número de documento debe contener números.";
 
     // Validaciones específicas de REGISTER
@@ -230,7 +231,7 @@ export default function LandingRole() {
     if (password !== passwordConfirm)
       return "Las contraseñas no coinciden.";
     return null;
-  }, [firstName, lastName, documentNumber, documentType, displayName, companyName, password, passwordConfirm, validateDocumentNumber]);
+  }, [firstName, lastName, documentNumber, displayName, companyName, password, passwordConfirm, validateDocumentNumber]);
 
   /* ─── Reenviar email de verificación ──────────────────────────────── */
   const handleResendVerification = async () => {
