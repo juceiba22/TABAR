@@ -1,12 +1,18 @@
 /**
- * AppShell.jsx — v3.1 (Web2.5 Privy Bypass Integrado)
+ * AppShell.jsx — v3.2 (Privy fuera del camino crítico de Firebase Auth)
  *
- * Cambios vs v3 original:
- * ✔ Incorporación del PrivyProvider global para Embedded Wallets institucionales.
- * ✔ Bypass activo de Privy si la URL contiene parámetros de verificación de Firebase Auth (?mode=verifyEmail),
- * eliminando definitivamente la pantalla en negro al validar nuevos usuarios por correo.
+ * Cambios vs v3.1:
+ * ✔ RoleProvider (Firebase Auth) ahora vive POR FUERA del PrivyProvider.
+ *   La verificación de email y el ciclo de sesión de Firebase ya no
+ *   dependen de que el SDK de Privy haya inicializado correctamente.
+ * ✔ Se elimina el bypass condicional por ?mode=verifyEmail: ya no es
+ *   necesario, porque Privy nunca puede bloquear el render de RoleProvider.
+ * ✔ Web3ErrorBoundary: si Privy falla al inicializar (origen no permitido,
+ *   error de red, etc.), solo se ve afectada la infraestructura de wallet,
+ *   no toda la aplicación (pantalla negra).
  */
 
+import { Component } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
@@ -259,47 +265,108 @@ function AppRoutes() {
   );
 }
 
-/* ─── Envolvedor Criptográfico Condicional (Bypass de Verificación) ──────── */
-/**
- * Si el usuario viene desde un enlace de confirmación de email institucional,
- * evitamos inicializar Privy para que Firebase Auth procese la sesión sin bloqueos.
- */
-function ConditionalWeb3Provider({ children }) {
-  const params = new URLSearchParams(window.location.search);
-  const isVerifyEmailMode = params.get("mode") === "verifyEmail" || params.has("oobCode");
-
-  if (isVerifyEmailMode) {
-    // Si es un link de verificación, hacemos bypass directo para que Firebase actúe libremente
-    return <>{children}</>;
+/* ─── Error Boundary para fallos de Privy/Web3 ───────────────────────────
+ * Si el SDK de Privy lanza una excepción durante el render (por ejemplo,
+ * por un origen no permitido, fallo de red al inicializar, o un hook leído
+ * antes de tiempo), esto evita que TODA la app quede en pantalla negra.
+ * Solo afecta al árbol que envuelve, dejando el resto de rutas operables. */
+class Web3ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  // De lo contrario, cargamos la suite completa Web2.5 de Privy
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("[Web3ErrorBoundary] Error en infraestructura Privy/Web3:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#080C10",
+          color: "#E3B64F",
+          gap: "16px",
+          padding: "24px",
+          textAlign: "center",
+        }}>
+          <p>No se pudo inicializar la infraestructura segura (Privy).</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "10px 20px",
+              border: "1px solid #E3B64F",
+              background: "transparent",
+              color: "#E3B64F",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ─── Web3Provider ────────────────────────────────────────────────────────
+ * Privy se monta siempre (ya no condicionalmente), porque varios componentes
+ * (miPerfil, tokenizar, industry/buy) usan usePrivy()/useWallets() y esos
+ * hooks REQUIEREN que el PrivyProvider esté presente en el árbol, sin
+ * importar la ruta o los parámetros de la URL. El flujo de verificación de
+ * email de Firebase (?mode=verifyEmail) ocurre en RoleContext, que ahora
+ * vive AFUERA de este provider (ver AppShell), por lo que ya no depende de
+ * que Privy haya terminado de inicializar.
+ */
+function Web3Provider({ children }) {
   return (
-    <PrivyProvider
-      appId="cmqqzase9000d0cjyq9ahukwg" // Aquí pegas el ID obtenido de dashboard.privy.io
-      config={{
-        loginMethods: ['email'],  
-        appearance: {
-          theme: 'dark',
-          accentColor: '#E3B64F',
-          showWalletLoginFirst: false,
-        },
-        embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-        },
-      }}
-    >
-      {children}
-    </PrivyProvider>
+    <Web3ErrorBoundary>
+      <PrivyProvider
+        appId="cmqqzase9000d0cjyq9ahukwg" // Aquí pegas el ID obtenido de dashboard.privy.io
+        config={{
+          loginMethods: ['email'],
+          appearance: {
+            theme: 'dark',
+            accentColor: '#E3B64F',
+            showWalletLoginFirst: false,
+          },
+          embeddedWallets: {
+            createOnLogin: 'users-without-wallets',
+          },
+        }}
+      >
+        {children}
+      </PrivyProvider>
+    </Web3ErrorBoundary>
   );
 }
 
-/* ─── AppShell Principal ─────────────────────────────────────────────────── */
+/* ─── AppShell Principal ─────────────────────────────────────────────────
+ * Orden de providers, de afuera hacia adentro:
+ *  1. BrowserRouter — necesario para todo lo demás.
+ *  2. RoleProvider — Firebase Auth. Va PRIMERO y por fuera de Privy para que
+ *     la validación de sesión / verificación de email nunca dependa de que
+ *     el SDK de Privy haya inicializado correctamente.
+ *  3. Web3Provider — Privy, envuelto en su propio Error Boundary. Si falla,
+ *     solo rompe las features de wallet, no el resto de la app.
+ *  4. DataProvider / ToastProvider / ChatProvider — el resto de la app.
+ */
 export default function AppShell() {
   return (
     <BrowserRouter>
-      <ConditionalWeb3Provider>
-        <RoleProvider>
+      <RoleProvider>
+        <Web3Provider>
           <DataProvider>
             <ToastProvider>
               <ChatProvider>
@@ -307,8 +374,8 @@ export default function AppShell() {
               </ChatProvider>
             </ToastProvider>
           </DataProvider>
-        </RoleProvider>
-      </ConditionalWeb3Provider>
+        </Web3Provider>
+      </RoleProvider>
 
       <style dangerouslySetInnerHTML={{
         __html: `

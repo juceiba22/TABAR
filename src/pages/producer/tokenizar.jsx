@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(227,182,79,0.25)" };
 
@@ -33,8 +33,11 @@ export default function ProducerTokenizar() {
   const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
   const { user, profile } = useRole();
 
+  const { ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+  const embeddedWallet = privyReady
+    ? (wallets || []).find((w) => w.walletClientType === 'privy')
+    : null;
 
   // Estados del formulario
   const [totalKgs, setTotalKgs] = useState("");

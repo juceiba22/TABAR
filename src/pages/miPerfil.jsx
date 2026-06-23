@@ -10,7 +10,9 @@ export default function MiPerfil() {
   const { ready, authenticated, login, user: privyUser, createWallet } = usePrivy();
   const { wallets } = useWallets();
 
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+  const embeddedWallet = ready
+    ? (wallets || []).find((w) => w.walletClientType === 'privy')
+    : null;
   
   // State for form fields
   const [displayName, setDisplayName] = useState("");
@@ -328,7 +330,13 @@ export default function MiPerfil() {
             <div className="form-group">
               <label className="profile-field-label">Billetera Institucional</label>
               
-              {embeddedWallet ? (
+              {!ready ? (
+                <div className="read-only-field-wrap institutional-badge-wrap">
+                  <span className="read-only-text" style={{ color: "var(--tb-text-2)", fontSize: '12px' }}>
+                    Inicializando infraestructura segura...
+                  </span>
+                </div>
+              ) : embeddedWallet ? (
                 <div className="read-only-field-wrap institutional-badge-wrap" style={{ border: '1px solid #3FB950' }}>
                   <span className="read-only-text" style={{ fontFamily: 'var(--tb-mono)', color: '#3FB950', fontSize: '11px' }}>
                     {embeddedWallet.address}

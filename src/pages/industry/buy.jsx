@@ -4,7 +4,7 @@ import { useData } from "../../modules/roles/DataContext";
 import { jsPDF } from "jspdf";
 import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" };
 
@@ -15,8 +15,11 @@ export default function IndustryBuy() {
   const { user, profile } = useRole();
   const { comprarIndustry } = useData();
   
+  const { ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+  const embeddedWallet = privyReady
+    ? (wallets || []).find((w) => w.walletClientType === 'privy')
+    : null;
 
   // Form states
   const [tipoTabaco, setTipoTabaco] = useState("");
