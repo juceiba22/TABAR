@@ -10,9 +10,12 @@ export default defineConfig({
     'global': 'globalThis'
   },
   build: {
-    commonjsOptions: {
-      transformMixedEsModules: true,
-      include: [/node_modules/]
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        keep_classnames: true,
+        keep_fnames: true
+      }
     }
   },
   plugins: [
