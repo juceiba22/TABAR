@@ -5,19 +5,6 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
-  define: {
-    'process.env': {},
-    'global': 'globalThis'
-  },
-  build: {
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        keep_classnames: true,
-        keep_fnames: true
-      }
-    }
-  },
   plugins: [
     nodePolyfills({
       globals: {
@@ -31,7 +18,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024 // Subimos a 6MB por el chunk consolidado
       },
       manifest: {
         name: 'Tabar Registro Institucional',
@@ -62,4 +49,20 @@ export default defineConfig({
       }
     })
   ],
+  define: {
+    'process.env': {},
+    'global': 'globalThis'
+  },
+  build: {
+    // Forzamos a que el código pesado de criptografía se agrupe de forma segura
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@privy-io') || id.includes('node_modules/viem') || id.includes('node_modules/@noble')) {
+            return 'privy-crypto-bundle'; // Todo lo Web3 a un solo archivo seguro
+          }
+        }
+      }
+    }
+  }
 })
