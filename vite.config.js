@@ -6,9 +6,13 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 // https://vite.dev/config/
 export default defineConfig({
   define: {
-    global: 'globalThis',
-    process: {
-      env: {}
+    'process.env': {},
+    'global': 'globalThis'
+  },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+      include: [/node_modules/]
     }
   },
   plugins: [
