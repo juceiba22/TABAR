@@ -1,13 +1,10 @@
 /**
- * AppShell.jsx — v3
+ * AppShell.jsx — v3.1 (Web2.5 Privy Bypass Integrado)
  *
- * Cambios vs v2:
- *  ① Ruta "/" ahora apunta a PublicPresentation (landing pública).
- *  ② LandingRole (login/registro) se movió a "/login".
- *  ③ Usuarios autenticados con rol son redirigidos desde "/" a su dashboard.
- *  ④ ProtectedRoute redirige a "/login" en vez de "/" para no-autenticados.
- *  ⑤ Catch-all para usuarios sin auth redirige a "/" (landing pública).
- *  ⑥ Se preserva SplashScreen, DataProvider y RoleProvider intactos.
+ * Cambios vs v3 original:
+ * ✔ Incorporación del PrivyProvider global para Embedded Wallets institucionales.
+ * ✔ Bypass activo de Privy si la URL contiene parámetros de verificación de Firebase Auth (?mode=verifyEmail),
+ * eliminando definitivamente la pantalla en negro al validar nuevos usuarios por correo.
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -37,6 +34,9 @@ import ProducerTokenizar from "./pages/producer/tokenizar";
 import ProducerAssociations from "./pages/producer/asociaciones";
 import MiPerfil from "./pages/miPerfil";
 
+// ① IMPORTAR EL PROVEEDOR DE PRIVY
+import { PrivyProvider } from '@privy-io/react-auth';
+
 /* ─── Spinner de splash ──────────────────────────────────────────────────── */
 function SplashScreen() {
   return (
@@ -52,24 +52,12 @@ function SplashScreen() {
 }
 
 /* ─── ProtectedRoute ─────────────────────────────────────────────────────── */
-/**
- * Guarda una ruta según autenticación y rol.
- *
- * Estados posibles:
- *   loading  → SplashScreen (sin flash)
- *   !user    → redirect a "/login"  (④ formulario de auth)
- *   role no permitido → redirect al home del rol actual
- *   ok       → renderiza children
- */
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, role, loading } = useRole();
 
   if (loading) return <SplashScreen />;
-
-  // ④ No autenticado → formulario de login
   if (!user) return <Navigate to="/login" replace />;
 
-  // Rol no permitido → home del rol actual, con fallback seguro
   if (allowedRoles && !allowedRoles.includes(role)) {
     const destination = ROLE_HOME[role] ?? "/login";
     return <Navigate to={destination} replace />;
@@ -78,35 +66,31 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-/* ─── SmartRoot: redirige auth con rol, o muestra landing ────────────────── */
+/* ─── SmartRoot ──────────────────────────────────────────────────────────── */
 function SmartRoot() {
   const { user, role, loading } = useRole();
 
   if (loading) return <SplashScreen />;
 
-  // ③ Usuario con sesión activa y rol → directo a su dashboard
   if (user && role) {
     const dest = ROLE_HOME[role] ?? "/login";
     return <Navigate to={dest} replace />;
   }
 
-  // ① Sin sesión o sin rol → landing pública
   return <PublicPresentation />;
 }
 
-/* ─── SmartLogin: redirige auth con rol, o muestra login ─────────────────── */
+/* ─── SmartLogin ─────────────────────────────────────────────────────────── */
 function SmartLogin() {
   const { user, role, loading } = useRole();
 
   if (loading) return <SplashScreen />;
 
-  // Ya autenticado con rol → no tiene sentido ver el login
   if (user && role) {
     const dest = ROLE_HOME[role] ?? "/";
     return <Navigate to={dest} replace />;
   }
 
-  // ② Mostrar formulario de login/registro
   return <LandingRole />;
 }
 
@@ -114,35 +98,28 @@ function SmartLogin() {
 function AppRoutes() {
   const { user, role, loading } = useRole();
 
-  // Bloquear render hasta que loading termine — evita flash
   if (loading) return <SplashScreen />;
 
-  // ⑤ Sin sesión o sin rol: mostrar rutas públicas + login
   if (!user || !role) {
     return (
       <Routes>
         <Route path="/" element={<SmartRoot />} />
         <Route path="/login" element={<SmartLogin />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        {/* Cualquier otra ruta sin auth → landing pública */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
 
-  // Destino raíz del rol actual
   const roleHome = ROLE_HOME[role] ?? "/";
 
   return (
     <Routes>
-      {/* ── Rutas públicas accesibles también estando auth ── */}
       <Route path="/" element={<Navigate to={roleHome} replace />} />
       <Route path="/login" element={<Navigate to={roleHome} replace />} />
       <Route path="/admin/login" element={<Navigate to={roleHome} replace />} />
 
-      {/* ── Rutas protegidas dentro del AppLayout ── */}
       <Route element={<AppLayout />}>
-        {/* Ruta compartida */}
         <Route path="/campaign" element={<CampaignPage />} />
         <Route 
           path="/miPerfil" 
@@ -205,6 +182,7 @@ function AppRoutes() {
           }
         />
         <Route path="/industry/financing" element={<IndustryFinancing />} />
+
         {/* State */}
         <Route
           path="/state"
@@ -276,25 +254,61 @@ function AppRoutes() {
         />
       </Route>
 
-      {/* Catch-all — redirige al home del rol actual */}
       <Route path="*" element={<Navigate to={roleHome} replace />} />
     </Routes>
   );
 }
 
-/* ─── AppShell ───────────────────────────────────────────────────────────── */
+/* ─── Envolvedor Criptográfico Condicional (Bypass de Verificación) ──────── */
+/**
+ * Si el usuario viene desde un enlace de confirmación de email institucional,
+ * evitamos inicializar Privy para que Firebase Auth procese la sesión sin bloqueos.
+ */
+function ConditionalWeb3Provider({ children }) {
+  const params = new URLSearchParams(window.location.search);
+  const isVerifyEmailMode = params.get("mode") === "verifyEmail" || params.has("oobCode");
+
+  if (isVerifyEmailMode) {
+    // Si es un link de verificación, hacemos bypass directo para que Firebase actúe libremente
+    return <>{children}</>;
+  }
+
+  // De lo contrario, cargamos la suite completa Web2.5 de Privy
+  return (
+    <PrivyProvider
+      appId="cmqqzase9000d0cjyq9ahukwg" // Aquí pegas el ID obtenido de dashboard.privy.io
+      config={{
+        loginMethods: ['email'],  
+        appearance: {
+          theme: 'dark',
+          accentColor: '#E3B64F',
+          showWalletLoginFirst: false,
+        },
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+        },
+      }}
+    >
+      {children}
+    </PrivyProvider>
+  );
+}
+
+/* ─── AppShell Principal ─────────────────────────────────────────────────── */
 export default function AppShell() {
   return (
     <BrowserRouter>
-      <RoleProvider>
-        <DataProvider>
-          <ToastProvider>
-            <ChatProvider>
-              <AppRoutes />
-            </ChatProvider>
-          </ToastProvider>
-        </DataProvider>
-      </RoleProvider>
+      <ConditionalWeb3Provider>
+        <RoleProvider>
+          <DataProvider>
+            <ToastProvider>
+              <ChatProvider>
+                <AppRoutes />
+              </ChatProvider>
+            </ToastProvider>
+          </DataProvider>
+        </RoleProvider>
+      </ConditionalWeb3Provider>
 
       <style dangerouslySetInnerHTML={{
         __html: `
