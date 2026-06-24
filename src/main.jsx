@@ -1,22 +1,20 @@
 // src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { PrivyProvider } from '@privy-io/react-auth'; // <--- CORREGIDO ACÁ
-import { Web3Provider } from "./context/Web3Context";
+import { PrivyProvider } from '@privy-io/react-auth';
+import { Web3Provider } from './context/Web3Context'; 
 import App from './App';
+import './index.css'; // Tus estilos globales de Tailwind
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* El PrivyProvider es el que habilita el login con Mail y Google */}
     <PrivyProvider
-      appId="cmqqzase9000d0cjyq9ahukwg" // Aquí va el ID que te da la consola de Privy (podes dejar este de prueba para maquetar)
+      appId="cmqqzase9000d0cjyq9ahukwg" // El ID real de tu dashboard de Privy
       config={{
         loginMethods: ['email', 'google'],
-        // Esto le crea la billetera automática a tu cliente cuando pone su mail
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
-        // Configuramos para que por defecto opere en Polygon Mainnet
         supportedChains: [{
           id: 137,
           network: 'polygon',
