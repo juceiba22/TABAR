@@ -1,103 +1,111 @@
 // src/App.jsx
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { Web3Context } from './context/Web3Context';
-import { FideicomisoDashboard } from './views/FideicomisoDashboard';
-import { ProductorDashboard } from './views/ProductorDashboard';
+
+// Importación de tus componentes de vista originales
+import Sidebar from './components/Sidebar';
+import DashboardOverview from './components/DashboardOverview';
+import Certificaciones from './components/Certificaciones';
+import Fideicomiso from './components/Fideicomiso';
+import Configuracion from './components/Configuracion';
 
 function App() {
-  // Traemos el estado de autenticación directamente de Privy
+  // 1. Lógica de Autenticación con Privy
   const { login, logout, authenticated, user } = usePrivy();
-  const { currentRole, setCurrentRole } = useContext(Web3Context);
+  const { account } = useContext(Web3Context);
 
+  // 2. Tus estados originales de navegación y roles
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [userRole, setUserRole] = useState('fideicomiso'); // 'fideicomiso', 'productor', 'acopiador'
+
+  // Renderizado dinámico de tus vistas originales
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardOverview userRole={userRole} />;
+      case 'certificaciones':
+        return <Certificaciones userRole={userRole} />;
+      case 'fideicomiso':
+        return <Fideicomiso userRole={userRole} />;
+      case 'configuracion':
+        return <Configuracion userRole={userRole} />;
+      default:
+        return <DashboardOverview userRole={userRole} />;
+    }
+  };
+
+  // PASO A: Si el usuario NO está autenticado, mostramos la pantalla de entrada con tu estética
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <span className="text-4xl">🌾</span>
+          </div>
+          <h2 className="text-3xl font-extrabold text-slate-950 tracking-tight">TABAR Tech</h2>
+          <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+            Plataforma de Tokenización Agrícola. Accedé de forma segura para certificar, auditar o gestionar contratos de fideicomiso de tabaco on-chain.
+          </p>
+          <button
+            onClick={login}
+            className="mt-8 w-full flex items-center justify-center py-3 px-4 rounded-xl text-sm font-semibold text-white bg-slate-950 hover:bg-slate-900 transition-colors shadow-sm"
+          >
+            Ingresar con Mail o Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // PASO B: Si está autenticado, se despliega tu Dashboard Real con Tailwind
   return (
-    <div style={styles.appContainer}>
-      {/* BARRA DE NAVEGACIÓN SUPERIOR */}
-      <nav style={styles.navbar}>
-        <div style={styles.logoContainer}>
-          <span style={styles.logoIcon}>🌾</span>
-          <span style={styles.logoText}>TABAR Tech</span>
-        </div>
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans antialiased text-slate-900">
+      
+      {/* SIDEBAR ORIGINAL (Le pasamos los datos dinámicos de Privy) */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        userRole={userRole}
+        userEmail={user?.email?.address || "Usuario Web3"}
+        walletAddress={account}
+        onLogout={logout}
+      />
 
-        <div style={styles.navActions}>
-          {authenticated ? (
-            <div style={styles.userMenu}>
-              <div style={styles.walletBadge}>
-                <span style={styles.dot}>●</span>
-                {/* Mostramos el mail del usuario o su wallet embebida */}
-                <code>{user?.email?.address || `${user?.wallet?.address.substring(0, 6)}...`}</code>
-              </div>
-              <button onClick={logout} style={styles.logoutBtn}>Cerrar Sesión</button>
-            </div>
-          ) : (
-            <button onClick={login} style={styles.connectBtn}>
-              Iniciar Sesión (Mail/Google)
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* CONTROLADOR DE LA DEMO (SELECTOR DE ROLES) */}
-      {authenticated && (
-        <div style={styles.demoController}>
-          <p style={styles.controllerLabel}>🕹️ Entorno de simulación para el Cliente (Selector de Rol):</p>
-          <div style={styles.btnGroup}>
-            <button 
-              onClick={() => setCurrentRole('fideicomiso')} 
-              style={currentRole === 'fideicomiso' ? styles.roleBtnActive : styles.roleBtn}
-            >
-              🏢 Ver como Fideicomiso (Admin)
-            </button>
-            <button 
-              onClick={() => setCurrentRole('productor')} 
-              style={currentRole === 'productor' ? styles.roleBtnActive : styles.roleBtn}
-            >
-              🚜 Ver como Productor Agrícola
-            </button>
+      {/* CONTENEDOR PRINCIPAL */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* BANNER DE SIMULACIÓN (Herramienta para tu Demo con el Cliente) */}
+        <div className="bg-blue-50 border-b border-blue-100 px-6 py-2.5 flex items-center justify-between shadow-sm shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🕹️</span>
+            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">Entorno de Simulación:</span>
+            <p className="text-xs text-blue-600 hidden sm:inline">Cambiá el rol para mostrarle el flujo completo a tu cliente.</p>
+          </div>
+          <div className="flex gap-1.5 bg-blue-100/60 p-1 rounded-lg border border-blue-200/40">
+            {['fideicomiso', 'productor', 'acopiador'].map((role) => (
+              <button
+                key={role}
+                onClick={() => setUserRole(role)}
+                className={`px-3 py-1 text-xs font-semibold capitalize rounded-md transition-all ${
+                  userRole === role 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                {role}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* CONTENIDO DINÁMICO */}
-      <main style={styles.mainContent}>
-        {!authenticated ? (
-          <div style={styles.loginWall}>
-            <h2>Bienvenido a la Demo de Fideicomiso TABAR</h2>
-            <p>Accede de forma segura usando tu correo electrónico o cuenta de Google sin necesidad de instalar extensiones cripto.</p>
-            <button onClick={login} style={styles.largeConnectBtn}>
-              Ingresar a la Plataforma
-            </button>
-          </div>
-        ) : currentRole === 'fideicomiso' ? (
-          <FideicomisoDashboard />
-        ) : (
-          <ProductorDashboard />
-        )}
-      </main>
+        {/* CONTENIDO DE LA VISTA ACTIVA */}
+        <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-slate-50/50">
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  appContainer: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'sans-serif' },
-  navbar: { display: 'flex', alignItems: 'center', padding: '16px 40px', backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', justifyContent: 'space-between' },
-  logoContainer: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logoIcon: { fontSize: '24px' },
-  logoText: { fontSize: '18px', fontWeight: 'bold', color: '#0f172a' },
-  navActions: { display: 'flex', alignItems: 'center' },
-  connectBtn: { padding: '10px 20px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' },
-  userMenu: { display: 'flex', alignItems: 'center', gap: '12px' },
-  walletBadge: { padding: '8px 16px', backgroundColor: '#f1f5f9', borderRadius: '20px', color: '#334155', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' },
-  dot: { color: '#16a34a', fontSize: '12px' },
-  logoutBtn: { padding: '8px 12px', backgroundColor: 'transparent', color: '#64748b', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' },
-  demoController: { maxWidth: '1200px', margin: '24px auto 0 auto', padding: '16px 24px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' },
-  controllerLabel: { margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e40af' },
-  btnGroup: { display: 'flex', gap: '12px' },
-  roleBtn: { padding: '10px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#64748b' },
-  roleBtnActive: { padding: '10px 16px', backgroundColor: '#1e40af', border: '1px solid #1e40af', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#fff' },
-  mainContent: { minHeight: '60vh' },
-  loginWall: { maxWidth: '500px', margin: '80px auto', textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' },
-  largeConnectBtn: { marginTop: '24px', width: '100%', padding: '14px', backgroundColor: '#0f172a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }
-};
 
 export default App;

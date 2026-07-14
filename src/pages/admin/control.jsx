@@ -1,3 +1,4 @@
+// src/pages/admin/control.jsx
 import { useState, useEffect } from "react";
 import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
@@ -6,6 +7,9 @@ import { useToast } from "../../modules/layout/ToastContext";
 import { collection, getDocs, query, where, doc, updateDoc, runTransaction } from "firebase/firestore";
 import { db } from "../../config/firebase";
 
+// Inyección del motor Web3 para la firma on-chain
+import { useTabarContract } from "../../hooks/useTabarContract";
+
 const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
 
 export default function AdminControl() {
@@ -13,7 +17,9 @@ export default function AdminControl() {
   const { showToast } = useToast();
   const [tab, setTab] = useState("campana");
   
-  // Estados para la gestión de certificaciones Web2.5 (Whitepaper Pág. 5 y 8)
+  // Hook del Smart Contract conectado a Polygon
+  const { emitirDeuda, txLoading } = useTabarContract();
+  
   const [certificaciones, setCertificaciones] = useState([]);
   const [certsLoading, setCertisLoading] = useState(false);
 
@@ -48,7 +54,6 @@ export default function AdminControl() {
     }
   };
 
-  // Cargar certificaciones Web2.5 pendientes de validación institucional
   const fetchCertificacionesPendientes = async () => {
     setCertisLoading(true);
     try {
@@ -66,7 +71,7 @@ export default function AdminControl() {
     }
   };
 
-  // Función de aprobación del Fideicomiso: Convierte el lote físico en Token TABAR oficial
+  // Función de aprobación conectada armónicamente a Polygon Mainnet
   const handleAprobarTokenizacion = async (cert) => {
     try {
       if (!campana || !campana.activa) {
@@ -74,11 +79,21 @@ export default function AdminControl() {
         return;
       }
 
+      // PASO CRÍTICO A: Ejecución y firma de la transacción real en la Blockchain
+      // Llamamos al contrato enviando: (walletProductor, cantidadFardos, idCertificado)
+      showToast("Iniciando firma digital en Polygon Mainnet...", "info");
+      
+      const blockchainTxHash = await emitirDeuda(
+        cert.walletProductor, 
+        cert.cantidadFardos, 
+        cert.numeroCertificado
+      );
+
+      // PASO B: Si la transacción en la Blockchain es exitosa, impactamos Firestore
       const certRef = doc(db, "producer_tokenizations", cert.id);
       const campanaRef = doc(db, "campaigns", "active");
       const balancesRef = doc(db, "balances", "global");
 
-      // Transacción atómica off-chain indexada (Simulación de red de gobernanza cerrada)
       await runTransaction(db, async (transaction) => {
         const cSnap = await transaction.get(campanaRef);
         const bSnap = await transaction.get(balancesRef);
@@ -87,10 +102,13 @@ export default function AdminControl() {
         
         const fardosAIgualar = parseFloat(cert.cantidadFardos);
         
-        // Actualizamos el estado del lote a aprobado por el Fideicomiso
-        transaction.update(certRef, { estado: "aprobado_fideicomiso" });
+        // Actualizamos Firestore anexando el hash real de la red
+        transaction.update(certRef, { 
+          estado: "aprobado_fideicomiso",
+          onChainTxHash: blockchainTxHash,
+          fechaAprobacionOnChain: new Date().toISOString()
+        });
 
-        // Aumentamos los fardos distribuidos y balances del productor de forma oficial
         const nuevosVendidos = (cSnap.data().fardosVendidos || 0) + fardosAIgualar;
         const nuevosDisponibles = (cSnap.data().fardosDisponibles || 0) - fardosAIgualar;
         
@@ -107,10 +125,10 @@ export default function AdminControl() {
       });
 
       setCertificaciones(certificaciones.filter(c => c.id !== cert.id));
-      showToast(`¡Lote Tokenizado! Se emitieron ${parseFloat(cert.cantidadFardos).toFixed(2)} TABAR al productor.`, "success");
+      showToast(`¡Lote Emitido On-Chain! Bloque confirmado con Hash: ${blockchainTxHash.substring(0, 10)}...`, "success");
     } catch (error) {
       console.error("Error en aprobación institucional:", error);
-      showToast("Error en la transacción de asignación fiduciaria.", "error");
+      showToast(error.message || "Operación cancelada o falla en la red de Polygon.", "error");
     }
   };
 
@@ -205,7 +223,7 @@ export default function AdminControl() {
             <h3 style={{ margin: 0, fontSize: "13px", color: "var(--tb-text-2)", fontWeight: 500 }}>
               Manifiestos y Certificados con Firma Digital Privy
             </h3>
-            <button onClick={fetchCertificacionesPendientes} disabled={certsLoading} style={{ background: "none", border: "none", color: "var(--tb-accent)", fontSize: "11px", cursor: "pointer" }}>
+            <button onClick={fetchCertificacionesPendientes} disabled={certsLoading || txLoading} style={{ background: "none", border: "none", color: "var(--tb-accent)", fontSize: "11px", cursor: "pointer" }}>
               {certsLoading ? "Verificando red..." : "↻ Refrescar Solicitudes"}
             </button>
           </div>
@@ -245,10 +263,19 @@ export default function AdminControl() {
                       <td style={{ textAlign: "right" }}>
                         <button 
                           onClick={() => handleAprobarTokenizacion(c)} 
+                          disabled={txLoading}
                           className="tabar-btn tabar-btn-primary" 
-                          style={{ padding: "6px 12px", fontSize: "11px", width: "auto", background: "#3FB950", borderColor: "#3FB950", color: "#080C10" }}
+                          style={{ 
+                            padding: "6px 12px", 
+                            fontSize: "11px", 
+                            width: "auto", 
+                            background: txLoading ? "#484F58" : "#3FB950", 
+                            borderColor: txLoading ? "#484F58" : "#3FB950", 
+                            color: "#080C10",
+                            opacity: txLoading ? 0.6 : 1
+                          }}
                         >
-                          Aprobar y Emitir Deuda
+                          {txLoading ? "Firmando Bloque..." : "Aprobar y Emitir Deuda"}
                         </button>
                       </td>
                     </tr>
@@ -264,6 +291,7 @@ export default function AdminControl() {
         </div>
       )}
 
+      {/* Mantener pestañas estado, solicitudes e historial idénticas */}
       {tab === "estado" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div className="tabar-card">
@@ -338,24 +366,11 @@ export default function AdminControl() {
                         </div>
                       </td>
                       <td>
-                        <span className="tabar-badge" style={{ 
-                          background: "rgba(255,255,255,0.05)", 
-                          color: "var(--tb-text-2)",
-                          textTransform: "capitalize",
-                          fontSize: "10px"
-                        }}>
-                          {u.role}
-                        </span>
+                        <span className="tabar-badge" style={{ background: "rgba(255,255,255,0.05)", color: "var(--tb-text-2)", textTransform: "capitalize", fontSize: "10px" }}>{u.role}</span>
                       </td>
                       <td className="mono" style={{ fontSize: "11px" }}>{u.email}</td>
                       <td style={{ textAlign: "right" }}>
-                        <button 
-                          onClick={() => handleApprove(u.id)} 
-                          className="tabar-btn tabar-btn-primary" 
-                          style={{ padding: "4px 10px", fontSize: "11px", width: "auto" }}
-                        >
-                          Aprobar Acceso
-                        </button>
+                        <button onClick={() => handleApprove(u.id)} className="tabar-btn tabar-btn-primary" style={{ padding: "4px 10px", fontSize: "11px", width: "auto" }}>Aprobar Acceso</button>
                       </td>
                     </tr>
                   ))}

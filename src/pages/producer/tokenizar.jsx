@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// src/pages/producer/tokenizar.jsx
+import { useState, useEffect, useContext } from "react";
 import { useData } from "../../modules/roles/DataContext";
 import { useRole } from "../../modules/roles/RoleContext";
 import { Link } from "react-router-dom";
@@ -6,17 +7,17 @@ import jsPDF from "jspdf";
 import { storage } from "../../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { Web3Context } from "../../context/Web3Context";
+import { useTabarContract } from "../../hooks/useTabarContract";
 
 const C = { accent: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(227,182,79,0.25)" };
 
-// Opciones de Tipo de Tabaco
 const TIPOS_TABACO = [
   { value: "virginia", label: "Virginia" },
   { value: "burley", label: "Burley" },
   { value: "criollo", label: "Criollo" }
 ];
 
-// Opciones de Calidad
 const OPCIONES_CALIDAD = [
   "T1F", "T1L", "B1F", "B1L", "C1F", "C1L", "X1F", "X1L",
   "T2F", "T2L", "T2KL", "T2KF", "B2F", "B2L", "B2KL", "B2KF",
@@ -25,13 +26,18 @@ const OPCIONES_CALIDAD = [
   "B4F", "B4L"
 ];
 
-// Formateadores
 const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function ProducerTokenizar() {
   const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
   const { user, profile } = useRole();
+
+  // Conexión al motor Web3 global e inyección de hooks
+  const { account, contract } = useContext(Web3Context);
+  const { getBalanceOf } = useTabarContract();
+  const [tokenBalance, setTokenBalance] = useState("0.00");
+  const [loadingBalance, setLoadingBalance] = useState(false);
 
   const { ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
@@ -49,12 +55,10 @@ export default function ProducerTokenizar() {
   const [tipoVenta, setTipoVenta] = useState("");
   const [precioVenta, setPrecioVenta] = useState("");
 
-  // Estados para asociaciones existentes
   const [asociacionesDisponibles, setAsociacionesDisponibles] = useState([]);
   const [asociacionSeleccionada, setAsociacionSeleccionada] = useState("");
   const [loadingAsociaciones, setLoadingAsociaciones] = useState(false);
 
-  // Estados de UI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -67,7 +71,19 @@ export default function ProducerTokenizar() {
   const precioFinal = parseFloat(precioVenta) || 0;
   const usdTotal = numTotalKgs * precioFinal;
 
-  // Cargar todas las asociaciones activas cuando el usuario elige venta asociada
+  // Efecto para consultar el balance real en Polygon Mainnet
+  useEffect(() => {
+    const fetchOnChainBalance = async () => {
+      if (contract && account) {
+        setLoadingBalance(true);
+        const bal = await getBalanceOf(account);
+        setTokenBalance(bal);
+        setLoadingBalance(false);
+      }
+    };
+    fetchOnChainBalance();
+  }, [account, contract]);
+
   useEffect(() => {
     if (user?.uid && tipoVenta === "asociada") {
       const fetchAsociaciones = async () => {
@@ -75,7 +91,6 @@ export default function ProducerTokenizar() {
         try {
           const res = await obtenerTodasLasAsociaciones();
           if (res.ok) {
-            // Filtrar solo las activas
             const activas = (res.asociaciones || []).filter(asoc => asoc.estado === "activa");
             setAsociacionesDisponibles(activas);
           }
@@ -84,12 +99,10 @@ export default function ProducerTokenizar() {
         }
         setLoadingAsociaciones(false);
       };
-
       fetchAsociaciones();
     }
   }, [user, tipoVenta]);
 
-  // Preview de foto
   useEffect(() => {
     if (!fotoFile) {
       setFotoPreview("");
@@ -100,7 +113,6 @@ export default function ProducerTokenizar() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [fotoFile]);
 
-  // Validar que todos los campos estén completos.
   const isFormValid =
     totalKgs &&
     tamanoFardo &&
@@ -111,27 +123,20 @@ export default function ProducerTokenizar() {
     parseFloat(precioVenta) > 0 &&
     (tipoVenta !== "asociada" || asociacionSeleccionada);
 
-  // Generar código de transacción único
   const generarCodigoTransaccion = () => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9).toUpperCase();
     return `TABAR-${timestamp}-${random}`;
   };
 
-  // Generar PDF con datos de la Orden de Venta
   const generarOrdenVentaPDF = async (producerObj, codigo) => {
     const doc = new jsPDF();
     const ahora = new Date();
     const fechaHora = ahora.toLocaleString("es-AR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
     });
 
-    // Encabezado
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.text("ORDEN DE VENTA EN TABAR", 20, 20);
@@ -140,11 +145,9 @@ export default function ProducerTokenizar() {
     doc.setFontSize(10);
     doc.text("Registro digital de orden de venta de tabaco", 20, 28);
 
-    // Línea divisoria
     doc.setDrawColor(63, 185, 80);
     doc.line(20, 32, 190, 32);
 
-    // Sección: Datos del Productor
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("DATOS DEL PRODUCTOR", 20, 42);
@@ -155,7 +158,6 @@ export default function ProducerTokenizar() {
     doc.text(`Email: ${user?.email || "No disponible"}`, 20, 57);
     doc.text(`ID Productor: ${user?.uid?.substring(0, 12) || "No disponible"}`, 20, 64);
 
-    // Sección: Detalles del Lote
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("DETALLES DEL LOTE", 20, 75);
@@ -169,7 +171,6 @@ export default function ProducerTokenizar() {
     doc.text(`Calidad: ${calidad}`, 20, 111);
     doc.text(`Tipo de Venta: ${tipoVenta === "individual" ? "Venta Individual" : "Venta Asociada"}`, 20, 118);
 
-    // Sección: Precio
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("PRECIO DE VENTA", 20, 129);
@@ -180,7 +181,6 @@ export default function ProducerTokenizar() {
 
     let yPos = 150;
 
-    // Sección: Total
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("TOTAL DE LA ORDEN DE VENTA", 20, yPos);
@@ -193,7 +193,6 @@ export default function ProducerTokenizar() {
     doc.text(`Activos TABAR Generados: ${fmtFardos(cantidadFardos)}`, 20, yPos);
     yPos += 11;
 
-    // Sección Asociación de Venta (si corresponde)
     if (producerObj) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
@@ -210,7 +209,6 @@ export default function ProducerTokenizar() {
         yPos += 11;
     }
 
-    // Sección: Información de Transacción
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("INFORMACIÓN DE LA ORDEN", 20, yPos);
@@ -224,18 +222,16 @@ export default function ProducerTokenizar() {
     yPos += 7;
     doc.text(`Estado: Orden de venta registrada`, 20, yPos);
 
-    // Pie de página
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(139, 148, 158);
     doc.text("Este documento es un comprobante digital de la orden de venta registrada en la plataforma TABAR.", 20, 250);
-    doc.text("La existencia de este documento implica la aceptación de los términos y condiciones de la operación de venta.", 20, 256);
+    doc.text("La existencia de este documento implies la aceptación de los términos y condiciones de la operación de venta.", 20, 256);
 
     return doc;
   };
 
   const handleTokenizar = async () => {
-    // Validaciones
     if (tipoVenta === "asociada" && !asociacionSeleccionada) {
       setError("Debes seleccionar una asociación");
       return;
@@ -243,7 +239,6 @@ export default function ProducerTokenizar() {
 
     setError("");
     setLoading(true);
-
     let associationId = null;
 
     try {
@@ -278,11 +273,7 @@ export default function ProducerTokenizar() {
 
       if (tipoVenta === "asociada") {
         const res = await unirseAAsociacion(asociacionSeleccionada, {
-          tipoTabaco,
-          calidad,
-          kgs: numTotalKgs,
-          cantidadFardos,
-          usdTotal
+          tipoTabaco, calidad, kgs: numTotalKgs, cantidadFardos, usdTotal
         });
 
         if (!res.ok) {
@@ -290,7 +281,6 @@ export default function ProducerTokenizar() {
           setLoading(false);
           return;
         }
-
         associationId = res.associationId;
       }
 
@@ -315,7 +305,6 @@ export default function ProducerTokenizar() {
       await uploadBytes(storageRef, pdfBlob);
       const pdfUrl = await getDownloadURL(storageRef);
 
-      // Preparar datos de la orden de venta (Firestore)
       const tokenizationData = {
         numeroCertificado: codigo,
         cantidadFardos,
@@ -331,7 +320,7 @@ export default function ProducerTokenizar() {
         fotoUrl: uploadedFotoUrl,
         pdfUrl: pdfUrl,
         pdfNombre: pdfFileName,
-        estado: "pendiente_acopio", // Queda a la espera de que el Acopiador/Fideicomiso valide
+        estado: "pendiente_acopio",
         fechaCreacion: new Date().toISOString(),
         creadoPor: user?.email,
         walletProductor: embeddedWallet.address,
@@ -339,7 +328,6 @@ export default function ProducerTokenizar() {
         datosCertificadosRaw: mensajeAFirmar
       };
 
-      // Llamar a tokenizarProducer (registra la orden de venta)
       const res = await tokenizarProducer(tokenizationData);
       
       if (res.ok) {
@@ -352,10 +340,8 @@ export default function ProducerTokenizar() {
       console.error(err);
       setError(err.message || "Error al procesar");
     }
-
     setLoading(false);
   };
-
 
   if (success) {
     return (
@@ -379,9 +365,7 @@ export default function ProducerTokenizar() {
           </p>
         </div>
         <p style={{ color: "#8B949E", marginBottom: "30px", fontSize: "12px" }}>
-          Tu orden de venta fue registrada exitosamente.
-          <br />
-          Se ha generado un PDF con los detalles de la operación.
+          Tu orden de venta fue registrada exitosamente. Se generó un PDF respaldatorio.
         </p>
         <Link to="/producer" className="tabar-btn tabar-btn-primary">Volver al Dashboard</Link>
       </div>
@@ -398,10 +382,24 @@ export default function ProducerTokenizar() {
         <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Registrá una orden de venta de tu tabaco en la plataforma TABAR</p>
       </div>
 
+      {/* TARJETA DE SALDO REAL ON-CHAIN INCORPORADA ARMÓNICAMENTE */}
+      {account && (
+        <div className="tabar-card" style={{ marginBottom: "20px", borderLeft: `4px solid ${C.accent}`, padding: "16px 20px" }}>
+          <span style={{ fontSize: "11px", color: "#8B949E", fontWeight: 600, uppercase: true }}>
+            Tu Balance de Garantías en Polygon
+          </span>
+          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#FFF", marginTop: "4px", fontFamily: "monospace" }}>
+            {loadingBalance ? "Sincronizando Ledger..." : `${tokenBalance} TABAR`}
+          </h2>
+          <p style={{ fontSize: "11px", color: "#484F58", marginTop: "4px" }}>
+            Billetera integrada: {account.substring(0, 6)}...{account.substring(account.length - 4)}
+          </p>
+        </div>
+      )}
+
       <div className="tabar-card">
         <h3 className="tabar-card-title">Información del Lote</h3>
 
-        {/* Total Kgs a ofrecer */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Total Kgs a ofrecer *
@@ -414,12 +412,8 @@ export default function ProducerTokenizar() {
             onChange={(e) => setTotalKgs(e.target.value)}
             disabled={loading || showConfirm}
           />
-          <p style={{ fontSize: "11px", color: "#484F58", marginTop: "6px" }}>
-            Cantidad total de kilos de tabaco que vas a ofrecer en esta orden
-          </p>
         </div>
 
-        {/* Tamaño del Fardo */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Tamaño del Fardo (kg) *
@@ -432,12 +426,8 @@ export default function ProducerTokenizar() {
             onChange={(e) => setTamanoFardo(e.target.value)}
             disabled={loading || showConfirm}
           />
-          <p style={{ fontSize: "11px", color: "#484F58", marginTop: "6px" }}>
-            Peso de cada fardo individual
-          </p>
         </div>
 
-        {/* Precio de venta (obligatorio) */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Precio de venta ($/kg) *
@@ -452,12 +442,8 @@ export default function ProducerTokenizar() {
             onChange={(e) => setPrecioVenta(e.target.value)}
             disabled={loading || showConfirm}
           />
-          <p style={{ fontSize: "11px", color: "#484F58", marginTop: "6px" }}>
-            Precio en pesos por kilogramo que querés cobrar
-          </p>
         </div>
 
-        {/* Tipo de Tabaco */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Tipo de Tabaco *
@@ -476,7 +462,6 @@ export default function ProducerTokenizar() {
           </select>
         </div>
 
-        {/* Calidad */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Calidad *
@@ -495,7 +480,6 @@ export default function ProducerTokenizar() {
           </select>
         </div>
 
-        {/* Foto de Muestra */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Foto de muestra de tabaco (Opcional)
@@ -511,53 +495,27 @@ export default function ProducerTokenizar() {
           {fotoPreview && (
             <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "11px", color: "#8B949E" }}>Vista previa:</span>
-              <img
-                src={fotoPreview}
-                alt="Muestra de tabaco"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "180px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  objectFit: "cover"
-                }}
-              />
+              <img src={fotoPreview} alt="Muestra" style={{ maxWidth: "100%", maxHeight: "180px", borderRadius: "8px", objectFit: "cover" }} />
             </div>
           )}
         </div>
 
-        {/* Tipo de Venta */}
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
             Tipo de Venta *
           </label>
           <div style={{ display: "flex", gap: "16px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-              <input
-                type="radio"
-                name="tipoVenta"
-                value="individual"
-                checked={tipoVenta === "individual"}
-                onChange={(e) => { setTipoVenta(e.target.value); setAsociacionSeleccionada(""); }}
-                disabled={loading || showConfirm}
-              />
+              <input type="radio" name="tipoVenta" value="individual" checked={tipoVenta === "individual"} onChange={(e) => { setTipoVenta(e.target.value); setAsociacionSeleccionada(""); }} disabled={loading || showConfirm} />
               <span>Venta Individual</span>
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px" }}>
-              <input
-                type="radio"
-                name="tipoVenta"
-                value="asociada"
-                checked={tipoVenta === "asociada"}
-                onChange={(e) => setTipoVenta(e.target.value)}
-                disabled={loading || showConfirm}
-              />
+              <input type="radio" name="tipoVenta" value="asociada" checked={tipoVenta === "asociada"} onChange={(e) => setTipoVenta(e.target.value)} disabled={loading || showConfirm} />
               <span>Venta Asociada</span>
             </label>
           </div>
         </div>
 
-        {/* Asociación Existente - para Venta Asociada */}
         {tipoVenta === "asociada" && (
           <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "#8B949E", marginBottom: "8px", fontWeight: 500 }}>
@@ -570,107 +528,50 @@ export default function ProducerTokenizar() {
               disabled={loading || showConfirm || loadingAsociaciones}
               style={{ cursor: "pointer" }}
             >
-              <option value="">{loadingAsociaciones ? "Cargando asociaciones..." : "Seleccionar asociación de productores"}</option>
+              <option value="">{loadingAsociaciones ? "Cargando..." : "Seleccionar asociación"}</option>
               {asociacionesDisponibles.map(asoc => (
                 <option key={asoc.id} value={asoc.id}>
-                  {asoc.nombre} - {asoc.inventario?.totalKgs || 0} Kgs, {asoc.inventario?.totalFardos || 0} fardos (Miembros: {asoc.productores?.map(p => p.nombre).join(", ") || ""})
+                  {asoc.nombre} - {asoc.inventario?.totalKgs || 0} Kgs (Miembros: {asoc.productores?.map(p => p.nombre).join(", ") || ""})
                 </option>
               ))}
             </select>
-            <p style={{ fontSize: "11px", color: "#8B949E", marginTop: "6px" }}>
-              ¿No encuentras una asociación? Crea una nueva en la pestaña <Link to="/producer/asociaciones" style={{ color: "#3FB950", textDecoration: "underline" }}>Mis Asociaciones</Link>.
-            </p>
           </div>
         )}
 
-        {/* Resumen de la operación */}
         {cantidadFardos > 0 && !showConfirm && (
-          <div style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid var(--tb-border)",
-            borderRadius: "8px",
-            padding: "16px",
-            marginBottom: "20px"
-          }}>
-            <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", color: "var(--tb-text-2)" }}>Resumen de la orden de venta</h4>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Total Kgs ofrecidos</span>
-              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>{numTotalKgs} kg</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Tamaño por fardo</span>
-              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>{numTamanoFardo} kg</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(227,182,79,0.2)", borderRadius: "8px", padding: "16px", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 12px 0", fontSize: "13px" }}>Resumen de la orden</h4>
+            <div style={{ display: "flex", justifyBetween: "space-between", marginBottom: "8px", fontSize: "12px" }}>
               <span style={{ color: "#8B949E" }}>Cantidad de fardos</span>
-              <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>{fmtFardos(cantidadFardos)}</span>
+              <span style={{ color: "#3FB950", fontWeight: 600 }}>{fmtFardos(cantidadFardos)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Precio de Venta ($/kg)</span>
-              <span style={{ color: "var(--tb-text)", fontFamily: "var(--tb-mono)" }}>${fmtMoney(precioFinal)}</span>
-            </div>
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", margin: "12px 0" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-              <span style={{ color: "#8B949E" }}>Total orden de venta ($)</span>
-              <span style={{ color: "#3FB950", fontWeight: 600, fontFamily: "var(--tb-mono)" }}>${fmtMoney(usdTotal)}</span>
+            <div style={{ display: "flex", justifyBetween: "space-between", fontSize: "12px" }}>
+              <span style={{ color: "#8B949E" }}>Total de la orden</span>
+              <span style={{ color: "#3FB950", fontWeight: 600 }}>${fmtMoney(usdTotal)}</span>
             </div>
           </div>
         )}
 
-        {error && (
-          <div style={{ color: "#F85149", fontSize: "12px", marginBottom: "16px", padding: "10px", background: "rgba(248,81,73,0.1)", borderRadius: "6px", border: "1px solid rgba(248,81,73,0.2)" }}>
-            {error}
-          </div>
-        )}
+        {error && <div style={{ color: "#F85149", fontSize: "12px", marginBottom: "16px", padding: "10px", background: "rgba(248,81,73,0.1)", borderRadius: "6px" }}>{error}</div>}
 
         {!showConfirm ? (
-          <button
-            className="tabar-btn tabar-btn-primary"
-            disabled={!isFormValid || loading}
-            onClick={() => setShowConfirm(true)}
-            style={{ opacity: !isFormValid ? 0.5 : 1, cursor: !isFormValid ? "not-allowed" : "pointer" }}
-          >
+          <button className="tabar-btn tabar-btn-primary" disabled={!isFormValid || loading} onClick={() => setShowConfirm(true)} style={{ opacity: !isFormValid ? 0.5 : 1 }}>
             {!isFormValid ? "Completa todos los campos" : "Generar Orden de Venta"}
           </button>
         ) : (
-          <div style={{
-            background: "rgba(227,182,79,0.05)",
-            border: "1px solid rgba(227,182,79,0.2)",
-            borderRadius: "8px",
-            padding: "20px",
-            textAlign: "center"
-          }}>
-            <h4 style={{ color: "#E3B64F", margin: "0 0 10px 0" }}>Confirmar Orden de Venta</h4>
+          <div style={{ background: "rgba(227,182,79,0.05)", border: "1px solid rgba(227,182,79,0.2)", borderRadius: "8px", padding: "20px", textAlign: "center" }}>
+            <h4 style={{ color: "#E3B64F", margin: "0 0 10px 0" }}>Confirmar Registro Digital</h4>
             <p style={{ fontSize: "12px", color: "#8B949E", marginBottom: "20px" }}>
-              Estás por registrar una orden de venta de {fmtFardos(cantidadFardos)} fardos ({numTotalKgs} kg) de {tipoTabaco === "virginia" ? "Virginia" : tipoTabaco === "burley" ? "Burley" : "Criollo"} a ${fmtMoney(precioFinal)}/kg.
-              <br />
-              Esta acción quedará registrada en el sistema y generará un PDF con el código de la orden.
+              Firmarás digitalmente los metadatos de {fmtFardos(cantidadFardos)} fardos a ${fmtMoney(precioFinal)}/kg con tu cuenta institucional.
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                className="tabar-btn tabar-btn-ghost"
-                onClick={() => setShowConfirm(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                className="tabar-btn tabar-btn-primary"
-                style={{ background: "#E3B64F", color: "#000" }}
-                onClick={handleTokenizar}
-                disabled={loading}
-              >
-                {loading ? "Registrando..." : "Confirmar y Generar Orden"}
+              <button className="tabar-btn tabar-btn-ghost" onClick={() => setShowConfirm(false)} disabled={loading}>Cancelar</button>
+              <button className="tabar-btn tabar-btn-primary" style={{ background: "#E3B64F", color: "#000" }} onClick={handleTokenizar} disabled={loading}>
+                {loading ? "Firmando y Subiendo..." : "Confirmar y Firmar"}
               </button>
             </div>
           </div>
         )}
-      </div>
-
-      <div style={{ marginTop: "20px", padding: "14px", background: "rgba(88,166,255,0.05)", border: "1px solid rgba(88,166,255,0.2)", borderRadius: "8px" }}>
-        <p style={{ fontSize: "12px", color: "#58A6FF", margin: 0 }}>
-          ℹ️ Tu orden de venta queda disponible en el mercado TABAR una vez registrada.
-        </p>
       </div>
     </div>
   );

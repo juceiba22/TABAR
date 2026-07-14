@@ -39,6 +39,7 @@ import IndustryFinancing from "./pages/industry/financing";
 import ProducerTokenizar from "./pages/producer/tokenizar";
 import ProducerAssociations from "./pages/producer/asociaciones";
 import MiPerfil from "./pages/miPerfil";
+import { Web3Provider as CustomWeb3Provider } from "./context/Web3Context";
 
 // ① IMPORTAR EL PROVEEDOR DE PRIVY
 import { PrivyProvider } from '@privy-io/react-auth';
@@ -333,7 +334,7 @@ function Web3Provider({ children }) {
   return (
     <Web3ErrorBoundary>
       <PrivyProvider
-        appId="cmqqzase9000d0cjyq9ahukwg" // Aquí pegas el ID obtenido de dashboard.privy.io
+        appId="cmqqzase9000d0cjyq9ahukwg" // ID de dashboard.privy.io
         config={{
           loginMethods: ['email'],
           appearance: {
@@ -346,7 +347,10 @@ function Web3Provider({ children }) {
           },
         }}
       >
-        {children}
+        {/* Agregamos el proveedor personalizado para heredar el contrato y la wallet */}
+        <CustomWeb3Provider>
+          {children}
+        </CustomWeb3Provider>
       </PrivyProvider>
     </Web3ErrorBoundary>
   );
