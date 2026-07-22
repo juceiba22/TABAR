@@ -115,7 +115,7 @@ export default function PublicPresentation() {
               [ Ingresar a la Plataforma ]
               <span className="pp-cta-arrow">→</span>
             </Link>
-            <a href="#" className="pp-cta pp-cta-secondary" onClick={(e) => { e.preventDefault(); alert('Descarga de Ensayo de Diagnóstico no disponible temporalmente.'); }}>
+            <a href="https://www.agrotabaco-estudios.com/" target="_blank" rel="noopener noreferrer" className="pp-cta pp-cta-secondary">
               [ Conocer más la propuesta ]
             </a>
           </div>
