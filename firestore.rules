@@ -3,122 +3,136 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if user is admin
+    // =========================================================================
+    // FUNCIONES AUXILIARES DE SEGURIDAD
+    // =========================================================================
+
+    // Verifica si el usuario actual tiene rol de Administrador/Fideicomiso
     function isAdmin() {
       return request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Helper function to check if user is authenticated
+    // Verifica si el usuario está autenticado en la plataforma
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Users collection
+    // =========================================================================
+    // REGLAS POR COLECCIÓN
+    // =========================================================================
+
+    // Colección de Usuarios
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
     }
 
-    // Campaigns collection
+    // Colección de Campañas (CRÍTICO: Solo Admin puede modificar)
     match /campaigns/{campaignId} {
       allow read: if isAuthenticated();
-      // For this MVP, we allow authenticated users to update campaigns via client-side transactions
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    // Balances collection
+    // Colección de Balances Globales (CRÍTICO: Solo Admin puede modificar)
     match /balances/{balanceId} {
       allow read: if isAuthenticated();
-      // For this MVP, we allow authenticated users to update balances via the client-side DataContext
-      // In a production app, this would be restricted to Cloud Functions
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    // Audit logs
+    // Logs de Auditoría
     match /audit_logs/{logId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
     }
 
-    // Purchase requests
+    // Solicitudes de Compra
     match /purchase_requests/{requestId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
-    
-    // Producer Tokenizations
-    match /producer_tokenizations/{tokenId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.productorOwner;
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.productorOwner == request.auth.uid);
-    }
 
-    // Purchase Orders (Acopiador)
+    // Órdenes de Compra (Acopiador / Industria)
     match /purchase_orders/{orderId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Financing Requests
+    // Solicitudes de Financiamiento (Acopiador / Industria)
     match /financing_requests/{requestId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // POA Uploads (State)
+    // Tokenizaciones del Productor
+    match /producer_tokenizations/{tokenId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.productorOwner;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.productorOwner == request.auth.uid);
+    }
+
+    // Asociaciones de Productores (Cooperativas Digitales)
+    match /producer_associations/{associationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Permite actualizar si el usuario es miembro de la asociación o es administrador
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (resource.data.productoresUIDs != null && request.auth.uid in resource.data.productoresUIDs) ||
+        (request.resource.data.productoresUIDs != null && request.auth.uid in request.resource.data.productoresUIDs)
+      );
+      allow delete: if isAuthenticated() && resource.data.creadoPor == request.auth.uid;
+    }
+
+    // Carga de POAs (Estado Nacional)
     match /poa_uploads/{poaId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Producer Associations
-    match /producer_associations/{associationId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth.uid == resource.data.creadoPor;
-    }
-
-    // Novedades FET (State)
+    // Novedades FET (Estado Nacional)
     match /novedades_fet/{novedadId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Dealer Operations
+    // Operaciones de Dealers
     match /dealer_operations/{operationId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.dealerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.dealerId == request.auth.uid;
     }
 
-    // Notifications
+    // Notificaciones
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
     }
 
-    // Chats
+    // Sistema de Chat Privado
     match /chats/{chatId} {
       allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
       allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
       
-      // Messages
+      // Mensajes del Chat
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants && request.resource.data.senderId == request.auth.uid;
+        allow read: if isAuthenticated() && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if isAuthenticated() && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants && 
+          request.resource.data.senderId == request.auth.uid;
       }
     }
 
-    // Default deny
+    // Denegación por defecto para cualquier otra ruta no especificada
     match /{document=**} {
       allow read, write: if false;
     }
