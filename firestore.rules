@@ -68,6 +68,12 @@ service cloud.firestore {
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
+    // Warrants Electrónicos (eWarrants)
+    match /warrants/{warrantId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+    }
+
     // Tokenizaciones del Productor
     match /producer_tokenizations/{tokenId} {
       allow read: if isAuthenticated();

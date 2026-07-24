@@ -20,6 +20,8 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import CampaignPage from "./pages/campaign/index";
 import MarketPage from "./pages/market/index";
 import MiPerfil from "./pages/miPerfil";
+import WarrantsPage from "./pages/warrants/index";
+
 
 // Páginas por Rol (Única fuente de verdad)
 import AdminDashboard from "./pages/admin/dashboard";
@@ -161,6 +163,9 @@ function AppRoutes() {
         <Route path="/producer" element={<ProtectedRoute allowedRoles={["producer", "admin"]}><ProducerDashboard /></ProtectedRoute>} />
         <Route path="/producer/tokenizar" element={<ProtectedRoute allowedRoles={["producer"]}><ProducerTokenizar /></ProtectedRoute>} />
         <Route path="/producer/asociaciones" element={<ProtectedRoute allowedRoles={["producer"]}><ProducerAssociations /></ProtectedRoute>} />
+        
+        {/* Warrants Digitales */}
+        <Route path="/warrants" element={<ProtectedRoute allowedRoles={["producer", "industry", "admin"]}><WarrantsPage /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to={roleHome} replace />} />

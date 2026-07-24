@@ -25,6 +25,7 @@ const NAV_LINKS = {
     { path: "/industry", label: "Mi Dashboard" },
     { path: "/industry/buy", label: "Orden de Compra" },
     { path: "/industry/financing", label: "Solicitar Financiamiento" },
+    { path: "/warrants", label: "Warrants Digitales" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
   state: [
@@ -42,6 +43,7 @@ const NAV_LINKS = {
     { path: "/producer", label: "Mi tabaco" },
     { path: "/producer/tokenizar", label: "Certificar Tabaco" },
     { path: "/producer/asociaciones", label: "Mis Asociaciones" },
+    { path: "/warrants", label: "Warrants Digitales" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
 };
