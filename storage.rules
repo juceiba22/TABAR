@@ -1,21 +1,59 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Reglas para novedades_fet
-    match /novedades_fet/{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // POAs cargados por el Estado / FET
+    match /poa_uploads/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+                      request.resource.contentType == "application/pdf" &&
+                      request.resource.size < 100000000;
     }
-    
-    // Reglas para fotos de muestra de tabaco (muestras_tabaco)
+
+    // Novedades del FET
+    match /novedades_fet/{allPaths=**} {
+      allow read: if true; // Cualquiera puede ver las fotos en la web
+      allow write: if request.auth != null; // Solo usuarios logueados pueden subir archivos
+    }
+
+    // Órdenes de compra (Acopiador / Industria)
+    match /purchase_orders/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Warrants electrónicos generados por financiamiento
+    match /financing_warrants/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Warrants Digitales (módulo /warrants)
+    match /warrants_documents/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Certificados / Órdenes de Venta TABAR (tokenización del productor)
+    match /certifications/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Fotos de muestra de tabaco (muestras_tabaco)
     match /muestras_tabaco/{allPaths=**} {
       allow read: if true; // Lectura pública para que se pueda ver en el marketplace
       allow write: if request.auth != null; // Solo productores autenticados pueden subir fotos
     }
 
-    // Reglas para fotos de perfil
+    // Fotos de perfil
     match /profile_pictures/{userId}/{allPaths=**} {
       allow read: if true; // Permitir lectura pública de avatares
       allow write: if request.auth != null && request.auth.uid == userId; // Solo el propio usuario puede subir/modificar
+    }
+
+    // Denegar todo lo demás
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
