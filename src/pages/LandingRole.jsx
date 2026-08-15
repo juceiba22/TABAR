@@ -242,6 +242,9 @@ export default function LandingRole() {
       let firstNameVal = "";
       let lastNameVal = "";
       let companyNameVal = "";
+      let documentTypeVal = "";
+      let documentNumberVal = "";
+      let displayNameVal = "";
       let roleVal = "industry";
 
       if (savedStr) {
@@ -250,6 +253,9 @@ export default function LandingRole() {
           firstNameVal = parsed.firstName || "";
           lastNameVal = parsed.lastName || "";
           companyNameVal = parsed.companyName || "";
+          documentTypeVal = parsed.documentType || "";
+          documentNumberVal = parsed.documentNumber || "";
+          displayNameVal = parsed.displayName || "";
           roleVal = parsed.role || "industry";
         } catch (e) {
           console.error("Error al decodificar perfil temporal para reenvío:", e);
@@ -262,9 +268,13 @@ export default function LandingRole() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          uid: pendingUser.uid,
           email: pendingUser.email.trim(),
           firstName: firstNameVal.trim(),
           lastName: lastNameVal.trim(),
+          documentType: documentTypeVal,
+          documentNumber: documentNumberVal.trim(),
+          displayName: displayNameVal.trim(),
           role: roleVal,
           companyName: companyNameVal.trim(),
           origin: window.location.origin,
@@ -386,6 +396,8 @@ export default function LandingRole() {
         localStorage.setItem(`pending_profile_${fbUser.uid}`, JSON.stringify(pendingProfile));
 
         // Enviar email de validación institucional con Resend a través de Serverless Function
+        // (esta llamada también pre-crea el perfil completo en Firestore vía Admin SDK,
+        // para que sobreviva aunque la verificación se complete en otro navegador/dispositivo)
         try {
           const emailRes = await fetch("/api/send-validation", {
             method: "POST",
@@ -393,9 +405,13 @@ export default function LandingRole() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              uid: fbUser.uid,
               email: email.trim(),
               firstName: firstName.trim(),
               lastName: lastName.trim(),
+              documentType,
+              documentNumber: documentNumber.trim(),
+              displayName: displayName.trim(),
               role: selectedRole,
               companyName: companyName.trim(),
               origin: window.location.origin,

@@ -38,11 +38,41 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Configuración de credenciales de Firebase en Vercel incompleta o inválida: " + initErr.message });
   }
 
-  const { email, firstName, lastName, role, companyName, origin } = req.body;
+  const { email, firstName, lastName, role, companyName, origin, uid, documentType, documentNumber, displayName } = req.body;
 
   // Solo se requiere 'email' y 'role' de forma obligatoria
   if (!email || !role) {
     return res.status(400).json({ error: "Faltan campos obligatorios (email y role)" });
+  }
+
+  // Persistimos el perfil completo en Firestore desde el servidor (Admin SDK,
+  // sin las reglas de seguridad de por medio) en el momento del registro.
+  // Antes esto solo se guardaba en localStorage del navegador donde el usuario
+  // se registraba, y si la verificación + primer login terminaban pasando en
+  // otro navegador/dispositivo (típico: abrir el link del mail desde el celular),
+  // esos datos se perdían y el perfil quedaba vacío para siempre.
+  if (uid) {
+    try {
+      const profilePayload = {
+        uid,
+        email,
+        role,
+        status: "pending_verification",
+        emailVerified: false,
+      };
+      if (firstName) profilePayload.firstName = firstName;
+      if (lastName) profilePayload.lastName = lastName;
+      if (documentType) profilePayload.documentType = documentType;
+      if (documentNumber) profilePayload.documentNumber = documentNumber;
+      if (displayName) profilePayload.displayName = displayName;
+      if (companyName) profilePayload.companyName = companyName;
+
+      await admin.firestore().collection("users").doc(uid).set(profilePayload, { merge: true });
+    } catch (firestoreErr) {
+      console.error("Error al pre-crear el perfil en Firestore:", firestoreErr);
+      // No cortamos el flujo: si esto falla, el fallback de localStorage
+      // en el cliente todavía puede salvar el registro en el mismo navegador.
+    }
   }
 
   const apiKey = process.env.RESEND_API_KEY;

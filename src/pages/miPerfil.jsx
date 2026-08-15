@@ -9,6 +9,16 @@ export default function MiPerfil() {
   const { user, role, profile, updateProfile } = useRole();
   const { ready, authenticated, login, user: privyUser, createWallet } = usePrivy();
   const { wallets } = useWallets();
+  const [walletBusy, setWalletBusy] = useState(false);
+  const [walletError, setWalletError] = useState("");
+  // Tras completar el login de Privy, el SDK tarda unos segundos en propagar
+  // el token interno que createWallet() necesita — createOnLogin (config de
+  // AppShell) se encarga de crearla sola en ese lapso. Si llamamos a
+  // createWallet() manualmente demasiado pronto, el SDK tira
+  // "User must be authenticated before creating a Privy wallet" aunque
+  // `authenticated` ya esté en true. Por eso esperamos antes de habilitar
+  // el botón de reintento manual.
+  const [walletRetryReady, setWalletRetryReady] = useState(false);
 
   const embeddedWallet = ready
     ? (wallets || []).find((w) => w.walletClientType === 'privy')
@@ -42,6 +52,17 @@ export default function MiPerfil() {
     }
   }, [profile]);
 
+  // Da tiempo a que createOnLogin cree la wallet sola antes de ofrecer el
+  // botón de reintento manual (ver nota en walletRetryReady más arriba).
+  useEffect(() => {
+    if (!authenticated || embeddedWallet) {
+      setWalletRetryReady(false);
+      return;
+    }
+    const t = setTimeout(() => setWalletRetryReady(true), 5000);
+    return () => clearTimeout(t);
+  }, [authenticated, embeddedWallet]);
+
   // Handle local picture selection
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -62,6 +83,38 @@ export default function MiPerfil() {
 
   const triggerFileInput = () => {
     fileInputRef.current.click();
+  };
+
+  // La wallet embebida de Privy solo se puede crear una vez el usuario está
+  // autenticado también en Privy (login por Firebase no alcanza: son dos
+  // sistemas de auth separados). Por eso el botón hace dos cosas distintas
+  // según el estado: primero conecta con Privy, y solo después genera la wallet.
+  const handleWalletAction = async () => {
+    setWalletError("");
+    if (!authenticated) {
+      try {
+        login(user?.email ? { prefill: { type: "email", value: user.email } } : undefined);
+      } catch (err) {
+        console.error("Error al abrir el login de Privy:", err);
+        setWalletError("No se pudo abrir la verificación institucional. Intentá de nuevo.");
+      }
+      return;
+    }
+
+    setWalletBusy(true);
+    try {
+      await createWallet();
+    } catch (err) {
+      console.error("Error al generar la wallet institucional:", err);
+      setWalletError(
+        err?.message?.includes("must be authenticated")
+          ? "Privy todavía está terminando de conectar tu sesión. Esperá unos segundos y volvé a intentar."
+          : "No se pudo generar la dirección criptográfica. Intentá de nuevo."
+      );
+      setWalletRetryReady(false);
+      setTimeout(() => setWalletRetryReady(true), 5000);
+    }
+    setWalletBusy(false);
   };
 
   // Map roles to descriptions matching user specs
@@ -343,18 +396,35 @@ export default function MiPerfil() {
                   </span>
                   <span className="lock-icon" title="Wallet criptográfica asegurada">🔑</span>
                 </div>
+              ) : authenticated && !walletRetryReady ? (
+                <div className="read-only-field-wrap institutional-badge-wrap">
+                  <div className="profile-micro-spinner" />
+                  <span className="read-only-text" style={{ color: "var(--tb-text-2)", fontSize: '12px', marginLeft: '8px' }}>
+                    Generando tu firma institucional...
+                  </span>
+                </div>
               ) : (
-                <button 
+                <button
                   type="button"
                   className="tabar-btn tabar-btn-primary"
-                  onClick={createWallet}
+                  onClick={handleWalletAction}
+                  disabled={walletBusy}
                   style={{ background: 'transparent', border: '1px solid var(--tb-accent)', color: 'var(--tb-accent)', width: '100%', padding: '10px' }}
                 >
-                  Generar Dirección Criptográfica Cerrada
+                  {walletBusy
+                    ? "Generando…"
+                    : authenticated
+                      ? "Reintentar generación"
+                      : "Conectar Firma Institucional"}
                 </button>
               )}
+              {walletError && (
+                <span className="field-helper-text" style={{ color: "var(--tb-red)" }}>{walletError}</span>
+              )}
               <span className="field-helper-text">
-                Dirección criptográfica utilizada para firmar digitalmente los Warrants y la emisión de deuda.
+                {authenticated || embeddedWallet
+                  ? "Dirección criptográfica utilizada para firmar digitalmente los Warrants y la emisión de deuda."
+                  : "Vas a recibir un código de verificación en tu mismo correo institucional para activar tu firma digital."}
               </span>
             </div>
 
