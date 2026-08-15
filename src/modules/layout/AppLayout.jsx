@@ -48,10 +48,14 @@ const NAV_LINKS = {
   ],
 };
 
+const COMMON_LINKS = [
+  { path: "/protocolo", label: "Banco Central" }
+];
+
 export default function AppLayout({ children }) {
   const { role, user, profile, logout } = useRole();
   const navigate = useNavigate();
-  const links = NAV_LINKS[role] || [];
+  const links = [...(NAV_LINKS[role] || []), ...COMMON_LINKS];
   const palette = ROLE_PALETTE[role] || ROLE_PALETTE.admin;
   const [navOpen, setNavOpen] = useState(false);
 

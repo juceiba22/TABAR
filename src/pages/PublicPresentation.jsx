@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { useRole, ROLE_HOME } from "../modules/roles/RoleContext";
+import { useRole, ROLE_HOME, ROLE_LABELS, ROLE_COLORS } from "../modules/roles/RoleContext";
+import VideoEmbed from "../modules/media/VideoEmbed";
+import { ROLE_VIDEOS } from "../data/roleVideos";
 import "./PublicPresentation.css";
 
 /* ─── Datos del Diagnóstico y Solución ────────────────────────────────────── */
@@ -95,7 +97,10 @@ export default function PublicPresentation() {
             <span className="pp-logo-text">TABAR</span>
             <span className="pp-logo-badge">Protocol v1.0</span>
           </div>
-          <Link to="/login" className="pp-nav-login">Ingresar</Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <Link to="/protocolo" className="pp-nav-protocolo">Protocolo</Link>
+            <Link to="/login" className="pp-nav-login">Ingresar</Link>
+          </div>
         </div>
       </nav>
 
@@ -162,6 +167,43 @@ export default function PublicPresentation() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ CÓMO FUNCIONA PARA VOS (videos por rol) ══════════ */}
+      <section className="pp-section">
+        <div className="pp-section-inner">
+          <h2 className="pp-section-title" style={{ textAlign: "center", marginBottom: "8px" }}>
+            Cómo funciona para vos
+          </h2>
+          <p style={{ textAlign: "center", color: "var(--tb-text-2)", fontSize: "14px", maxWidth: "560px", margin: "0 auto 40px" }}>
+            Un video corto por cada perfil. Elegí el tuyo y mirá exactamente qué vas a poder hacer apenas entrés.
+          </p>
+          <div className="pp-rolevideos-grid">
+            {ROLE_VIDEOS.map((rv) => {
+              const color = ROLE_COLORS[rv.role] || "#E3B64F";
+              return (
+                <div key={rv.role} className="pp-rolevideo-card" style={{ borderColor: `${color}40` }}>
+                  <div className="pp-rolevideo-icon" style={{ background: `${color}1A`, color }}>
+                    {rv.icon}
+                  </div>
+                  <h3 className="pp-rolevideo-title">{ROLE_LABELS[rv.role]}</h3>
+                  <p className="pp-rolevideo-blurb">{rv.blurb}</p>
+                  <div className="pp-rolevideo-actions">
+                    <VideoEmbed
+                      videoUrl={rv.videoUrl}
+                      title={`Cómo funciona TABAR para ${ROLE_LABELS[rv.role]}`}
+                      icon={rv.icon}
+                      accentColor={color}
+                    />
+                    <Link to="/login" className="pp-rolevideo-cta" style={{ color }}>
+                      {rv.ctaLabel} →
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -15,6 +15,7 @@ import AppLayout from "./modules/layout/AppLayout";
 import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
 import AdminLogin from "./pages/admin/AdminLogin";
+import ProtocoloPage from "./pages/protocolo";
 
 // Páginas Compartidas
 import CampaignPage from "./pages/campaign/index";
@@ -107,6 +108,7 @@ function AppRoutes() {
         <Route path="/" element={<SmartRoot />} />
         <Route path="/login" element={<SmartLogin />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/protocolo" element={<ProtocoloPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -119,6 +121,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={roleHome} replace />} />
       <Route path="/login" element={<Navigate to={roleHome} replace />} />
       <Route path="/admin/login" element={<Navigate to={roleHome} replace />} />
+      <Route path="/protocolo" element={<ProtocoloPage />} />
 
       <Route element={<AppLayout />}>
         {/* Rutas Comunes Autenticadas */}
