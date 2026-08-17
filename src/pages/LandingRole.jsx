@@ -261,7 +261,7 @@ export default function LandingRole() {
           documentTypeVal = parsed.documentType || "";
           documentNumberVal = parsed.documentNumber || "";
           displayNameVal = parsed.displayName || "";
-          roleVal = parsed.role || "industry";
+          roleVal = parsed.role || "acopiador";
         } catch (e) {
           console.error("Error al decodificar perfil temporal para reenvío:", e);
         }
