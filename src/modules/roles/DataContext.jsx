@@ -11,10 +11,8 @@ import {
   orderBy,
   limit,
   getDoc,
-  runTransaction,
   getDocs,
-  where,
-  arrayUnion
+  where
 } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "./RoleContext";
@@ -30,10 +28,12 @@ const ESTADO_INICIAL_CAMPANA = {
   diasTranscurridos: 0,
 };
 
+const ESTADO_INICIAL_BALANCES = { acopiador: 0, dealer: 0 };
+
 export function DataProvider({ children }) {
   const { user, profile } = useRole();
   const [campana, setCampana] = useState(ESTADO_INICIAL_CAMPANA);
-  const [balances, setBalances] = useState({ industry: 0, state: 0, dealer: 0, producer: 0 });
+  const [balances, setBalances] = useState(ESTADO_INICIAL_BALANCES);
   const [historial, setHistorial] = useState([]);
 
   // Listen to the active campaign
@@ -51,12 +51,12 @@ export function DataProvider({ children }) {
 
   // Listen to global balances
   useEffect(() => {
-    if (!user) { setBalances({ industry: 0, state: 0, dealer: 0, producer: 0 }); return; }
+    if (!user) { setBalances(ESTADO_INICIAL_BALANCES); return; }
     const unsub = onSnapshot(doc(db, "balances", "global"), (docSnap) => {
       if (docSnap.exists()) {
         setBalances(docSnap.data());
       } else {
-        setBalances({ industry: 0, state: 0, dealer: 0, producer: 0 });
+        setBalances(ESTADO_INICIAL_BALANCES);
       }
     });
     return () => unsub();
@@ -92,59 +92,13 @@ export function DataProvider({ children }) {
       diasTranscurridos: 0,
       inicio: new Date().toISOString()
     });
-    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0, producer: 0 });
+    await setDoc(doc(db, "balances", "global"), ESTADO_INICIAL_BALANCES);
     await addHistorial(`✅ Campaña iniciada: ${fardosTotales.toLocaleString("es-AR")} TABAR por ${diasTotales} días`, "success");
   };
 
   const cerrarCampana = async () => {
     await updateDoc(doc(db, "campaigns", "active"), { activa: false });
     await addHistorial("🔒 Campaña cerrada.", "warning");
-  };
-
-  const comprarIndustry = async (datos) => {
-    try {
-      if (typeof datos === "object" && datos.numeroOrden) {
-        const ordenData = datos;
-        const docRef = doc(db, "purchase_orders", `${Date.now()}`);
-        await setDoc(docRef, {
-          ...ordenData,
-          estado: "emitida"
-        });
-        await addHistorial(`✅ Acopiador emitió orden de compra de ${ordenData.cantidadKgs} Kgs de ${ordenData.tipoTabaco}`, "success");
-        return { ok: true };
-      }
-
-      if (typeof datos === "number") {
-        const cantidad = datos;
-        if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
-        if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
-
-        const campanaRef = doc(db, "campaigns", "active");
-        const balancesRef = doc(db, "balances", "global");
-
-        await runTransaction(db, async (t) => {
-          const cSnap = await t.get(campanaRef);
-          const bSnap = await t.get(balancesRef);
-
-          if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
-          if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
-
-          const newVendidos = cSnap.data().fardosVendidos + cantidad;
-          const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
-          t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
-
-          const currentIndustryBal = bSnap.exists() ? (bSnap.data().industry || 0) : 0;
-          t.set(balancesRef, { ...bSnap.data(), industry: currentIndustryBal + cantidad }, { merge: true });
-        });
-
-        await addHistorial(`✅ Acopiador compró ${cantidad.toLocaleString("es-AR")} TABAR`, "success");
-        return { ok: true };
-      }
-
-      return { ok: false, error: "Formato de datos inválido" };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
   };
 
   const requestFinancing = async (financingData) => {
@@ -161,92 +115,36 @@ export function DataProvider({ children }) {
     }
   };
 
-  const invertirState = async (datos) => {
+  // Adquisición de tokens por parte del dealer, con intención explícita en
+  // vez de un rol dedicado: "descuento" (compra de tabaco, ex comprarIndustry)
+  // o "rendimiento" (financiamiento vía FET con POA, ex invertirState).
+  const adquirirDealer = async (intent, datos) => {
     try {
-      if (typeof datos === "number") {
-        const cantidad = datos;
-        if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
-        if (cantidad > campana.fardosDisponibles) return { ok: false, error: `Solo hay ${campana.fardosDisponibles} TABAR disponibles.` };
-
-        const campanaRef = doc(db, "campaigns", "active");
-        const balancesRef = doc(db, "balances", "global");
-
-        await runTransaction(db, async (t) => {
-          const cSnap = await t.get(campanaRef);
-          const bSnap = await t.get(balancesRef);
-
-          if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
-          if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
-
-          const newVendidos = cSnap.data().fardosVendidos + cantidad;
-          const newDisponibles = cSnap.data().fardosDisponibles - cantidad;
-          t.update(campanaRef, { fardosVendidos: newVendidos, fardosDisponibles: newDisponibles });
-
-          const currentStateBal = bSnap.exists() ? (bSnap.data().state || 0) : 0;
-          t.set(balancesRef, { ...bSnap.data(), state: currentStateBal + cantidad }, { merge: true });
-        });
-
-        await addHistorial(`✅ Estado Nacional invirtió ${cantidad.toLocaleString("es-AR")} TABAR vía FET`, "success");
-        return { ok: true };
+      if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
+      if (intent !== "descuento" && intent !== "rendimiento") {
+        return { ok: false, error: "Intención inválida" };
       }
 
-      if (typeof datos === "object" && datos.entidad) {
-        const poaData = datos;
-        const docRef = doc(db, "poa_uploads", `${Date.now()}`);
-        await setDoc(docRef, {
-          ...poaData,
-          estado: "pendiente_aprobacion"
-        });
-        await addHistorial(`✅ Se cargó POA de ${poaData.entidad} por $${poaData.monto.toLocaleString("es-AR")}`, "success");
-        return { ok: true };
-      }
-
-      return { ok: false, error: "Formato de datos inválido" };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
-  };
-
-  const operarDealer = async (tipo, cantidad) => {
-    if (!campana.activa) return { ok: false, error: "No hay campaña activa." };
-
-    const campanaRef = doc(db, "campaigns", "active");
-    const balancesRef = doc(db, "balances", "global");
-
-    try {
-      await runTransaction(db, async (t) => {
-        const cSnap = await t.get(campanaRef);
-        const bSnap = await t.get(balancesRef);
-
-        if (!cSnap.exists() || !cSnap.data().activa) throw new Error("Campaña inactiva");
-
-        const currentDealerBal = bSnap.exists() ? (bSnap.data().dealer || 0) : 0;
-
-        if (tipo === "buy") {
-          if (cantidad > cSnap.data().fardosDisponibles) throw new Error("Stock insuficiente");
-          t.update(campanaRef, {
-            fardosVendidos: cSnap.data().fardosVendidos + cantidad,
-            fardosDisponibles: cSnap.data().fardosDisponibles - cantidad
-          });
-          t.set(balancesRef, { ...bSnap.data(), dealer: currentDealerBal + cantidad }, { merge: true });
-        } else {
-          if (cantidad > currentDealerBal) throw new Error("Balance insuficiente");
-          t.update(campanaRef, {
-            fardosVendidos: cSnap.data().fardosVendidos - cantidad,
-            fardosDisponibles: cSnap.data().fardosDisponibles + cantidad
-          });
-          t.set(balancesRef, { ...bSnap.data(), dealer: currentDealerBal - cantidad }, { merge: true });
-        }
+      const docRef = doc(db, "dealer_acquisitions", `${Date.now()}`);
+      await setDoc(docRef, {
+        ...datos,
+        intent,
+        dealerId: user.uid,
+        estado: "pendiente_aprobacion",
+        creadoEn: serverTimestamp()
       });
 
-      await addHistorial(`✅ Dealer ${tipo === "buy" ? "compró" : "vendió"} ${cantidad.toLocaleString("es-AR")} TABAR`, "success");
+      const mensaje = intent === "descuento"
+        ? `✅ Dealer emitió orden de compra de ${datos.cantidadKgs} Kgs de ${datos.tipoTabaco} (descuento)`
+        : `✅ Dealer cargó POA de ${datos.entidad} por $${(datos.monto || 0).toLocaleString("es-AR")} (rendimiento)`;
+      await addHistorial(mensaje, "success");
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e.message };
     }
   };
 
-  const tokenizarProducer = async (tokenizationData) => {
+  const tokenizarAcopiador = async (tokenizationData) => {
     try {
       if (!user?.uid) return { ok: false, error: "Usuario no autenticado" };
 
@@ -254,11 +152,12 @@ export function DataProvider({ children }) {
       await setDoc(docRef, {
         ...tokenizationData,
         productorOwner: user.uid,
+        warrantId: null,
         creadoEn: serverTimestamp(),
         actualizadoEn: serverTimestamp()
       });
 
-      await addHistorial(`🌿 Productor tokenizó ${tokenizationData.cantidadFardos} fardos (TABAR)`, "success");
+      await addHistorial(`🌿 Acopiador tokenizó ${tokenizationData.cantidadFardos} fardos (TABAR)`, "success");
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e.message };
@@ -524,7 +423,7 @@ export function DataProvider({ children }) {
 
   const resetDemo = async () => {
     await setDoc(doc(db, "campaigns", "active"), ESTADO_INICIAL_CAMPANA);
-    await setDoc(doc(db, "balances", "global"), { industry: 0, state: 0, dealer: 0, producer: 0 });
+    await setDoc(doc(db, "balances", "global"), ESTADO_INICIAL_BALANCES);
   };
 
   return (
@@ -534,11 +433,9 @@ export function DataProvider({ children }) {
       historial,
       iniciarCampana,
       cerrarCampana,
-      comprarIndustry,
+      adquirirDealer,
       requestFinancing,
-      invertirState,
-      operarDealer,
-      tokenizarProducer,
+      tokenizarAcopiador,
       crearAsociacion,
       obtenerAsociacionesDelProductor,
       obtenerAsociacionesDisponiblesParaUnirse,

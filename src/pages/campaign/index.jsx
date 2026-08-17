@@ -1,7 +1,6 @@
 import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
-
-const KG_POR_FARDO = 200;
+import { KG_POR_FARDO } from "../../data/constants";
 
 export default function CampaignPage() {
   const { user } = useRole();

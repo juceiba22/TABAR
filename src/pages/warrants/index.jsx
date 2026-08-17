@@ -113,6 +113,24 @@ export default function WarrantsPage() {
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
+  // Tokenizaciones propias sin warrant asociado todavía (para vincular al emitir)
+  const [tokenizaciones, setTokenizaciones] = useState([]);
+  const [tokenizacionId, setTokenizacionId] = useState("");
+
+  useEffect(() => {
+    if (!user?.uid) { setTokenizaciones([]); return; }
+    const q = query(collection(db, "producer_tokenizations"), where("productorOwner", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = [];
+      snapshot.forEach((d) => {
+        const data = d.data();
+        if (!data.warrantId) items.push({ id: d.id, ...data });
+      });
+      setTokenizaciones(items);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   // Load Warrants
   useEffect(() => {
     const q = collection(db, "warrants");
@@ -365,12 +383,22 @@ export default function WarrantsPage() {
         emailCreador: user?.email,
         tenedorActual: form.emisorRazon,
         tenedorCuit: form.emisorCuit,
+        tokenizacionId: tokenizacionId || null,
         fechaCreacion: new Date().toISOString(),
       };
 
-      await addDoc(collection(db, "warrants"), warrantData);
+      const newWarrantRef = await addDoc(collection(db, "warrants"), warrantData);
+
+      // Registrar el vínculo también del lado de la tokenización, para
+      // poder resolverlo sin tener que recorrer todos los warrants.
+      if (tokenizacionId) {
+        await updateDoc(doc(db, "producer_tokenizations", tokenizacionId), {
+          warrantId: newWarrantRef.id,
+        });
+      }
 
       alert(isDraft ? "Borrador guardado exitosamente." : "eWarrant emitido y firmado con éxito.");
+      setTokenizacionId("");
       cleanForm();
       setActiveTab("emisiones");
     } catch (err) {
@@ -714,6 +742,31 @@ export default function WarrantsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Vínculo con producción tokenizada */}
+            {tokenizaciones.length > 0 && (
+              <div style={{ border: "1px solid var(--tb-border)", borderRadius: "8px", padding: "16px" }}>
+                <h4 style={{ margin: "0 0 12px 0", color: "var(--tb-accent)" }}>Vincular a producción tokenizada (opcional)</h4>
+                <label style={{ display: "block", fontSize: "11px", marginBottom: "4px" }}>
+                  Lote certificado a respaldar con este warrant
+                </label>
+                <select
+                  value={tokenizacionId}
+                  onChange={(e) => setTokenizacionId(e.target.value)}
+                  className="tabar-input"
+                >
+                  <option value="">Sin vincular</option>
+                  {tokenizaciones.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.tipoTabaco || "Tabaco"} — {t.cantidadFardos || 0} fardos ({t.numeroCertificado || t.id})
+                    </option>
+                  ))}
+                </select>
+                <span style={{ display: "block", fontSize: "11px", color: "var(--tb-text-3)", marginTop: "4px" }}>
+                  Al emitir el warrant, queda registrado como el respaldo de esa tokenización.
+                </span>
+              </div>
+            )}
 
             {/* Producto */}
             <div style={{ border: "1px solid var(--tb-border)", borderRadius: "8px", padding: "16px" }}>

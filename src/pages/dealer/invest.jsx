@@ -36,7 +36,7 @@ const ENTIDADES = [
 
 export default function StateInvest() {
   const { user } = useRole();
-  const { invertirState } = useData();
+  const { adquirirDealer } = useData();
 
   // Form states
   const [entidad, setEntidad] = useState("");
@@ -122,8 +122,7 @@ export default function StateInvest() {
       };
 
       // 3. Send to backend/DataContext
-      // Assuming invertirState can handle POA data, or you might need a different function
-      const res = await invertirState(poaData);
+      const res = await adquirirDealer("rendimiento", poaData);
 
       setLoading(false);
       if (res?.ok) {

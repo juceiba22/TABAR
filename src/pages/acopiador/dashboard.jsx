@@ -26,7 +26,7 @@ const getMontoFinanciamiento = (d) => Number(d?.montoFinanciamiento ?? d?.montoS
 export default function AcopiadorDashboard() {
   const { user } = useRole();
   const { balances } = useData();
-  const myBalance = balances?.producer || 0;
+  const myBalance = balances?.acopiador || 0;
 
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({

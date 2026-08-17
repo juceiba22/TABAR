@@ -1,14 +1,14 @@
 import { useRole } from "../../modules/roles/RoleContext";
 import { useData } from "../../modules/roles/DataContext";
+import { KG_POR_FARDO } from "../../data/constants";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
 export default function IndustryPosition() {
   const { user } = useRole();
   const { balances } = useData();
-  const myBalance = balances?.industry || 0;
+  const myBalance = balances?.dealer || 0;
 
-  const KG_POR_FARDO = 200;
   const PRECIO_SPOT = 96.5;
   const DESCUENTO = 0.12;
   const PRECIO_TABAR = PRECIO_SPOT * (1 - DESCUENTO);

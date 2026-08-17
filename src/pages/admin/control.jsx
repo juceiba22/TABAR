@@ -117,10 +117,10 @@ export default function AdminControl() {
           fardosDisponibles: nuevosDisponibles 
         });
 
-        const currentProducerBal = bSnap.exists() ? (bSnap.data().producer || 0) : 0;
-        transaction.set(balancesRef, { 
-          ...bSnap.data(), 
-          producer: currentProducerBal + fardosAIgualar 
+        const currentAcopiadorBal = bSnap.exists() ? (bSnap.data().acopiador || 0) : 0;
+        transaction.set(balancesRef, {
+          ...bSnap.data(),
+          acopiador: currentAcopiadorBal + fardosAIgualar
         }, { merge: true });
       });
 
@@ -313,20 +313,12 @@ export default function AdminControl() {
                   <thead><tr><th>Sector</th><th>Balance (TABAR)</th></tr></thead>
                   <tbody>
                     <tr>
-                      <td className="mono" style={{ textTransform: "capitalize" }}>Industria Exportadora</td>
-                      <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.industry > 0 ? "#58A6FF" : "#484F58" }}>{(balances.industry || 0).toLocaleString("es-AR")}</td>
+                      <td className="mono" style={{ textTransform: "capitalize" }}>Acopiadores</td>
+                      <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.acopiador > 0 ? "#58A6FF" : "#484F58" }}>{(balances.acopiador || 0).toLocaleString("es-AR")}</td>
                     </tr>
                     <tr>
-                      <td className="mono" style={{ textTransform: "capitalize" }}>Estado Nacional (FET)</td>
-                      <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.state > 0 ? "#F0883E" : "#484F58" }}>{(balances.state || 0).toLocaleString("es-AR")}</td>
-                    </tr>
-                    <tr>
-                      <td className="mono" style={{ textTransform: "capitalize" }}>Mercado Dealer</td>
+                      <td className="mono" style={{ textTransform: "capitalize" }}>Dealers</td>
                       <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.dealer > 0 ? "#BC8CFF" : "#484F58" }}>{(balances.dealer || 0).toLocaleString("es-AR")}</td>
-                    </tr>
-                    <tr>
-                      <td className="mono" style={{ textTransform: "capitalize" }}>Productores / Fincas</td>
-                      <td style={{ fontFamily: "var(--tb-mono)", fontSize: "12px", color: balances.producer > 0 ? "#3FB950" : "#484F58" }}>{(balances.producer || 0).toLocaleString("es-AR")}</td>
                     </tr>
                   </tbody>
                 </table>

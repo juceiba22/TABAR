@@ -30,7 +30,7 @@ const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractio
 const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function ProducerTokenizar() {
-  const { tokenizarProducer, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
+  const { tokenizarAcopiador, obtenerTodasLasAsociaciones, unirseAAsociacion } = useData();
   const { user, profile } = useRole();
 
   // Conexión al motor Web3 global e inyección de hooks
@@ -328,7 +328,7 @@ export default function ProducerTokenizar() {
         datosCertificadosRaw: mensajeAFirmar
       };
 
-      const res = await tokenizarProducer(tokenizationData);
+      const res = await tokenizarAcopiador(tokenizationData);
       
       if (res.ok) {
         setTransactionCode(codigo);

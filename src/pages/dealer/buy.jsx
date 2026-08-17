@@ -13,7 +13,7 @@ const CALIDADES = ["T1F", "T1S", "T2F", "T2S", "B1L", "B1S", "B2", "C1", "C2"];
 
 export default function IndustryBuy() {
   const { user, profile } = useRole();
-  const { comprarIndustry } = useData();
+  const { adquirirDealer } = useData();
   
   const { ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
@@ -184,7 +184,7 @@ export default function IndustryBuy() {
       };
 
       // 4. Save to Firestore
-      const res = await comprarIndustry(ordenData);
+      const res = await adquirirDealer("descuento", ordenData);
 
       setLoading(false);
       if (res?.ok) {

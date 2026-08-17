@@ -81,13 +81,12 @@ export default function MarketPage() {
     async function fetchData() {
       try {
         const [
-          poSnap, frSnap, ptSnap, paSnap, puSnap, nfSnap
+          daSnap, frSnap, ptSnap, paSnap, nfSnap
         ] = await Promise.all([
-          getDocs(collection(db, "purchase_orders")),
+          getDocs(collection(db, "dealer_acquisitions")),
           getDocs(collection(db, "financing_requests")),
           getDocs(collection(db, "producer_tokenizations")),
           getDocs(collection(db, "producer_associations")),
-          getDocs(collection(db, "poa_uploads")),
           getDocs(collection(db, "novedades_fet")),
         ]);
 
@@ -111,27 +110,44 @@ export default function MarketPage() {
           return new Date(); // fallback extremo
         };
 
-        // 1. Órdenes de compra (Industry)
-        // buy.jsx guarda: cantidadKgs (int), montoTotal (string vía .toFixed(2)).
-        poSnap.forEach(doc => {
+        // 1. Adquisiciones del Dealer — la intención (no el rol) distingue
+        // "descuento" (compra de tabaco, ex purchase_orders/comprarIndustry)
+        // de "rendimiento" (financiamiento vía FET con POA, ex poa_uploads/invertirState).
+        daSnap.forEach(doc => {
           const d = doc.data();
-          const monto = getMontoOrden(d);
-          allItems.push({
-            id: `po-${doc.id}`,
-            rawId: doc.id,
-            rawDoc: d,
-            date: parseDate(doc),
-            role: "acopiador",
-            roleLabel: "Acopiador",
-            type: "Orden de Compra",
-            title: `Orden emitida: ${fmtKgs(d.cantidadKgs)} Kgs`,
-            description: `Tipo de Tabaco: ${d.tipoTabaco} | Calidad: ${d.calidadSolicitada || d.calidad || "—"} | Inversión: $${fmtMoney(monto)}`,
-            icon: "▣",
-            color: "#58A6FF"
-          });
+          if (d.intent === "descuento") {
+            const monto = getMontoOrden(d);
+            allItems.push({
+              id: `da-${doc.id}`,
+              rawId: doc.id,
+              rawDoc: d,
+              date: parseDate(doc),
+              role: "dealer",
+              roleLabel: "Dealer",
+              type: "Orden de Compra",
+              title: `Orden emitida: ${fmtKgs(d.cantidadKgs)} Kgs`,
+              description: `Tipo de Tabaco: ${d.tipoTabaco} | Calidad: ${d.calidadSolicitada || d.calidad || "—"} | Inversión: $${fmtMoney(monto)}`,
+              icon: "▣",
+              color: "#BC8CFF"
+            });
+          } else if (d.intent === "rendimiento") {
+            allItems.push({
+              id: `da-${doc.id}`,
+              rawId: doc.id,
+              rawDoc: d,
+              date: parseDate(doc),
+              role: "dealer",
+              roleLabel: "Dealer",
+              type: "Carga POA",
+              title: `Financiamiento FET: ${d.entidad}`,
+              description: `Monto solicitado: $${fmtMoney(d.monto)} | Resolución: ${d.numeroResolucion || "—"}/${d.anioResolucion || "—"}`,
+              icon: "△",
+              color: "#BC8CFF"
+            });
+          }
         });
 
-        // 2. Financiamiento (Industry)
+        // 2. Financiamiento (Acopiador)
         // financing.jsx guarda: montoFinanciamiento (number), motivoFinanciamiento, plazo (int días).
         // NO se guarda ningún campo `tasaAceptada`, por eso se mostraba 0% siempre.
         // Se reemplaza por `plazo` que sí existe en el documento.
@@ -154,7 +170,7 @@ export default function MarketPage() {
           });
         });
 
-        // 3. Certificaciones (Producer) - Orden de Venta
+        // 3. Certificaciones (Acopiador) - Orden de Venta
         // tokenizar.jsx guarda los kgs como `totalKgs` (no `kgs`).
         ptSnap.forEach(doc => {
           const d = doc.data();
@@ -190,7 +206,7 @@ export default function MarketPage() {
           });
         });
 
-        // 4. Asociaciones (Producer)
+        // 4. Asociaciones (Acopiador)
         paSnap.forEach(doc => {
           const d = doc.data();
           allItems.push({
@@ -208,25 +224,7 @@ export default function MarketPage() {
           });
         });
 
-        // 5. POAs (State)
-        puSnap.forEach(doc => {
-          const d = doc.data();
-          allItems.push({
-            id: `poa-${doc.id}`,
-            rawId: doc.id,
-            rawDoc: d,
-            date: parseDate(doc),
-            role: "state",
-            roleLabel: "Estado Nacional",
-            type: "Carga POA",
-            title: `Presentación POA: ${d.entidad}`,
-            description: `Monto solicitado: $${fmtMoney(d.monto)} | Proyecto: ${d.nombreProyecto || 'N/A'}`,
-            icon: "△",
-            color: "#F0883E"
-          });
-        });
-
-        // 6. Novedades FET (State)
+        // 5. Novedades FET (contenido informativo, no ligado a un rol de usuario)
         // state/returns.jsx guarda el discriminador como `tipo` (no `tipoA`) con valores "A", "B" o "C":
         //   - "A" Precio FET:        { precioFet, monto, fecha, comentarios }
         //   - "B" Novedades Campaña: { informacion, fileUrl }

@@ -54,14 +54,15 @@ service cloud.firestore {
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Órdenes de Compra (Acopiador / Industria)
-    match /purchase_orders/{orderId} {
+    // Adquisiciones del Dealer (compra con descuento o financiamiento por
+    // rendimiento vía FET — la intención, no el rol, distingue el tipo)
+    match /dealer_acquisitions/{acquisitionId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.dealerId;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.dealerId == request.auth.uid);
     }
 
-    // Solicitudes de Financiamiento (Acopiador / Industria)
+    // Solicitudes de Financiamiento (Acopiador)
     match /financing_requests/{requestId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
@@ -71,10 +72,11 @@ service cloud.firestore {
     // Warrants Electrónicos (eWarrants)
     match /warrants/{warrantId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.creadoPor;
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.creadoPor == request.auth.uid);
     }
 
-    // Tokenizaciones del Productor
+    // Tokenizaciones del Acopiador (nombre de colección histórico: producer_tokenizations)
     match /producer_tokenizations/{tokenId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.productorOwner;
@@ -94,14 +96,7 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.creadoPor == request.auth.uid;
     }
 
-    // Carga de POAs (Estado Nacional)
-    match /poa_uploads/{poaId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-    }
-
-    // Novedades FET (Estado Nacional)
+    // Novedades FET (contenido informativo, candidato a dashboard público)
     match /novedades_fet/{novedadId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
