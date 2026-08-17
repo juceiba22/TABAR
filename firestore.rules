@@ -29,9 +29,10 @@ service cloud.firestore {
       allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
     }
 
-    // Colección de Campañas (CRÍTICO: Solo Admin puede modificar)
+    // Colección de Campañas — lectura pública (stock/progreso agregado,
+    // sin PII, se muestra en el dashboard público). Escritura solo Admin.
     match /campaigns/{campaignId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
@@ -96,9 +97,10 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.creadoPor == request.auth.uid;
     }
 
-    // Novedades FET (contenido informativo, candidato a dashboard público)
+    // Novedades FET — contenido informativo, lectura pública (se muestra
+    // en el dashboard público). Escritura sigue requiriendo sesión.
     match /novedades_fet/{novedadId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }

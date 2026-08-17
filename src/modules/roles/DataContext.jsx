@@ -36,9 +36,9 @@ export function DataProvider({ children }) {
   const [balances, setBalances] = useState(ESTADO_INICIAL_BALANCES);
   const [historial, setHistorial] = useState([]);
 
-  // Listen to the active campaign
+  // Listen to the active campaign — público: el stock/progreso de la
+  // campaña se muestra en el dashboard público, sin requerir sesión.
   useEffect(() => {
-    if (!user) { setCampana(ESTADO_INICIAL_CAMPANA); return; }
     const unsub = onSnapshot(doc(db, "campaigns", "active"), (docSnap) => {
       if (docSnap.exists()) {
         setCampana(docSnap.data());

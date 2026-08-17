@@ -12,7 +12,6 @@ import { ToastProvider } from "./modules/layout/ToastContext";
 import AppLayout from "./modules/layout/AppLayout";
 
 // Páginas Públicas y Autenticación
-import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
 import AdminLogin from "./pages/admin/AdminLogin";
 import ProtocoloPage from "./pages/protocolo";
@@ -78,7 +77,7 @@ function SmartRoot() {
     const dest = ROLE_HOME[role] ?? "/login";
     return <Navigate to={dest} replace />;
   }
-  return <PublicPresentation />;
+  return <ProtocoloPage />;
 }
 
 function SmartLogin() {

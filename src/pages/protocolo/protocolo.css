@@ -76,6 +76,70 @@
 .pr-chip--link { color: var(--tb-accent); text-decoration: none; }
 .pr-chip--link:hover { border-color: var(--tb-accent); }
 
+.pr-hero-actions {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 24px;
+}
+.pr-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--tb-accent); color: var(--tb-bg); text-decoration: none;
+  font-weight: 600; font-size: 14px; padding: 12px 22px; border-radius: 8px;
+  transition: opacity 0.15s;
+}
+.pr-cta:hover { opacity: 0.9; }
+.pr-cta-secondary {
+  background: transparent; color: var(--tb-text); border: 1px solid var(--tb-border);
+}
+
+/* ── Diagnóstico ── */
+.pr-diagnosis-grid {
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+@media (min-width: 720px) { .pr-diagnosis-grid { grid-template-columns: repeat(3, 1fr); } }
+.pr-diagnosis-card {
+  background: var(--tb-surface-2); border: 1px solid; border-radius: 14px;
+  padding: 22px; display: flex; flex-direction: column; gap: 10px;
+}
+.pr-diagnosis-icon {
+  width: 40px; height: 40px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 18px;
+}
+.pr-diagnosis-card h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.pr-diagnosis-card p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--tb-text-2); }
+
+/* ── Roles (Acopiador / Dealer) ── */
+.pr-roles-grid {
+  display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 720px; margin: 0 auto;
+}
+@media (min-width: 640px) { .pr-roles-grid { grid-template-columns: 1fr 1fr; } }
+.pr-role-card {
+  background: var(--tb-surface-2); border: 1px solid; border-radius: 14px;
+  padding: 24px; display: flex; flex-direction: column; gap: 10px;
+}
+.pr-role-icon { font-size: 22px; }
+.pr-role-card h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.pr-role-card p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--tb-text-2); flex-grow: 1; }
+.pr-role-cta { font-size: 13px; font-weight: 600; text-decoration: none; }
+.pr-role-cta:hover { text-decoration: underline; }
+
+/* ── Campaña (público) ── */
+.pr-campaign-wrap { max-width: 640px; margin: 0 auto; }
+.pr-campaign-cta { text-align: center; margin-top: 20px; }
+
+/* ── Roadmap ── */
+.pr-roadmap-container {
+  display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto;
+}
+.pr-roadmap-block {
+  background: var(--tb-surface-2); border: 1px solid var(--tb-border);
+  border-left: 3px solid var(--tb-accent); border-radius: 10px; padding: 18px 20px;
+}
+.pr-roadmap-phase { font-size: 13px; font-weight: 600; color: var(--tb-accent); margin-bottom: 6px; }
+.pr-roadmap-detail { font-size: 13px; line-height: 1.6; color: var(--tb-text-2); }
+
+/* ── Novedades FET (público) ── */
+.pr-novedades-list { display: flex; flex-direction: column; gap: 10px; max-width: 720px; margin: 0 auto; }
+.pr-novedad-empty { text-align: center; color: var(--tb-text-3); font-size: 13px; }
+
 /* ── Disclaimer ── */
 .pr-disclaimer {
   max-width: 760px; margin: 0 auto 8px; padding: 14px 20px 40px;
