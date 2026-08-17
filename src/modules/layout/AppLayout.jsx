@@ -3,8 +3,6 @@ import { useRole, ROLE_LABELS } from "../roles/RoleContext";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { useChat } from "../chat/ChatContext";
-import ChatDrawer from "../chat/ChatDrawer";
 
 const ROLE_PALETTE = {
   admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" },
@@ -64,7 +62,6 @@ export default function AppLayout({ children }) {
 
   const displayName = profile?.displayName || user?.email || "Usuario";
 
-  const { toggleDrawer } = useChat();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -270,29 +267,6 @@ export default function AppLayout({ children }) {
           <div className="tabar-system-name">Financiamiento Agroindustrial</div>
           
           <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
-            {/* Chat Center */}
-            <button
-              onClick={toggleDrawer}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#8B949E",
-                fontSize: "18px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "6px",
-                borderRadius: "50%",
-                transition: "all 0.2s ease",
-                outline: "none"
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#E3B64F"; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#8B949E"; }}
-            >
-              💬
-            </button>
-
             {/* Notification Center */}
             <div ref={notifRef} style={{ position: "relative" }}>
               <button
@@ -446,7 +420,6 @@ export default function AppLayout({ children }) {
         </header>
         <main className="tabar-content">
           {children || <Outlet />}
-          <ChatDrawer />
         </main>
       </div>
     </div>

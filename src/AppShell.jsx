@@ -8,7 +8,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
 import { DataProvider } from "./modules/roles/DataContext";
 import { ToastProvider } from "./modules/layout/ToastContext";
-import { ChatProvider } from "./modules/chat/ChatContext";
 import AppLayout from "./modules/layout/AppLayout";
 
 // Páginas Públicas y Autenticación
@@ -225,9 +224,7 @@ export default function AppShell() {
         <Web3Provider>
           <DataProvider>
             <ToastProvider>
-              <ChatProvider>
-                <AppRoutes />
-              </ChatProvider>
+              <AppRoutes />
             </ToastProvider>
           </DataProvider>
         </Web3Provider>
