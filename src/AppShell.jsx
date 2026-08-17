@@ -6,6 +6,7 @@
 import { Component } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RoleProvider, useRole, ROLE_HOME } from "./modules/roles/RoleContext";
+import RequireFullProfile from "./modules/roles/RequireFullProfile";
 import { DataProvider } from "./modules/roles/DataContext";
 import { ToastProvider } from "./modules/layout/ToastContext";
 import AppLayout from "./modules/layout/AppLayout";
@@ -143,7 +144,7 @@ function AppRoutes() {
 
         {/* Módulo Acopiador */}
         <Route path="/acopiador" element={<ProtectedRoute allowedRoles={["acopiador", "admin"]}><AcopiadorDashboard /></ProtectedRoute>} />
-        <Route path="/acopiador/tokenizar" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorTokenizar /></ProtectedRoute>} />
+        <Route path="/acopiador/tokenizar" element={<ProtectedRoute allowedRoles={["acopiador"]}><RequireFullProfile><AcopiadorTokenizar /></RequireFullProfile></ProtectedRoute>} />
         <Route path="/acopiador/asociaciones" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorAsociaciones /></ProtectedRoute>} />
         <Route path="/acopiador/financing" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorFinancing /></ProtectedRoute>} />
 
@@ -155,7 +156,7 @@ function AppRoutes() {
         <Route path="/dealer/invest" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerInvest /></ProtectedRoute>} />
 
         {/* Warrants Digitales */}
-        <Route path="/warrants" element={<ProtectedRoute allowedRoles={["acopiador", "dealer", "admin"]}><WarrantsPage /></ProtectedRoute>} />
+        <Route path="/warrants" element={<ProtectedRoute allowedRoles={["acopiador", "dealer", "admin"]}><RequireFullProfile><WarrantsPage /></RequireFullProfile></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to={roleHome} replace />} />

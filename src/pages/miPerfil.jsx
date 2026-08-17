@@ -28,6 +28,10 @@ export default function MiPerfil() {
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [documentType, setDocumentType] = useState("dni");
+  const [documentNumber, setDocumentNumber] = useState("");
   
   // State for profile picture
   const [photoFile, setPhotoFile] = useState(null);
@@ -48,6 +52,10 @@ export default function MiPerfil() {
       setDisplayName(profile.displayName || "");
       setPhone(profile.phone || "");
       setCompanyName(profile.companyName || "");
+      setFirstName(profile.firstName || "");
+      setLastName(profile.lastName || "");
+      setDocumentType(profile.documentType || "dni");
+      setDocumentNumber(profile.documentNumber || "");
       setPhotoPreview(profile.profilePicUrl || "");
     }
   }, [profile]);
@@ -157,6 +165,10 @@ export default function MiPerfil() {
         displayName: displayName.trim(),
         phone: phone.trim(),
         companyName: companyName.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        documentType,
+        documentNumber: documentNumber.trim(),
         profilePicUrl: uploadedUrl,
         updatedAt: new Date().toISOString()
       };
@@ -185,6 +197,10 @@ export default function MiPerfil() {
       displayName.trim() !== (profile.displayName || "").trim() ||
       phone.trim() !== (profile.phone || "").trim() ||
       companyName.trim() !== (profile.companyName || "").trim() ||
+      firstName.trim() !== (profile.firstName || "").trim() ||
+      lastName.trim() !== (profile.lastName || "").trim() ||
+      documentType !== (profile.documentType || "dni") ||
+      documentNumber.trim() !== (profile.documentNumber || "").trim() ||
       photoFile !== null
     );
   };
@@ -271,37 +287,57 @@ export default function MiPerfil() {
             
             <div className="form-group-row">
               <div className="form-group flex-1">
-                <label className="profile-field-label">Nombre</label>
-                <div className="read-only-field-wrap">
-                  <span className="read-only-text">{profile?.firstName || "—"}</span>
-                  <span className="lock-icon" title="Campo verificado y no modificable">🔒</span>
-                </div>
+                <label htmlFor="firstName" className="profile-field-label required-label">Nombre</label>
+                <input
+                  id="firstName"
+                  type="text"
+                  className="tabar-input profile-editable-input"
+                  placeholder="Ej. Juan"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
               </div>
 
               <div className="form-group flex-1">
-                <label className="profile-field-label">Apellido</label>
-                <div className="read-only-field-wrap">
-                  <span className="read-only-text">{profile?.lastName || "—"}</span>
-                  <span className="lock-icon" title="Campo verificado y no modificable">🔒</span>
-                </div>
+                <label htmlFor="lastName" className="profile-field-label required-label">Apellido</label>
+                <input
+                  id="lastName"
+                  type="text"
+                  className="tabar-input profile-editable-input"
+                  placeholder="Ej. García"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
             <div className="form-group-row">
               <div className="form-group flex-1">
-                <label className="profile-field-label">Tipo de documento</label>
-                <div className="read-only-field-wrap">
-                  <span className="read-only-text">{profile?.documentType?.toUpperCase() || "DNI"}</span>
-                  <span className="lock-icon" title="Campo verificado y no modificable">🔒</span>
-                </div>
+                <label htmlFor="documentType" className="profile-field-label required-label">Tipo de documento</label>
+                <select
+                  id="documentType"
+                  className="tabar-input profile-editable-input"
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                >
+                  <option value="dni">DNI</option>
+                  <option value="passport">Pasaporte</option>
+                </select>
               </div>
 
               <div className="form-group flex-2">
-                <label className="profile-field-label">Número de documento</label>
-                <div className="read-only-field-wrap">
-                  <span className="read-only-text">{profile?.documentNumber || "—"}</span>
-                  <span className="lock-icon" title="Campo verificado y no modificable">🔒</span>
-                </div>
+                <label htmlFor="documentNumber" className="profile-field-label required-label">Número de documento</label>
+                <input
+                  id="documentNumber"
+                  type="text"
+                  className="tabar-input profile-editable-input"
+                  placeholder={documentType === "dni" ? "Ej. 12345678" : "Ej. ABC123456"}
+                  value={documentNumber}
+                  onChange={(e) => setDocumentNumber(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
@@ -461,6 +497,10 @@ export default function MiPerfil() {
                   setDisplayName(profile.displayName || "");
                   setPhone(profile.phone || "");
                   setCompanyName(profile.companyName || "");
+                  setFirstName(profile.firstName || "");
+                  setLastName(profile.lastName || "");
+                  setDocumentType(profile.documentType || "dni");
+                  setDocumentNumber(profile.documentNumber || "");
                   setPhotoPreview(profile.profilePicUrl || "");
                   setPhotoFile(null);
                   setErrorMsg("");

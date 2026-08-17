@@ -17,10 +17,14 @@ import {
   sendPasswordResetEmail,
   applyActionCode,
   signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { useRole } from "../modules/roles/RoleContext";
+
+const googleProvider = new GoogleAuthProvider();
 
 /* ─── Paleta de roles ────────────────────────────────────────────────────── */
 const ROLE_PALETTE = {
@@ -76,6 +80,11 @@ function mapFirebaseError(code) {
       return "Esta cuenta fue deshabilitada. Contactá al administrador.";
     case "auth/operation-not-allowed":
       return "Método de autenticación no habilitado.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return "";
+    case "auth/popup-blocked":
+      return "El navegador bloqueó la ventana de Google. Habilitá los pop-ups e intentá de nuevo.";
     default:
       return "Error inesperado. Intentá de nuevo.";
   }
@@ -86,7 +95,7 @@ function mapFirebaseError(code) {
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function LandingRole() {
   const navigate = useNavigate();
-  const { user, role, loading: authLoading } = useRole();
+  const { user, role, profile, loading: authLoading, updateProfile } = useRole();
 
   /* ─── Modos de la pantalla ──────────────────────────────────────────── */
   // "login" | "register" | "forgot" | "verify-email" | "no-role" | "verifying" | "verified"
@@ -287,6 +296,49 @@ export default function LandingRole() {
     } catch (err) {
       console.error("Error al reenviar email de validación:", err);
       setError("No se pudo reenviar el correo de validación. Intentá más tarde.");
+    }
+  };
+
+  /* ─── Google Sign-In (login amigable, KYC progresivo) ──────────── */
+  const handleGoogleAuth = async () => {
+    if (loading) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      const userRef = doc(db, "users", cred.user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Primer login con Google: perfil mínimo, SIN rol todavía.
+        // El KYC pesado (empresa, documento) se pide recién cuando el
+        // usuario avanza a tokenizar o firmar un warrant.
+        await setDoc(userRef, {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          displayName: cred.user.displayName || cred.user.email.split("@")[0],
+          photoURL: cred.user.photoURL || null,
+          authProvider: "google",
+          role: null,
+          status: "profile_incomplete",
+          emailVerified: true,
+          createdAt: new Date().toISOString(),
+        });
+        // RoleContext (onAuthStateChanged) levanta el perfil recién creado
+        // y, al no tener role, dispara la pantalla de selección de rol.
+      } else if (userSnap.data().role === "admin") {
+        await signOut(auth);
+        setError("Acceso denegado. Utilice el portal de administración en /admin/login");
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      const msg = mapFirebaseError(err.code);
+      if (msg) setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -529,9 +581,13 @@ export default function LandingRole() {
               />
             )}
 
-            {/* ═══ MODO: SIN ROL ═══ */}
+            {/* ═══ MODO: ELEGIR ROL (KYC progresivo — solo tras login con Google) ═══ */}
             {mode === "no-role" && (
-              <NoRoleScreen onLogout={async () => { await signOut(auth); setMode("login"); }} />
+              <RoleChooserScreen
+                profile={profile}
+                onChoose={(chosenRole) => updateProfile({ role: chosenRole, status: "role_selected" })}
+                onLogout={async () => { await signOut(auth); setMode("login"); }}
+              />
             )}
 
             {/* ═══ MODOS: LOGIN / REGISTER / FORGOT ═══ */}
@@ -557,6 +613,21 @@ export default function LandingRole() {
                     {mode === "forgot" && "Te enviaremos instrucciones a tu correo"}
                   </p>
                 </div>
+
+                {(mode === "login" || mode === "register") && (
+                  <>
+                    <button
+                      type="button"
+                      className="lr-btn-google"
+                      onClick={handleGoogleAuth}
+                      disabled={loading}
+                    >
+                      <GoogleGlyph />
+                      Continuar con Google
+                    </button>
+                    <div className="lr-divider"><span>o con tu correo institucional</span></div>
+                  </>
+                )}
 
                 <form onSubmit={handleAuth} className="lr-form" noValidate>
 
@@ -850,6 +921,17 @@ function Field({ label, action, children }) {
   );
 }
 
+function GoogleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 01-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.09A12 12 0 0012 24z" />
+      <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 014.9 12c0-.79.14-1.56.37-2.28V6.63H1.26A12 12 0 000 12c0 1.94.46 3.77 1.26 5.37l4.01-3.09z" />
+      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 001.26 6.63l4.01 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
+    </svg>
+  );
+}
+
 function Alert({ type, text }) {
   return (
     <div className={`lr-alert lr-alert--${type}`} role="alert">
@@ -1025,21 +1107,45 @@ function VerifiedScreen({ onLogin }) {
   );
 }
 
-function NoRoleScreen({ onLogout }) {
+function RoleChooserScreen({ profile, onChoose, onLogout }) {
+  const [selected, setSelected] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const handleConfirm = async () => {
+    if (!selected || saving) return;
+    setSaving(true);
+    setErr("");
+    try {
+      await onChoose(selected);
+      // Si todo salió bien, el efecto de redirección en el componente padre
+      // se encarga de sacar a la persona de esta pantalla.
+    } catch (e) {
+      console.error("[RoleChooserScreen] Error al guardar el rol:", e);
+      setErr("No se pudo guardar tu elección. Intentá de nuevo.");
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="lr-status-screen">
-      <div className="lr-status-icon lr-status-icon--warning">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
+      <div className="lr-status-icon lr-status-icon--info">
+        <span style={{ fontSize: "28px" }}>👋</span>
       </div>
-      <h2 className="lr-status-title">Acceso pendiente</h2>
+      <h2 className="lr-status-title">
+        {profile?.displayName ? `¡Bienvenido, ${profile.displayName}!` : "¡Bienvenido!"}
+      </h2>
       <p className="lr-status-desc">
-        Tu cuenta está autenticada pero aún no tiene asignado un rol. Contactá al administrador para obtener acceso.
+        Elegí cómo vas a usar TABAR. El resto de tus datos te los vamos a pedir más adelante, solo cuando los necesites.
       </p>
-      <button type="button" className="lr-btn-primary" onClick={onLogout}>
+      {err && <Alert type="error" text={err} />}
+      <div style={{ width: "100%", maxWidth: "360px" }}>
+        <RoleSelector roles={ROLES_INFO} selected={selected} onSelect={setSelected} disabled={saving} />
+      </div>
+      <button type="button" className="lr-btn-primary" onClick={handleConfirm} disabled={!selected || saving}>
+        {saving ? <span className="lr-btn-spinner" /> : "Continuar"}
+      </button>
+      <button type="button" className="lr-btn-ghost" onClick={onLogout} disabled={saving}>
         Cerrar sesión
       </button>
     </div>
@@ -1423,6 +1529,49 @@ const STYLES = `
   background: rgba(63,185,80,0.08);
   color: var(--tb-green);
   border-color: rgba(63,185,80,0.2);
+}
+
+/* ── Google Sign-In ──────────────────────── */
+.lr-btn-google {
+  width: 100%;
+  padding: 10px;
+  background: var(--tb-surface-2);
+  border: 1px solid var(--tb-border);
+  border-radius: 8px;
+  color: var(--tb-text);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--tb-font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 42px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lr-btn-google:hover:not(:disabled) {
+  border-color: var(--tb-border-hover);
+  background: var(--tb-surface-1);
+}
+.lr-btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.lr-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--tb-text-3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.lr-divider::before,
+.lr-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--tb-border);
 }
 
 /* ── Botones ─────────────────────────────── */

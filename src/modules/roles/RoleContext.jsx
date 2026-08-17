@@ -152,6 +152,10 @@ export function RoleProvider({ children }) {
     const userRef = doc(db, "users", user.uid);
     await updateDoc(userRef, updates);
     setProfile((prev) => (prev ? { ...prev, ...updates } : updates));
+    // "role" se trackea aparte de "profile" (ver estado más arriba) — si no se
+    // sincroniza acá, elegir rol después del login con Google quedaría sin
+    // efecto hasta el próximo refresh de la sesión.
+    if ("role" in updates) setRole(updates.role);
   };
 
   return (
