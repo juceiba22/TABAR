@@ -22,7 +22,10 @@ export const Web3Provider = ({ children }) => {
           setAccount(embeddedWallet.address);
 
           // Ethers v6 + Privy Wallet Provider
-          const privyEthersProvider = await embeddedWallet.getEthersProvider();
+          // (el SDK de Privy instalado ya no expone getEthersProvider(); hay
+          // que tomar el provider EIP-1193 crudo y envolverlo nosotros)
+          const eip1193Provider = await embeddedWallet.getEthereumProvider();
+          const privyEthersProvider = new ethers.BrowserProvider(eip1193Provider);
           const signer = await privyEthersProvider.getSigner();
 
           const tabarContract = new ethers.Contract(CONTRACT_ADDRESS, TabarABI, signer);
