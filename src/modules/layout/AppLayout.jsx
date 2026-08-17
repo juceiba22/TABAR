@@ -6,10 +6,8 @@ import { db } from "../../config/firebase";
 
 const ROLE_PALETTE = {
   admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" },
-  industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" },
-  state: { color: "#F0883E", dim: "rgba(240,136,62,0.10)", border: "rgba(240,136,62,0.25)" },
+  acopiador: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" },
   dealer: { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)", border: "rgba(188,140,255,0.25)" },
-  producer: { color: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(63,185,80,0.25)" },
 };
 
 const NAV_LINKS = {
@@ -19,28 +17,19 @@ const NAV_LINKS = {
     { path: "/campaign", label: "Campaña" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
-  industry: [
-    { path: "/industry", label: "Mi Dashboard" },
-    { path: "/industry/buy", label: "Orden de Compra" },
-    { path: "/industry/financing", label: "Solicitar Financiamiento" },
+  acopiador: [
+    { path: "/acopiador", label: "Mi Dashboard" },
+    { path: "/acopiador/tokenizar", label: "Certificar Tabaco" },
+    { path: "/acopiador/asociaciones", label: "Mis Asociaciones" },
+    { path: "/acopiador/financing", label: "Solicitar Financiamiento" },
     { path: "/warrants", label: "Warrants Digitales" },
-    { path: "/market", label: "Mercado Tabacalero" }
-  ],
-  state: [
-    { path: "/state", label: "Mi Dashboard" },
-    { path: "/state/invest", label: "Cargar POAs" },
-    { path: "/state/returns", label: "FET" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
   dealer: [
     { path: "/dealer", label: "Mi Dashboard" },
+    { path: "/dealer/buy", label: "Comprar con Descuento" },
+    { path: "/dealer/invest", label: "Financiar (FET)" },
     { path: "/dealer/trade", label: "Operar" },
-    { path: "/market", label: "Mercado Tabacalero" }
-  ],
-  producer: [
-    { path: "/producer", label: "Mi tabaco" },
-    { path: "/producer/tokenizar", label: "Certificar Tabaco" },
-    { path: "/producer/asociaciones", label: "Mis Asociaciones" },
     { path: "/warrants", label: "Warrants Digitales" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
@@ -157,7 +146,7 @@ export default function AppLayout({ children }) {
 
           <nav className="tabar-nav">
             {links.map((link) => {
-              const isEnd = ["/admin", "/industry", "/state", "/dealer", "/producer"].includes(link.path);
+              const isEnd = ["/admin", "/acopiador", "/dealer"].includes(link.path);
               return (
                 <NavLink
                   key={link.path}

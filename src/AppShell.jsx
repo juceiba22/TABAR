@@ -27,21 +27,16 @@ import WarrantsPage from "./pages/warrants/index";
 import AdminDashboard from "./pages/admin/dashboard";
 import AdminControl from "./pages/admin/control";
 
-import IndustryDashboard from "./pages/industry/dashboard";
-import IndustryBuy from "./pages/industry/buy";
-import IndustryPosition from "./pages/industry/position";
-import IndustryFinancing from "./pages/industry/financing";
-
-import StateDashboard from "./pages/state/dashboard";
-import StateInvest from "./pages/state/invest";
-import StateReturns from "./pages/state/returns";
+import AcopiadorDashboard from "./pages/acopiador/dashboard";
+import AcopiadorTokenizar from "./pages/acopiador/tokenizar";
+import AcopiadorAsociaciones from "./pages/acopiador/asociaciones";
+import AcopiadorFinancing from "./pages/acopiador/financing";
 
 import DealerDashboard from "./pages/dealer/dashboard";
 import DealerTrade from "./pages/dealer/trade";
-
-import ProducerDashboard from "./pages/producer/dashboard";
-import ProducerTokenizar from "./pages/producer/tokenizar";
-import ProducerAssociations from "./pages/producer/asociaciones";
+import DealerBuy from "./pages/dealer/buy";
+import DealerPosition from "./pages/dealer/position";
+import DealerInvest from "./pages/dealer/invest";
 
 import { Web3Provider as CustomWeb3Provider } from "./context/Web3Context";
 import { PrivyProvider } from '@privy-io/react-auth';
@@ -125,49 +120,42 @@ function AppRoutes() {
       <Route element={<AppLayout />}>
         {/* Rutas Comunes Autenticadas */}
         <Route path="/campaign" element={<CampaignPage />} />
-        <Route 
-          path="/miPerfil" 
+        <Route
+          path="/miPerfil"
           element={
-            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+            <ProtectedRoute allowedRoles={["admin", "acopiador", "dealer"]}>
               <MiPerfil />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/market" 
+        <Route
+          path="/market"
           element={
-            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+            <ProtectedRoute allowedRoles={["admin", "acopiador", "dealer"]}>
               <MarketPage />
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Módulo Admin / Fideicomiso */}
+        {/* Módulo Admin / Fideicomiso (panel ops interno, no es un rol público) */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/control" element={<ProtectedRoute allowedRoles={["admin"]}><AdminControl /></ProtectedRoute>} />
 
-        {/* Módulo Industria / Acopiador */}
-        <Route path="/industry" element={<ProtectedRoute allowedRoles={["industry", "admin"]}><IndustryDashboard /></ProtectedRoute>} />
-        <Route path="/industry/buy" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryBuy /></ProtectedRoute>} />
-        <Route path="/industry/position" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryPosition /></ProtectedRoute>} />
-        <Route path="/industry/financing" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryFinancing /></ProtectedRoute>} />
-
-        {/* Módulo Estado Nacional */}
-        <Route path="/state" element={<ProtectedRoute allowedRoles={["state", "admin"]}><StateDashboard /></ProtectedRoute>} />
-        <Route path="/state/invest" element={<ProtectedRoute allowedRoles={["state"]}><StateInvest /></ProtectedRoute>} />
-        <Route path="/state/returns" element={<ProtectedRoute allowedRoles={["state"]}><StateReturns /></ProtectedRoute>} />
+        {/* Módulo Acopiador */}
+        <Route path="/acopiador" element={<ProtectedRoute allowedRoles={["acopiador", "admin"]}><AcopiadorDashboard /></ProtectedRoute>} />
+        <Route path="/acopiador/tokenizar" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorTokenizar /></ProtectedRoute>} />
+        <Route path="/acopiador/asociaciones" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorAsociaciones /></ProtectedRoute>} />
+        <Route path="/acopiador/financing" element={<ProtectedRoute allowedRoles={["acopiador"]}><AcopiadorFinancing /></ProtectedRoute>} />
 
         {/* Módulo Dealer */}
         <Route path="/dealer" element={<ProtectedRoute allowedRoles={["dealer", "admin"]}><DealerDashboard /></ProtectedRoute>} />
         <Route path="/dealer/trade" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerTrade /></ProtectedRoute>} />
+        <Route path="/dealer/buy" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerBuy /></ProtectedRoute>} />
+        <Route path="/dealer/position" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerPosition /></ProtectedRoute>} />
+        <Route path="/dealer/invest" element={<ProtectedRoute allowedRoles={["dealer"]}><DealerInvest /></ProtectedRoute>} />
 
-        {/* Módulo Productor */}
-        <Route path="/producer" element={<ProtectedRoute allowedRoles={["producer", "admin"]}><ProducerDashboard /></ProtectedRoute>} />
-        <Route path="/producer/tokenizar" element={<ProtectedRoute allowedRoles={["producer"]}><ProducerTokenizar /></ProtectedRoute>} />
-        <Route path="/producer/asociaciones" element={<ProtectedRoute allowedRoles={["producer"]}><ProducerAssociations /></ProtectedRoute>} />
-        
         {/* Warrants Digitales */}
-        <Route path="/warrants" element={<ProtectedRoute allowedRoles={["producer", "industry", "admin"]}><WarrantsPage /></ProtectedRoute>} />
+        <Route path="/warrants" element={<ProtectedRoute allowedRoles={["acopiador", "dealer", "admin"]}><WarrantsPage /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to={roleHome} replace />} />

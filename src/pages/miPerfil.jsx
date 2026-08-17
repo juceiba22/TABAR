@@ -120,14 +120,10 @@ export default function MiPerfil() {
   // Map roles to descriptions matching user specs
   const getRoleLabelExtended = (r) => {
     switch (r) {
-      case "producer":
-        return "Productor Tabacalero (Finca / Cultivo de Tabaco)";
-      case "industry":
-        return "Acopiador (Entidad / Acopio)";
-      case "state":
-        return "Estado (Ente Nacional / FET)";
+      case "acopiador":
+        return "Acopiador (tokeniza producción y solicita financiamiento)";
       case "dealer":
-        return "Dealer (Revendedor / Trader)";
+        return "Dealer (adquiere tokens con descuento o financia por rendimiento)";
       default:
         return ROLE_LABELS[r] || "Sin Rol";
     }
@@ -432,10 +428,8 @@ export default function MiPerfil() {
             <div className="profile-info-banner" style={{ borderLeftColor: roleColor }}>
               <span style={{ fontSize: "16px" }}>ℹ️</span>
               <div style={{ fontSize: "12px", color: "var(--tb-text-2)", lineHeight: "1.4" }}>
-                {role === "producer" && "Como productor tabacalero, podes crear cooperativas digitales, asociarte con otros productores del sector y publicar ofertas en el marketplace."}
-                {role === "industry" && "Como acopiador / cooperativa, estás habilitado para emitir órdenes de compra de tabaco certificado y solicitar financiamiento anticipado en la red."}
-                {role === "state" && "Como representante del Estado Nacional o administrador del FET, podes publicar novedades sobre el precio FET, informar sobre transferencias o cargar POAs firmados en garantía."}
-                {role === "dealer" && "Como Dealer o inversor, podes arbitrar entre las órdenes de compra-venta e intermediar en las necesidades de financiamiento de acopiadres y el Estado (FET)."}
+                {role === "acopiador" && "Como acopiador, podes certificar tu producción, asociarte con otros acopiadores, tokenizar tabaco y solicitar financiamiento anticipado en la red."}
+                {role === "dealer" && "Como Dealer, podes adquirir tokens TABAR con descuento sobre compra de tabaco o financiar por rendimiento, y operar en el mercado."}
               </div>
             </div>
 

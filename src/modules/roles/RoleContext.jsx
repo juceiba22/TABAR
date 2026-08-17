@@ -20,28 +20,24 @@ import { auth, db } from "../../config/firebase";
 
 const RoleContext = createContext(null);
 
+// "admin" sigue siendo un valor válido en Firestore (panel ops interno del
+// fideicomiso/AgroTabaco) pero deliberadamente no forma parte de los roles
+// públicos del producto — no aparece en ROLES_INFO/selector de registro.
 export const ROLES = {
-  ADMIN: "admin",
-  INDUSTRY: "industry",
-  STATE: "state",
+  ACOPIADOR: "acopiador",
   DEALER: "dealer",
-  PRODUCER: "producer",
 };
 
 export const ROLE_LABELS = {
   admin: "Fideicomiso / Admin",
-  industry: "Acopiador",
-  state: "Estado Nacional",
-  dealer: "Dealer / Revendedor",
-  producer: "Productor Tabacalero",
+  acopiador: "Acopiador",
+  dealer: "Dealer",
 };
 
 export const ROLE_COLORS = {
   admin: "#E3B64F",
-  industry: "#58A6FF",
-  state: "#F0883E",
+  acopiador: "#58A6FF",
   dealer: "#BC8CFF",
-  producer: "#3FB950",
 };
 
 /* ─── Rutas raíz por rol — única fuente de verdad ─────────────────────────
@@ -49,10 +45,8 @@ export const ROLE_COLORS = {
    del rol actual sin hardcodear strings.                                   */
 export const ROLE_HOME = {
   admin: "/admin",
-  industry: "/industry",
-  state: "/state",
+  acopiador: "/acopiador",
   dealer: "/dealer",
-  producer: "/producer",
 };
 
 export function RoleProvider({ children }) {

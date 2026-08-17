@@ -1,4 +1,4 @@
-// src/pages/producer/tokenizar.jsx
+// src/pages/acopiador/tokenizar.jsx
 import { useState, useEffect, useContext } from "react";
 import { useData } from "../../modules/roles/DataContext";
 import { useRole } from "../../modules/roles/RoleContext";
@@ -367,7 +367,7 @@ export default function ProducerTokenizar() {
         <p style={{ color: "#8B949E", marginBottom: "30px", fontSize: "12px" }}>
           Tu orden de venta fue registrada exitosamente. Se generó un PDF respaldatorio.
         </p>
-        <Link to="/producer" className="tabar-btn tabar-btn-primary">Volver al Dashboard</Link>
+        <Link to="/acopiador" className="tabar-btn tabar-btn-primary">Volver al Dashboard</Link>
       </div>
     );
   }

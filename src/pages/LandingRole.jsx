@@ -25,17 +25,13 @@ import { useRole } from "../modules/roles/RoleContext";
 /* ─── Paleta de roles ────────────────────────────────────────────────────── */
 const ROLE_PALETTE = {
   admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.12)", border: "rgba(227,182,79,0.35)", glyph: "◈" },
-  industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.12)", border: "rgba(88,166,255,0.35)", glyph: "⬡" },
-  state: { color: "#F0883E", dim: "rgba(240,136,62,0.12)", border: "rgba(240,136,62,0.35)", glyph: "◉" },
+  acopiador: { color: "#58A6FF", dim: "rgba(88,166,255,0.12)", border: "rgba(88,166,255,0.35)", glyph: "🌿" },
   dealer: { color: "#BC8CFF", dim: "rgba(188,140,255,0.12)", border: "rgba(188,140,255,0.35)", glyph: "◇" },
-  producer: { color: "#3FB950", dim: "rgba(63,185,80,0.12)", border: "rgba(63,185,80,0.35)", glyph: "🌿" },
 };
 
 const ROLES_INFO = [
-  { id: "producer", title: "Productor Tabacalero", subtitle: "Finca / Cultivo de Tabaco" },
-  { id: "industry", title: "Acopiador", subtitle: "Entidad/Acopio" },
-  { id: "state", title: "Estado", subtitle: "Ente Nacional / FET" },
-  { id: "dealer", title: "Dealer", subtitle: "Revendedor / Trader" },
+  { id: "acopiador", title: "Acopiador", subtitle: "Tokeniza producción y solicita financiamiento" },
+  { id: "dealer", title: "Dealer", subtitle: "Adquiere tokens con descuento o financia por rendimiento" },
 ];
 
 /* ─── Tipos de documento ────────────────────────────────────────────────── */
@@ -109,7 +105,7 @@ export default function LandingRole() {
   const [documentNumber, setDocumentNumber] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [companyName, setCompanyName] = useState("");
-  const [selectedRole, setSelectedRole] = useState("industry");
+  const [selectedRole, setSelectedRole] = useState("acopiador");
 
   /* ─── Estado UI ─────────────────────────────────────────────────────── */
   const [error, setError] = useState("");
@@ -245,7 +241,7 @@ export default function LandingRole() {
       let documentTypeVal = "";
       let documentNumberVal = "";
       let displayNameVal = "";
-      let roleVal = "industry";
+      let roleVal = "acopiador";
 
       if (savedStr) {
         try {
@@ -328,7 +324,7 @@ export default function LandingRole() {
             email: cred.user.email,
             displayName: cred.user.email.split('@')[0],
             companyName: "Entidad a confirmar",
-            role: "industry", // Default fallback
+            role: "acopiador", // Default fallback
             createdAt: new Date().toISOString(),
             status: "approved",
             emailVerified: true,

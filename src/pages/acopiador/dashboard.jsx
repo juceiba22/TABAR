@@ -2,31 +2,39 @@ import { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useRole } from "../../modules/roles/RoleContext";
+import { useData } from "../../modules/roles/DataContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
 const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
 
-// Formateador de moneda en pesos.
+// Formateadores
+const fmtKgs = (n) => Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+const fmtFardos = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// Lee el monto de una orden de compra.
-// buy.jsx lo guarda como `montoTotal` (string, por .toFixed(2)).
-// Se mantiene compatibilidad con `usdTotal` por si quedó algún documento viejo.
-const getMontoOrden = (d) => parseFloat(d?.montoTotal ?? d?.usdTotal ?? 0) || 0;
+// Lee los kgs de un documento de producer_tokenizations.
+// Soporta el nombre nuevo (`totalKgs`, como lo guarda tokenizar.jsx) y el
+// viejo (`kgs`) por compatibilidad con documentos antiguos.
+const getKgs = (d) => Number(d?.totalKgs ?? d?.kgs ?? 0);
 
 // Lee el monto de una solicitud de financiamiento.
 // financing.jsx lo guarda como `montoFinanciamiento` (number).
 // Se mantiene compatibilidad con `montoSolicitado` por si quedó algún documento viejo.
 const getMontoFinanciamiento = (d) => Number(d?.montoFinanciamiento ?? d?.montoSolicitado ?? 0) || 0;
 
-export default function IndustryDashboard() {
+export default function AcopiadorDashboard() {
   const { user } = useRole();
-  const [loading, setLoading] = useState(true);
+  const { balances } = useData();
+  const myBalance = balances?.producer || 0;
 
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    ordenesCount: 0,
-    ordenesMontoTotal: 0,
+    totalKgs: 0,
+    totalFardos: 0,
+    totalUsd: 0,
+    tiposTabaco: [],
+    asociacionesCount: 0,
     financiamientoCount: 0,
     financiamientoMontoTotal: 0,
     motivos: [],
@@ -37,13 +45,6 @@ export default function IndustryDashboard() {
     async function fetchData() {
       if (!user?.uid) return;
       try {
-        let ordenesCount = 0;
-        let ordenesMontoTotal = 0;
-        let financiamientoCount = 0;
-        let financiamientoMontoTotal = 0;
-        const motivosSet = new Set();
-        let interaccionesList = [];
-
         const parseDate = (doc) => {
           const d = doc.data();
           if (d.fechaCreacion) return new Date(d.fechaCreacion);
@@ -54,31 +55,66 @@ export default function IndustryDashboard() {
           return new Date();
         };
 
-        // 1. Órdenes de compra
-        const poRef = collection(db, "purchase_orders");
-        const qPo = query(poRef, where("userId", "==", user.uid));
-        const poSnap = await getDocs(qPo);
+        let totalKgs = 0;
+        let totalFardos = 0;
+        let totalUsd = 0;
+        const tiposTabacoSet = new Set();
+        let interaccionesList = [];
 
-        poSnap.forEach(doc => {
+        // 1. Tokenizaciones (certificación de tabaco propio)
+        const tokenizationsRef = collection(db, "producer_tokenizations");
+        const qTok = query(tokenizationsRef, where("productorOwner", "==", user.uid));
+        const tokSnap = await getDocs(qTok);
+
+        tokSnap.forEach(doc => {
           const d = doc.data();
-          const monto = getMontoOrden(d);
+          const kgs = getKgs(d);
 
-          ordenesCount++;
-          ordenesMontoTotal += monto;
+          totalKgs += kgs;
+          totalFardos += d.cantidadFardos || 0;
+          totalUsd += d.usdTotal || 0;
+
+          if (d.tipoTabaco) {
+            const tipoDesc = d.calidad ? `${d.tipoTabaco} ${d.calidad}` : d.tipoTabaco;
+            tiposTabacoSet.add(tipoDesc);
+          }
 
           interaccionesList.push({
-            id: `po-${doc.id}`,
+            id: `tok-${doc.id}`,
             date: parseDate(doc),
-            title: `Orden de compra`,
-            description: `Orden de compra emitida por ${(d.cantidadKgs || 0).toLocaleString("es-AR")} kgs y a un monto total de $${fmtMoney(monto)}`,
-            icon: "▣"
+            title: `Certificación`,
+            description: `Se certificaron ${fmtFardos(d.cantidadFardos)} fardos (${fmtKgs(kgs)} Kgs) de ${d.tipoTabaco}.`,
+            icon: "🌿"
           });
         });
 
-        // 2. Solicitudes de financiamiento
+        // 2. Asociaciones
+        const assocRef = collection(db, "producer_associations");
+        const qAssoc = query(assocRef, where("productoresUIDs", "array-contains", user.uid));
+        const assocSnap = await getDocs(qAssoc);
+
+        let asociacionesCount = 0;
+        assocSnap.forEach(doc => {
+          const d = doc.data();
+          asociacionesCount++;
+
+          interaccionesList.push({
+            id: `assoc-${doc.id}`,
+            date: parseDate(doc),
+            title: `Asociación exitosa "${d.nombre}"`,
+            description: `Te uniste a la asociación de ${d.productores?.length || 1} miembros.`,
+            icon: "👥"
+          });
+        });
+
+        // 3. Solicitudes de financiamiento
         const frRef = collection(db, "financing_requests");
         const qFr = query(frRef, where("userId", "==", user.uid));
         const frSnap = await getDocs(qFr);
+
+        let financiamientoCount = 0;
+        let financiamientoMontoTotal = 0;
+        const motivosSet = new Set();
 
         frSnap.forEach(doc => {
           const d = doc.data();
@@ -103,8 +139,11 @@ export default function IndustryDashboard() {
         interaccionesList.sort((a, b) => b.date.getTime() - a.date.getTime());
 
         setStats({
-          ordenesCount,
-          ordenesMontoTotal,
+          totalKgs,
+          totalFardos,
+          totalUsd,
+          tiposTabaco: Array.from(tiposTabacoSet),
+          asociacionesCount,
           financiamientoCount,
           financiamientoMontoTotal,
           motivos: Array.from(motivosSet),
@@ -112,7 +151,7 @@ export default function IndustryDashboard() {
         });
 
       } catch (err) {
-        console.error("Error fetching industry stats:", err);
+        console.error("Error fetching acopiador stats:", err);
       } finally {
         setLoading(false);
       }
@@ -121,53 +160,34 @@ export default function IndustryDashboard() {
     fetchData();
   }, [user]);
 
-  const motivosStr = stats.motivos.length > 0
-    ? stats.motivos.join(", ")
-    : "fines generales";
+  const kgEquivalente = myBalance * 200;
+
+  const tiposStr = stats.tiposTabaco.length > 0 ? stats.tiposTabaco.join(", ") : "Tabaco";
+  const motivosStr = stats.motivos.length > 0 ? stats.motivos.join(", ") : "fines generales";
 
   return (
     <div>
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
-          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>⬡</div>
+          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>🌿</div>
           <h1>Mi Dashboard — Acopiador</h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Resumen financiero y comercial en la campaña TABAR</p>
+        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Producción certificada, asociaciones y financiamiento en la campaña TABAR</p>
       </div>
 
       {!loading && (
         <div style={{ background: "rgba(88,166,255,0.05)", border: "1px solid rgba(88,166,255,0.2)", borderRadius: "12px", padding: "24px", marginBottom: "32px", backdropFilter: "blur(10px)" }}>
           <p style={{ margin: 0, color: "#C9D1D9", fontSize: "16px", lineHeight: 1.6 }}>
-            Usted ha emitido hasta el momento <strong style={{ color: C.accent }}>{stats.ordenesCount}</strong> de órdenes de compra por un monto total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.ordenesMontoTotal)}</strong>. Asimismo ha solicitado financiamiento <strong style={{ color: C.accent }}>{stats.financiamientoCount}</strong> veces por un total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.financiamientoMontoTotal)}</strong>. El motivo del financiamiento han sido: <strong style={{ color: "#F0F6FC" }}>{motivosStr}</strong>.
+            Ud. ha certificado hasta el momento <strong style={{ color: C.accent }}>{fmtKgs(stats.totalKgs)}</strong> kgs de tabaco del tipo <strong style={{ color: "#F0F6FC" }}>{tiposStr}</strong> en <strong style={{ color: "#F0F6FC" }}>{fmtFardos(stats.totalFardos)}</strong> fardos, y se unió a <strong style={{ color: "#F0F6FC" }}>{stats.asociacionesCount}</strong> asociaciones. Asimismo ha solicitado financiamiento <strong style={{ color: C.accent }}>{stats.financiamientoCount}</strong> veces por un total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.financiamientoMontoTotal)}</strong>, con motivo: <strong style={{ color: "#F0F6FC" }}>{motivosStr}</strong>.
           </p>
         </div>
       )}
 
       <div className="tabar-grid-4">
-        <MetricCard
-          label="Financiamiento solicitado"
-          value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`}
-          unit="monto total"
-          color="#3FB950" bg="rgba(63,185,80,0.10)" glyph="$"
-        />
-        <MetricCard
-          label="Motivos"
-          value={stats.motivos.length > 0 ? stats.motivos.length : "0"}
-          unit="tipos de financiamiento"
-          color="#BC8CFF" bg="rgba(188,140,255,0.10)" glyph="◱"
-        />
-        <MetricCard
-          label="Órdenes de compra"
-          value={stats.ordenesCount}
-          unit="emitidas"
-          color={C.accent} bg={C.dim} glyph="▣"
-        />
-        <MetricCard
-          label="Monto de compras"
-          value={`$${(stats.ordenesMontoTotal / 1000).toFixed(1)}k`}
-          unit="total acumulado"
-          color="#E3B64F" bg="rgba(227,182,79,0.10)" glyph="◈"
-        />
+        <MetricCard label="Mi Tenencia TABAR" value={myBalance.toLocaleString("es-AR")} unit="fardos digitales" color={C.accent} bg={C.dim} glyph="🌿" />
+        <MetricCard label="Equivalente en tabaco" value={kgEquivalente.toLocaleString("es-AR")} unit="kg certificados" color="#ccff66" bg="rgba(204,255,102,0.10)" glyph="◈" />
+        <MetricCard label="Financiamiento solicitado" value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`} unit="monto total" color="#3FB950" bg="rgba(63,185,80,0.10)" glyph="$" />
+        <MetricCard label="Estado de Registro" value={myBalance > 0 ? "Activo" : "Sin fardos"} unit="" color={myBalance > 0 ? "#3FB950" : "#F0883E"} bg={myBalance > 0 ? "rgba(63,185,80,0.10)" : "rgba(240,136,62,0.10)"} glyph="◉" />
       </div>
 
       <div className="tabar-section">
@@ -218,7 +238,9 @@ export default function IndustryDashboard() {
       <div className="tabar-section">
         <h3 className="tabar-section-label">Acciones rápidas</h3>
         <div className="tabar-grid-3">
-          <ActionCard to="/industry/buy" glyph="▣" title="Comprar producción anticipada" desc="Adquirí fardos digitales TABAR con descuento sobre precio de mercado" color={C.accent} bg={C.dim} />
+          <ActionCard to="/acopiador/tokenizar" glyph="▣" title="Certificar Tabaco" desc="Certificá tu producción física para recibir financiamiento digital" color={C.accent} bg={C.dim} />
+          <ActionCard to="/acopiador/asociaciones" glyph="👥" title="Mis Asociaciones" desc="Formá parte de grupos de venta para consolidar stock y vender en bloque" color={C.accent} bg={C.dim} />
+          <ActionCard to="/acopiador/financing" glyph="◇" title="Solicitar Financiamiento" desc="Pedí capital de trabajo, anticipo de exportación u otros motivos" color={C.accent} bg={C.dim} />
         </div>
       </div>
     </div>
