@@ -35,18 +35,17 @@ const DIAGNOSIS = [
 
 const MODULES = [
   {
-    role: "Módulo Productor",
-    desc: "Posibilidad inmediata de crear asociaciones y cooperativas digitales. Los tabacaleros pueden asociarse y vender a los acopiadores en bloque pudiendo así mejorar su precio de venta",
-  },
-  {
     role: "Módulo Acopiador",
     desc: "Los acopiadores pueden solicitar financiamiento en el mercado financiero y/o cripto (por medio de Warrants) para afrontar la campaña o conseguir adelantos para las exportaciones",
   },
   {
-    role: "Módulo Gestión Estatal (FET)",
-    desc: "Cuando un POA tiene firma y su asignación esta asegurada pero los tiempos se retrasan, los acopiadores pueden conseguir un adelanto gracias a los Dealers.",
+    role: "Módulo Dealers",
+    desc: "Los dealers operan en el mercado, proveyendo financiamiento o comprando tabaco obteniendo una rentabilidad por ello.",
+  },
+  {
+    role: "Tabar tokeniza",
+    desc: "Tabar presta el servicio de tokenización del tabaco, convirtiendo el tabaco físico en un valor digital comercializable.",
   }
-
 ];
 
 const ROADMAP = [
@@ -118,7 +117,7 @@ export default function PublicPresentation() {
               [ Ingresar a la Plataforma ]
               <span className="pp-cta-arrow">→</span>
             </Link>
-            <a href="https://www.agrotabaco-estudios.com/" target="_blank" rel="noopener noreferrer" className="pp-cta pp-cta-secondary">
+            <a href="#solucion-operativa" className="pp-cta pp-cta-secondary">
               [ Conocer más la propuesta ]
             </a>
           </div>
@@ -126,10 +125,10 @@ export default function PublicPresentation() {
       </section>
 
       {/* ══════════ SOLUCIÓN OPERATIVA ══════════ */}
-      <section className="pp-section">
+      <section id="solucion-operativa" className="pp-section">
         <div className="pp-section-inner">
           <h2 className="pp-section-title" style={{ textAlign: "center", marginBottom: "40px" }}>
-            La Solución Operativa
+            Digitalizá el tabaco y obtené beneficios
           </h2>
           <div className="pp-solution-grid">
             {MODULES.map((m, i) => (
