@@ -95,10 +95,8 @@ export default function PublicPresentation() {
               </svg>
             </div>
             <span className="pp-logo-text">TABAR</span>
-            <span className="pp-logo-badge">Protocol v1.0</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <Link to="/protocolo" className="pp-nav-protocolo">Protocolo</Link>
             <Link to="/login" className="pp-nav-login">Ingresar</Link>
           </div>
         </div>
@@ -112,7 +110,7 @@ export default function PublicPresentation() {
             La solución a los problemas del sector tabacalero.
           </h1>
           <p className="pp-hero-sub">
-            La caída sistemática de la producción y del FET demuestran que el sistema tradicional está agotado. Por eso creamos TABAR, una plataforma para los tabacaleros de ley.
+            Creamos TABAR, una plataforma para digitalizar el tabaco argentino, y abrir nuevos canales de comercialización y financiamiento.
           </p>
 
           <div className="pp-hero-actions">
@@ -123,30 +121,6 @@ export default function PublicPresentation() {
             <a href="https://www.agrotabaco-estudios.com/" target="_blank" rel="noopener noreferrer" className="pp-cta pp-cta-secondary">
               [ Conocer más la propuesta ]
             </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ DIAGNÓSTICO ESTRUCTURAL ══════════ */}
-      <section className="pp-section pp-section--dark">
-        <div className="pp-section-inner">
-          <h2 className="pp-section-title" style={{ textAlign: "center", marginBottom: "40px" }}>
-            El Diagnóstico Estructural
-          </h2>
-          <div className="pp-profiles-grid">
-            {DIAGNOSIS.map((d, i) => (
-              <div
-                key={i}
-                className="pp-profile-card"
-                style={{ borderColor: d.border }}
-              >
-                <div className="pp-profile-icon" style={{ background: d.dim, color: d.color }}>
-                  {d.icon}
-                </div>
-                <h3 className="pp-profile-title" style={{ marginBottom: '12px' }}>{d.title}</h3>
-                <p className="pp-profile-detail" style={{ fontSize: '14px' }}>{d.text}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -171,43 +145,6 @@ export default function PublicPresentation() {
         </div>
       </section>
 
-      {/* ══════════ CÓMO FUNCIONA PARA VOS (videos por rol) ══════════ */}
-      <section className="pp-section">
-        <div className="pp-section-inner">
-          <h2 className="pp-section-title" style={{ textAlign: "center", marginBottom: "8px" }}>
-            Cómo funciona para vos
-          </h2>
-          <p style={{ textAlign: "center", color: "var(--tb-text-2)", fontSize: "14px", maxWidth: "560px", margin: "0 auto 40px" }}>
-            Un video corto por cada perfil. Elegí el tuyo y mirá exactamente qué vas a poder hacer apenas entrés.
-          </p>
-          <div className="pp-rolevideos-grid">
-            {ROLE_VIDEOS.map((rv) => {
-              const color = ROLE_COLORS[rv.role] || "#E3B64F";
-              return (
-                <div key={rv.role} className="pp-rolevideo-card" style={{ borderColor: `${color}40` }}>
-                  <div className="pp-rolevideo-icon" style={{ background: `${color}1A`, color }}>
-                    {rv.icon}
-                  </div>
-                  <h3 className="pp-rolevideo-title">{ROLE_LABELS[rv.role]}</h3>
-                  <p className="pp-rolevideo-blurb">{rv.blurb}</p>
-                  <div className="pp-rolevideo-actions">
-                    <VideoEmbed
-                      videoUrl={rv.videoUrl}
-                      title={`Cómo funciona TABAR para ${ROLE_LABELS[rv.role]}`}
-                      icon={rv.icon}
-                      accentColor={color}
-                    />
-                    <Link to="/login" className="pp-rolevideo-cta" style={{ color }}>
-                      {rv.ctaLabel} →
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ══════════ ROADMAP TÉCNICO ══════════ */}
       <section className="pp-section pp-section--dark">
         <div className="pp-section-inner">
@@ -228,7 +165,7 @@ export default function PublicPresentation() {
       {/* ── Footer ── */}
       <footer className="pp-footer">
         <div className="pp-footer-inner">
-          <span>TABAR Protocol v1.0 · Infraestructura Tecnológica</span>
+          <span>TABAR · Infraestructura Tecnológica</span>
           <span>Plataforma de uso institucional restringido</span>
         </div>
       </footer>
