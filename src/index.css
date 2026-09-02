@@ -1,28 +1,41 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TABAR Design System — Fintech Dark Luxury
+   TABAR Design System — AgroTabaco Clean Light & Green Luxury
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --tb-bg:         #080C10;
-  --tb-surface-1:  #0D1117;
-  --tb-surface-2:  #161B22;
-  --tb-surface-3:  #1C2330;
-  --tb-border:     rgba(255,255,255,0.07);
-  --tb-border-hover: rgba(255,255,255,0.14);
-  --tb-text:       #F0F6FC;
-  --tb-text-2:     #8B949E;
-  --tb-text-3:     #484F58;
-  --tb-accent:     #E3B64F;
-  --tb-accent-dim: rgba(227,182,79,0.10);
-  --tb-green:      #3FB950;
-  --tb-blue:       #58A6FF;
-  --tb-orange:     #F0883E;
-  --tb-purple:     #BC8CFF;
-  --tb-red:        #F85149;
-  --tb-font:       'DM Sans', system-ui, sans-serif;
-  --tb-mono:       'DM Mono', monospace;
+  --tb-bg:           #f7f7f2;
+  --tb-surface-1:    #ffffff;
+  --tb-surface-2:    #f1f2ed;
+  --tb-surface-3:    #eef1e8;
+  --tb-border:       #e3e6dc;
+  --tb-border-hover: #ced3c5;
+  --tb-text:         #1b241d;
+  --tb-text-2:       #5c6b5e;
+  --tb-text-3:       #8c9a8e;
+  
+  /* AgroTabaco Green Identity */
+  --tb-accent:       #1a4329;
+  --tb-accent-dim:   rgba(26, 67, 41, 0.08);
+  --tb-green:        #2f6844;
+  --tb-olive:        #6b7a3a;
+  --tb-olive-light:  #a9b87a;
+  --tb-cream:        #f7f7f2;
+  --tb-blue:         #2b5c8f;
+  --tb-orange:       #8a5a2e;
+  --tb-purple:       #6b4d82;
+  --tb-red:          #a13f2e;
 
-  color-scheme: dark;
+  /* Typography */
+  --tb-font:         'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --tb-serif:        'Source Serif 4', Georgia, serif;
+  --tb-mono:         'DM Mono', monospace;
+
+  /* Shadows */
+  --tb-shadow-sm:    0 1px 3px rgba(26, 67, 41, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --tb-shadow-md:    0 4px 12px rgba(26, 67, 41, 0.06);
+  --tb-shadow-lg:    0 10px 25px -5px rgba(16, 43, 25, 0.12);
+
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -73,10 +86,11 @@ a:hover { text-decoration: underline; }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--tb-surface-3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--tb-text-3); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--tb-bg); }
+::-webkit-scrollbar-thumb { background: #d7dcd0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #bcc4b2; }
 
 /* Selection */
-::selection { background: rgba(227,182,79,0.25); color: #fff; }
+::selection { background: rgba(26, 67, 41, 0.15); color: #1a4329; }
+

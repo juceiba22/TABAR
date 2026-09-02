@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useRole, ROLE_LABELS } from "../roles/RoleContext";
+import { useRole, ROLE_LABELS, ROLE_HOME, DEMO_PROFILES } from "../roles/RoleContext";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "../../config/firebase";
@@ -7,11 +7,11 @@ import { useChat } from "../chat/ChatContext";
 import ChatDrawer from "../chat/ChatDrawer";
 
 const ROLE_PALETTE = {
-  admin: { color: "#E3B64F", dim: "rgba(227,182,79,0.10)", border: "rgba(227,182,79,0.25)" },
-  industry: { color: "#58A6FF", dim: "rgba(88,166,255,0.10)", border: "rgba(88,166,255,0.25)" },
-  state: { color: "#F0883E", dim: "rgba(240,136,62,0.10)", border: "rgba(240,136,62,0.25)" },
-  dealer: { color: "#BC8CFF", dim: "rgba(188,140,255,0.10)", border: "rgba(188,140,255,0.25)" },
-  producer: { color: "#3FB950", dim: "rgba(63,185,80,0.10)", border: "rgba(63,185,80,0.25)" },
+  admin: { color: "#1a4329", dim: "rgba(26,67,41,0.08)", border: "rgba(26,67,41,0.25)" },
+  industry: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
+  state: { color: "#6b7a3a", dim: "rgba(107,122,58,0.08)", border: "rgba(107,122,58,0.25)" },
+  dealer: { color: "#8a5a2e", dim: "rgba(138,90,46,0.08)", border: "rgba(138,90,46,0.25)" },
+  producer: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
 };
 
 const NAV_LINKS = {
@@ -53,7 +53,7 @@ const COMMON_LINKS = [
 ];
 
 export default function AppLayout({ children }) {
-  const { role, user, profile, logout } = useRole();
+  const { role, user, profile, logout, setDemoRole } = useRole();
   const navigate = useNavigate();
   const links = [...(NAV_LINKS[role] || []), ...COMMON_LINKS];
   const palette = ROLE_PALETTE[role] || ROLE_PALETTE.admin;
@@ -136,12 +136,12 @@ export default function AppLayout({ children }) {
           <div className="tabar-logo">
             <div className="tabar-logo-mark">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#080C10" />
+                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#ffffff" />
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--tb-text)", letterSpacing: "1px" }}>TABAR</div>
-              <div style={{ fontSize: "10px", color: "var(--tb-text-3)", letterSpacing: "0.5px", textTransform: "uppercase" }}>AgroTabaco Labs</div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--tb-accent)", letterSpacing: "0.5px" }}>TABAR</div>
+              <div style={{ fontSize: "10px", color: "var(--tb-text-2)", letterSpacing: "0.5px", textTransform: "uppercase", fontWeight: 600 }}>AgroTabaco Labs</div>
             </div>
           </div>
           <button className="tabar-hamburger" onClick={() => setNavOpen(!navOpen)}>
@@ -182,9 +182,9 @@ export default function AppLayout({ children }) {
 
           <div className="tabar-sidebar-bottom">
             <NavLink to="/miPerfil" style={{
-              background: "var(--tb-surface-2)",
+              background: "#ffffff",
               border: "1px solid var(--tb-border)",
-              borderRadius: "6px",
+              borderRadius: "8px",
               padding: "8px 10px",
               display: "flex",
               alignItems: "center",
@@ -196,7 +196,7 @@ export default function AppLayout({ children }) {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = palette.color;
-              e.currentTarget.style.boxShadow = `0 0 10px ${palette.dim}`;
+              e.currentTarget.style.boxShadow = `0 2px 8px ${palette.dim}`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "var(--tb-border)";
@@ -208,8 +208,8 @@ export default function AppLayout({ children }) {
                   src={profile.profilePicUrl} 
                   alt="Avatar" 
                   style={{ 
-                    width: "24px", 
-                    height: "24px", 
+                    width: "26px", 
+                    height: "26px", 
                     borderRadius: "50%", 
                     objectFit: "cover", 
                     border: `1.5px solid ${palette.color}`,
@@ -218,8 +218,8 @@ export default function AppLayout({ children }) {
                 />
               ) : (
                 <div style={{ 
-                  width: "24px", 
-                  height: "24px", 
+                  width: "26px", 
+                  height: "26px", 
                   borderRadius: "50%", 
                   background: palette.dim, 
                   border: `1.5px solid ${palette.border}`, 
@@ -227,7 +227,7 @@ export default function AppLayout({ children }) {
                   alignItems: "center", 
                   justifyContent: "center", 
                   color: palette.color, 
-                  fontSize: "10px", 
+                  fontSize: "11px", 
                   fontWeight: "bold",
                   fontFamily: "var(--tb-mono)",
                   flexShrink: 0
@@ -237,9 +237,10 @@ export default function AppLayout({ children }) {
               )}
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                 <span style={{ 
-                  fontFamily: "var(--tb-mono)", 
-                  fontSize: "11px", 
-                  color: "var(--tb-text-2)", 
+                  fontFamily: "var(--tb-font)", 
+                  fontSize: "12px", 
+                  fontWeight: 600,
+                  color: "var(--tb-text)", 
                   overflow: "hidden", 
                   textOverflow: "ellipsis", 
                   whiteSpace: "nowrap",
@@ -247,17 +248,17 @@ export default function AppLayout({ children }) {
                 }}>
                   {displayName}
                 </span>
-                <span style={{ fontSize: "9px", color: "var(--tb-text-3)", lineHeight: "1" }}>
+                <span style={{ fontSize: "10px", color: "var(--tb-text-2)", lineHeight: "1.1" }}>
                   Ver mi perfil
                 </span>
               </div>
             </NavLink>
             <button onClick={handleLogout} style={{
-              width: "100%", background: "transparent",
+              width: "100%", background: "#ffffff",
               border: "1px solid var(--tb-border)",
-              color: "var(--tb-text-3)", padding: "7px",
+              color: "var(--tb-text-2)", padding: "7px",
               cursor: "pointer", fontFamily: "var(--tb-font)",
-              fontSize: "12px", borderRadius: "6px",
+              fontSize: "12px", borderRadius: "6px", fontWeight: 500,
             }}>
               Cerrar sesión
             </button>
@@ -266,31 +267,60 @@ export default function AppLayout({ children }) {
       </aside>
 
       <div className="tabar-main">
+        {/* Banner de Acceso y Cambio de Rol Demo en Vivo */}
+        <div className="tabar-demo-banner">
+          <div className="tabar-demo-banner-title">
+            <span>🔬 AgroTabaco Demo Hub</span>
+            <span style={{ opacity: 0.8, fontSize: '11px', fontWeight: 400 }}>| Explorar roles:</span>
+          </div>
+          <div className="tabar-demo-banner-roles">
+            {[
+              { id: "producer", label: "🌿 Productor" },
+              { id: "industry", label: "🏢 Acopiador" },
+              { id: "state", label: "🏛️ Estado (FET)" },
+              { id: "dealer", label: "💼 Dealer" },
+              { id: "admin", label: "🔑 Admin" },
+            ].map((r) => (
+              <button
+                key={r.id}
+                onClick={() => {
+                  setDemoRole(r.id);
+                  navigate(ROLE_HOME[r.id] || "/");
+                }}
+                className={`tabar-demo-role-btn${role === r.id ? " active" : ""}`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <header className="tabar-header">
-          <div className="tabar-system-name">Financiamiento Agroindustrial</div>
+          <div className="tabar-system-name" style={{ color: 'var(--tb-accent)', fontWeight: 600 }}>
+            Mercado & Financiamiento Agroindustrial
+          </div>
           
           <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
             {/* Chat Center */}
             <button
               onClick={toggleDrawer}
               style={{
-                background: "transparent",
-                border: "none",
-                color: "#8B949E",
-                fontSize: "18px",
+                background: "#f1f2ed",
+                border: "1px solid var(--tb-border)",
+                color: "var(--tb-accent)",
+                fontSize: "16px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "6px",
-                borderRadius: "50%",
+                padding: "6px 10px",
+                borderRadius: "8px",
                 transition: "all 0.2s ease",
                 outline: "none"
               }}
-              onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#E3B64F"; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#8B949E"; }}
+              title="Asistente IA de Mercado"
             >
-              💬
+              💬 <span style={{ fontSize: '12px', fontWeight: 600, marginLeft: '4px' }}>Asistente</span>
             </button>
 
             {/* Notification Center */}
@@ -298,30 +328,28 @@ export default function AppLayout({ children }) {
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  color: unreadCount > 0 ? "#E3B64F" : "#8B949E",
-                  fontSize: "18px",
+                  background: "#f1f2ed",
+                  border: "1px solid var(--tb-border)",
+                  color: unreadCount > 0 ? "var(--tb-accent)" : "var(--tb-text-2)",
+                  fontSize: "16px",
                   cursor: "pointer",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  padding: "6px",
-                  borderRadius: "50%",
+                  padding: "6px 10px",
+                  borderRadius: "8px",
                   transition: "all 0.2s ease",
                   outline: "none"
                 }}
-                onMouseOver={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 🔔
                 {unreadCount > 0 && (
                   <span style={{
                     position: "absolute",
-                    top: "-2px",
-                    right: "-2px",
-                    background: "#FF453A",
+                    top: "-3px",
+                    right: "-3px",
+                    background: "#a13f2e",
                     color: "#FFFFFF",
                     fontSize: "9px",
                     fontWeight: "bold",
@@ -332,7 +360,6 @@ export default function AppLayout({ children }) {
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "2px",
-                    boxShadow: "0 0 8px #FF453A"
                   }}>
                     {unreadCount}
                   </span>
@@ -347,20 +374,20 @@ export default function AppLayout({ children }) {
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "12px 16px",
-                    borderBottom: "1px solid #30363D",
-                    background: "rgba(255, 255, 255, 0.02)"
+                    borderBottom: "1px solid var(--tb-border)",
+                    background: "#f7f7f2"
                   }}>
-                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#F0F6FC" }}>Notificaciones</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--tb-accent)" }}>Notificaciones</span>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllAsRead}
                         style={{
                           background: "transparent",
                           border: "none",
-                          color: "#E3B64F",
+                          color: "var(--tb-accent)",
                           fontSize: "11px",
                           cursor: "pointer",
-                          fontWeight: "500",
+                          fontWeight: "600",
                           padding: "0"
                         }}
                       >
@@ -380,7 +407,7 @@ export default function AppLayout({ children }) {
                       <div style={{
                         padding: "32px 16px",
                         textAlign: "center",
-                        color: "#8B949E",
+                        color: "var(--tb-text-2)",
                         fontSize: "13px"
                       }}>
                         No tienes notificaciones
@@ -392,22 +419,20 @@ export default function AppLayout({ children }) {
                           onClick={() => handleMarkAsRead(notif.id)}
                           style={{
                             padding: "12px 16px",
-                            borderBottom: "1px solid rgba(255,255,255,0.04)",
-                            background: notif.read ? "transparent" : "rgba(227, 182, 79, 0.03)",
+                            borderBottom: "1px solid #f1f2ed",
+                            background: notif.read ? "#ffffff" : "rgba(26, 67, 41, 0.04)",
                             cursor: "pointer",
                             transition: "background 0.2s ease",
                             display: "flex",
                             flexDirection: "column",
                             gap: "4px"
                           }}
-                          onMouseOver={(e) => { e.currentTarget.style.background = notif.read ? "rgba(255,255,255,0.02)" : "rgba(227, 182, 79, 0.05)"; }}
-                          onMouseOut={(e) => { e.currentTarget.style.background = notif.read ? "transparent" : "rgba(227, 182, 79, 0.03)"; }}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
                             <span style={{
                               fontSize: "12px",
-                              color: notif.read ? "#8B949E" : "#F0F6FC",
-                              fontWeight: notif.read ? "400" : "500",
+                              color: "var(--tb-text)",
+                              fontWeight: notif.read ? "400" : "600",
                               lineHeight: "1.4",
                               flex: 1
                             }}>
@@ -418,13 +443,13 @@ export default function AppLayout({ children }) {
                                 width: "6px",
                                 height: "6px",
                                 borderRadius: "50%",
-                                background: "#E3B64F",
+                                background: "var(--tb-accent)",
                                 marginTop: "5px",
                                 flexShrink: 0
                               }} />
                             )}
                           </div>
-                          <span style={{ fontSize: "10px", color: "#8B949E" }}>
+                          <span style={{ fontSize: "10px", color: "var(--tb-text-3)" }}>
                             {notif.creadoEn?.toDate 
                               ? new Date(notif.creadoEn.toDate()).toLocaleDateString("es-AR", { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) 
                               : "Reciente"
@@ -440,7 +465,7 @@ export default function AppLayout({ children }) {
 
             <div className="tabar-connected-badge">
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
-              Conectado
+              En línea (Demo)
             </div>
           </div>
         </header>

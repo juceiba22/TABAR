@@ -22,9 +22,10 @@
 /* ── Nav ── */
 .pr-nav {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(8,12,16,0.85);
+  background: rgba(255,255,255,0.92);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--tb-border);
+  box-shadow: 0 1px 3px rgba(26,67,41,0.03);
 }
 .pr-nav-inner {
   max-width: 1000px; margin: 0 auto;

@@ -90,7 +90,7 @@ export default function PublicPresentation() {
           <div className="pp-logo">
             <div className="pp-logo-mark">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#080C10" />
+                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#ffffff" />
               </svg>
             </div>
             <span className="pp-logo-text">TABAR</span>

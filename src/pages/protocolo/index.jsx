@@ -76,7 +76,7 @@ export default function ProtocoloPage() {
           <Link to="/" className="pr-logo">
             <div className="pr-logo-mark">
               <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#080C10" />
+                <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#ffffff" />
               </svg>
             </div>
             <span>TABAR</span>
