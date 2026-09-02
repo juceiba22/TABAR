@@ -15,14 +15,12 @@ import AppLayout from "./modules/layout/AppLayout";
 import PublicPresentation from "./pages/PublicPresentation";
 import LandingRole from "./pages/LandingRole";
 import AdminLogin from "./pages/admin/AdminLogin";
-import ProtocoloPage from "./pages/protocolo";
 
 // Páginas Compartidas
 import CampaignPage from "./pages/campaign/index";
 import MarketPage from "./pages/market/index";
 import MiPerfil from "./pages/miPerfil";
 import WarrantsPage from "./pages/warrants/index";
-
 
 // Páginas por Rol (Única fuente de verdad)
 import AdminDashboard from "./pages/admin/dashboard";
@@ -32,10 +30,6 @@ import IndustryDashboard from "./pages/industry/dashboard";
 import IndustryBuy from "./pages/industry/buy";
 import IndustryPosition from "./pages/industry/position";
 import IndustryFinancing from "./pages/industry/financing";
-
-import StateDashboard from "./pages/state/dashboard";
-import StateInvest from "./pages/state/invest";
-import StateReturns from "./pages/state/returns";
 
 import DealerDashboard from "./pages/dealer/dashboard";
 import DealerTrade from "./pages/dealer/trade";
@@ -108,7 +102,6 @@ function AppRoutes() {
         <Route path="/" element={<SmartRoot />} />
         <Route path="/login" element={<SmartLogin />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/protocolo" element={<ProtocoloPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -121,7 +114,6 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={roleHome} replace />} />
       <Route path="/login" element={<Navigate to={roleHome} replace />} />
       <Route path="/admin/login" element={<Navigate to={roleHome} replace />} />
-      <Route path="/protocolo" element={<ProtocoloPage />} />
 
       <Route element={<AppLayout />}>
         {/* Rutas Comunes Autenticadas */}
@@ -129,7 +121,7 @@ function AppRoutes() {
         <Route 
           path="/miPerfil" 
           element={
-            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+            <ProtectedRoute allowedRoles={["admin", "industry", "dealer", "producer"]}>
               <MiPerfil />
             </ProtectedRoute>
           } 
@@ -137,7 +129,7 @@ function AppRoutes() {
         <Route 
           path="/market" 
           element={
-            <ProtectedRoute allowedRoles={["admin", "industry", "state", "dealer", "producer"]}>
+            <ProtectedRoute allowedRoles={["admin", "industry", "dealer", "producer"]}>
               <MarketPage />
             </ProtectedRoute>
           } 
@@ -152,11 +144,6 @@ function AppRoutes() {
         <Route path="/industry/buy" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryBuy /></ProtectedRoute>} />
         <Route path="/industry/position" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryPosition /></ProtectedRoute>} />
         <Route path="/industry/financing" element={<ProtectedRoute allowedRoles={["industry"]}><IndustryFinancing /></ProtectedRoute>} />
-
-        {/* Módulo Estado Nacional */}
-        <Route path="/state" element={<ProtectedRoute allowedRoles={["state", "admin"]}><StateDashboard /></ProtectedRoute>} />
-        <Route path="/state/invest" element={<ProtectedRoute allowedRoles={["state"]}><StateInvest /></ProtectedRoute>} />
-        <Route path="/state/returns" element={<ProtectedRoute allowedRoles={["state"]}><StateReturns /></ProtectedRoute>} />
 
         {/* Módulo Dealer */}
         <Route path="/dealer" element={<ProtectedRoute allowedRoles={["dealer", "admin"]}><DealerDashboard /></ProtectedRoute>} />

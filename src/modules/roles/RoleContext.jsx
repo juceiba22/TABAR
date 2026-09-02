@@ -15,7 +15,6 @@ const RoleContext = createContext(null);
 export const ROLES = {
   ADMIN: "admin",
   INDUSTRY: "industry",
-  STATE: "state",
   DEALER: "dealer",
   PRODUCER: "producer",
 };
@@ -23,7 +22,6 @@ export const ROLES = {
 export const ROLE_LABELS = {
   admin: "Fideicomiso / Admin",
   industry: "Acopiador",
-  state: "Estado Nacional",
   dealer: "Dealer / Revendedor",
   producer: "Productor Tabacalero",
 };
@@ -31,7 +29,6 @@ export const ROLE_LABELS = {
 export const ROLE_COLORS = {
   admin: "#1a4329",
   industry: "#2f6844",
-  state: "#6b7a3a",
   dealer: "#8a5a2e",
   producer: "#3fb950",
 };
@@ -39,7 +36,6 @@ export const ROLE_COLORS = {
 export const ROLE_HOME = {
   admin: "/admin",
   industry: "/industry",
-  state: "/state",
   dealer: "/dealer",
   producer: "/producer",
 };
@@ -73,21 +69,6 @@ export const DEMO_PROFILES = {
     documentNumber: "30-71829304-8",
     cuit: "30-71829304-8",
     razonSocial: "Acopiadora Nordeste S.A.",
-    hasRole: true
-  },
-  state: {
-    uid: "demo-state-tabar",
-    firstName: "Delegación",
-    lastName: "Nacional FET",
-    displayName: "Fondo Especial del Tabaco (FET)",
-    email: "estado@tabar.agro",
-    role: "state",
-    status: "approved",
-    emailVerified: true,
-    documentType: "cuit",
-    documentNumber: "30-99999999-1",
-    cuit: "30-99999999-1",
-    entidad: "Secretaría de Agricultura - FET",
     hasRole: true
   },
   dealer: {

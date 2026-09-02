@@ -9,7 +9,6 @@ import ChatDrawer from "../chat/ChatDrawer";
 const ROLE_PALETTE = {
   admin: { color: "#1a4329", dim: "rgba(26,67,41,0.08)", border: "rgba(26,67,41,0.25)" },
   industry: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
-  state: { color: "#6b7a3a", dim: "rgba(107,122,58,0.08)", border: "rgba(107,122,58,0.25)" },
   dealer: { color: "#8a5a2e", dim: "rgba(138,90,46,0.08)", border: "rgba(138,90,46,0.25)" },
   producer: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
 };
@@ -28,12 +27,6 @@ const NAV_LINKS = {
     { path: "/warrants", label: "Warrants Digitales" },
     { path: "/market", label: "Mercado Tabacalero" }
   ],
-  state: [
-    { path: "/state", label: "Mi Dashboard" },
-    { path: "/state/invest", label: "Cargar POAs" },
-    { path: "/state/returns", label: "FET" },
-    { path: "/market", label: "Mercado Tabacalero" }
-  ],
   dealer: [
     { path: "/dealer", label: "Mi Dashboard" },
     { path: "/dealer/trade", label: "Operar" },
@@ -48,14 +41,10 @@ const NAV_LINKS = {
   ],
 };
 
-const COMMON_LINKS = [
-  { path: "/protocolo", label: "Banco Central" }
-];
-
 export default function AppLayout({ children }) {
   const { role, user, profile, logout, setDemoRole } = useRole();
   const navigate = useNavigate();
-  const links = [...(NAV_LINKS[role] || []), ...COMMON_LINKS];
+  const links = NAV_LINKS[role] || [];
   const palette = ROLE_PALETTE[role] || ROLE_PALETTE.admin;
   const [navOpen, setNavOpen] = useState(false);
 
@@ -160,7 +149,7 @@ export default function AppLayout({ children }) {
 
           <nav className="tabar-nav">
             {links.map((link) => {
-              const isEnd = ["/admin", "/industry", "/state", "/dealer", "/producer"].includes(link.path);
+              const isEnd = ["/admin", "/industry", "/dealer", "/producer"].includes(link.path);
               return (
                 <NavLink
                   key={link.path}
@@ -277,7 +266,6 @@ export default function AppLayout({ children }) {
             {[
               { id: "producer", label: "🌿 Productor" },
               { id: "industry", label: "🏢 Acopiador" },
-              { id: "state", label: "🏛️ Estado (FET)" },
               { id: "dealer", label: "💼 Dealer" },
               { id: "admin", label: "🔑 Admin" },
             ].map((r) => (

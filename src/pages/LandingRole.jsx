@@ -29,15 +29,6 @@ const ROLES_INFO = [
     bgLight: "#eef1e8",
   },
   {
-    id: "state",
-    title: "Estado Nacional (FET)",
-    badge: "Ente Regulador",
-    desc: "Supervisión de POAs, distribución del Fondo Especial del Tabaco y trazabilidad de la producción nacional.",
-    icon: "🏛️",
-    color: "#6b7a3a",
-    bgLight: "#f4f6ec",
-  },
-  {
     id: "dealer",
     title: "Dealer / Revendedor",
     badge: "Mercado Secundario",
@@ -373,7 +364,6 @@ export default function LandingRole() {
                 >
                   <option value="producer">🌿 Productor Tabacalero</option>
                   <option value="industry">🏢 Acopiador / Industria</option>
-                  <option value="state">🏛️ Estado Nacional (FET)</option>
                   <option value="dealer">💼 Dealer / Revendedor</option>
                   <option value="admin">🔑 Fideicomiso / Administrador</option>
                 </select>
