@@ -212,18 +212,14 @@ export default function AppLayout({ children }) {
       </aside>
 
       <div className="tabar-main">
-        {/* Ticker Live Telemetry Bar */}
+        {/* Top Bar Entorno Demo */}
         <div className="tabar-telemetry-ribbon">
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span><span className="tabar-telemetry-pulse" />AUDITORÍA EN VIVO:</span>
-            <span style={{ color: "#c1c8c0" }}>VALLE DE LERMA 99.4%</span>
-            <span>•</span>
-            <span style={{ color: "#c1c8c0" }}>PERICO HUB ACTIVO</span>
-            <span>•</span>
-            <span style={{ color: "#c0eec9" }}>LEY 9.643 SAGyP</span>
+            <span><span className="tabar-telemetry-pulse" />ENTORNO DEMO:</span>
+            <span style={{ color: "#c1c8c0" }}>TABAR Protocol · Plataforma en Fase de Demostración & Simulación</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#ffdeac" }}>
-            <span>RED TABAR v1.2</span>
+            <span>VERSIÓN DEMO v1.2</span>
           </div>
         </div>
 

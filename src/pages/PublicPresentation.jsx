@@ -31,35 +31,35 @@ const MODULES = [
 
 const METRICS = [
   {
-    label: "Warrants Colateralizados",
+    label: "Warrants Colateralizados (Simulado)",
     val: "$4.850.000",
     unit: "USD",
-    trend: "↑ 18.4%",
-    note: "vs. ciclo previo",
+    trend: "Simulado",
+    note: "estimación para demo",
     icon: "account_balance"
   },
   {
-    label: "Tabaco en Custodia",
+    label: "Tabaco en Custodia (Simulado)",
     val: "1.280",
     unit: "Tn",
-    trend: "Virginia Grado 1",
-    note: "en silos certificados",
+    trend: "Simulado",
+    note: "volumen proyectado",
     icon: "inventory_2"
   },
   {
-    label: "TNA Promedio Colateral",
+    label: "TNA Promedio Colateral (Simulado)",
     val: "7.2%",
     unit: "USD",
-    trend: "Rendimiento fijo",
-    note: "tasa institucional",
+    trend: "Simulado",
+    note: "tasa indicativa demo",
     icon: "trending_up"
   },
   {
     label: "Tiempo de Liquidación",
     val: "< 48",
     unit: "Horas",
-    trend: "Desembolso T+2",
-    note: "vs 90 días tradicionales",
+    trend: "T+2 Estimado",
+    note: "objetivo operativo",
     icon: "bolt"
   }
 ];
@@ -94,32 +94,21 @@ export default function PublicPresentation() {
 
   return (
     <div className="pp-root">
-      {/* ── Top Telemetry Bar ── */}
+      {/* ── Top Bar ── */}
       <div className="pp-telemetry-bar">
         <div className="pp-telemetry-inner">
           <div className="pp-telemetry-left">
             <span className="pp-telemetry-badge">
               <span className="pp-pulse-dot" />
-              AUDITORÍA EN VIVO
+              ENTORNO DEMO
             </span>
             <div className="pp-telemetry-item">
-              <span className="pp-dim">VALLE DE LERMA HUB:</span>
-              <span className="pp-bold">99.4% HUMEDAD ÓPTIMA</span>
-            </div>
-            <span className="pp-sep">•</span>
-            <div className="pp-telemetry-item">
-              <span className="pp-dim">PERICO HUB:</span>
-              <span className="pp-bold">CUSTODIA ACTIVA</span>
-            </div>
-            <span className="pp-sep">•</span>
-            <div className="pp-telemetry-item">
-              <span className="pp-dim">SAGyP MATRIZ:</span>
-              <span className="pp-bold text-green">LEY 9.643 CONFORME</span>
+              <span className="pp-bold">TABAR Protocol · Plataforma Digital en Fase de Demostración y Evaluación</span>
             </div>
           </div>
           <div className="pp-telemetry-right">
-            <span>RED TABAR v1.2</span>
-            <span className="pp-gold">SALTA & JUJUY CORREDOR</span>
+            <span>VERSIÓN DEMO v1.2</span>
+            <span className="pp-gold">PROYECTO EN EVALUACIÓN</span>
           </div>
         </div>
       </div>
@@ -141,7 +130,7 @@ export default function PublicPresentation() {
 
           <div className="pp-nav-links">
             <a href="#solucion-operativa" className="pp-nav-link">Propuesta & Warrants</a>
-            <a href="#metricas" className="pp-nav-link">Telemetría de Mercado</a>
+            <a href="#metricas" className="pp-nav-link">Datos Simulados de Mercado</a>
             <a href="#roadmap" className="pp-nav-link">Roadmap Técnico</a>
           </div>
 
@@ -161,7 +150,7 @@ export default function PublicPresentation() {
             <div className="pp-hero-left">
               <div className="pp-eyebrow">
                 <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--tb-secondary)' }}>token</span>
-                <span>MERCADO DIGITAL & TOKENIZACIÓN RWA · AGROTABACO LABS</span>
+                <span>MERCADO DIGITAL & TOKENIZACIÓN RWA · ENTORNO DEMO</span>
               </div>
               <h1 className="pp-hero-title">
                 La solución a los problemas del sector tabacalero.
@@ -183,7 +172,7 @@ export default function PublicPresentation() {
               </div>
 
               {/* Sub-notes */}
-              <div className="pp-subnotes">
+              <div className="pp-subnotes" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
                 <div className="pp-subnote">
                   <span className="pp-subnote-label">Garantía Real</span>
                   <span className="pp-subnote-val">Tabaco en Acopio</span>
@@ -191,10 +180,6 @@ export default function PublicPresentation() {
                 <div className="pp-subnote">
                   <span className="pp-subnote-label">Mitigación FET</span>
                   <span className="pp-subnote-val">Anticipo Operativo</span>
-                </div>
-                <div className="pp-subnote">
-                  <span className="pp-subnote-label">Trazabilidad</span>
-                  <span className="pp-subnote-val">IoT & Telemetría</span>
                 </div>
               </div>
             </div>
@@ -205,27 +190,27 @@ export default function PublicPresentation() {
                 <div className="pp-warehouse-header">
                   <span className="pp-pulse-tag">
                     <span className="pp-pulse-dot-gold" />
-                    CUSTODIA FÍSICA HOMOLOGADA
+                    PROYECTO EN FASE DEMO
                   </span>
                 </div>
                 <div className="pp-warehouse-body">
                   <div className="pp-wh-badge-row">
                     <div>
-                      <div className="pp-wh-subtitle">Depósito Matriz #04</div>
-                      <div className="pp-wh-title">Valle de Lerma & Perico</div>
+                      <div className="pp-wh-subtitle">Entorno de Demostración</div>
+                      <div className="pp-wh-title">Simulación de Warrants & Acopio</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div className="pp-wh-code">WARRANT-AR-2026</div>
-                      <div className="pp-wh-reg">SAGyP Reg. 9643/24</div>
+                      <div className="pp-wh-code">WARRANT-DEMO-2026</div>
+                      <div className="pp-wh-reg">Prototipo de Evaluación</div>
                     </div>
                   </div>
                 </div>
                 <div className="pp-warehouse-footer">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="material-symbols-outlined" style={{ color: '#132a1e', fontSize: '18px' }}>inventory_2</span>
-                    <span>Lote Balizado: Virginia L1 / L2 Standard</span>
+                    <span>Lote de Prueba: Virginia L1 / L2</span>
                   </div>
-                  <span className="pp-audit-chip">100% AUDITADO</span>
+                  <span className="pp-audit-chip">100% SIMULADO</span>
                 </div>
               </div>
             </div>
@@ -236,6 +221,14 @@ export default function PublicPresentation() {
       {/* ══════════ LIVE METRICS BAR ══════════ */}
       <section id="metricas" className="pp-metrics-section">
         <div className="pp-section-inner">
+          <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--tb-text-2)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--tb-mono)" }}>
+              Métricas del Protocolo (Valores Estimados de Demostración)
+            </span>
+            <span style={{ fontSize: "11px", background: "var(--tb-surface-2)", border: "1px solid var(--tb-border)", padding: "2px 8px", borderRadius: "4px", color: "var(--tb-secondary)", fontWeight: 600 }}>
+              Datos Simulados
+            </span>
+          </div>
           <div className="pp-metrics-grid">
             {METRICS.map((m, i) => (
               <div key={i} className="pp-metric-card">
@@ -266,11 +259,11 @@ export default function PublicPresentation() {
               <span className="pp-eyebrow-sec">Ecosistema Institucional</span>
               <h2 className="pp-section-title">Digitalizá el tabaco y obtené beneficios</h2>
               <p className="pp-section-subtitle">
-                Infraestructura técnica que unifica la fiscalización física agronómica con el mercado de capitales argentino e internacional.
+                Infraestructura digital que une la producción tabacalera con el mercado de capitales argentino.
               </p>
             </div>
             <div className="pp-audit-badge">
-              SISTEMA AUDITADO · LEY 9.643
+              PROYECTO DEMO · LEY 9.643
             </div>
           </div>
 
