@@ -165,7 +165,7 @@ export default function PublicPresentation() {
                   <span>Ingresar a la Plataforma</span>
                   <span className="pp-arrow">→</span>
                 </Link>
-                <a href="#solucion-operativa" className="pp-cta-secondary">
+                <a href="/whitepaper.pdf" target="_blank" rel="noopener noreferrer" className="pp-cta-secondary">
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                   <span>Conocer más la propuesta</span>
                 </a>
