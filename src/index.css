@@ -1,39 +1,46 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TABAR Design System — AgroTabaco Clean Light & Green Luxury
+   TABAR Design System — Stitch Agrarian & Financial Intelligence
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --tb-bg:           #f7f7f2;
+  /* Canvas & Surfaces */
+  --tb-bg:           #faf9f6;
   --tb-surface-1:    #ffffff;
-  --tb-surface-2:    #f1f2ed;
-  --tb-surface-3:    #eef1e8;
-  --tb-border:       #e3e6dc;
-  --tb-border-hover: #ced3c5;
-  --tb-text:         #1b241d;
-  --tb-text-2:       #5c6b5e;
-  --tb-text-3:       #8c9a8e;
-  
-  /* AgroTabaco Green Identity */
-  --tb-accent:       #1a4329;
-  --tb-accent-dim:   rgba(26, 67, 41, 0.08);
-  --tb-green:        #2f6844;
-  --tb-olive:        #6b7a3a;
-  --tb-olive-light:  #a9b87a;
-  --tb-cream:        #f7f7f2;
-  --tb-blue:         #2b5c8f;
-  --tb-orange:       #8a5a2e;
-  --tb-purple:       #6b4d82;
-  --tb-red:          #a13f2e;
+  --tb-surface-2:    #f5f3f1;
+  --tb-surface-3:    #efeeeb;
+  --tb-surface-tint: #edf6ef;
+  --tb-surface-dark: #132a1e;
 
-  /* Typography */
-  --tb-font:         'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Borders & Dividers */
+  --tb-border:       #e5ebe7;
+  --tb-border-hover: #c2c8c2;
+
+  /* Text & Ink */
+  --tb-text:         #151e17;
+  --tb-text-2:       #55635b;
+  --tb-text-3:       #727973;
+
+  /* Brand Palette (Stitch) */
+  --tb-primary:      #00150a;
+  --tb-accent:       #132a1e;
+  --tb-accent-dim:   rgba(19, 42, 30, 0.08);
+  --tb-secondary:    #c59b27;
+  --tb-secondary-dim:rgba(197, 155, 39, 0.12);
+  --tb-gold:         #c59b27;
+  --tb-green:        #2e7d32;
+  --tb-green-dim:    rgba(46, 125, 50, 0.10);
+  --tb-red:          #d32f2f;
+  --tb-red-dim:      rgba(211, 47, 47, 0.10);
+
+  /* Fonts */
+  --tb-font:         'IBM Plex Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --tb-serif:        'Source Serif 4', Georgia, serif;
-  --tb-mono:         'DM Mono', monospace;
+  --tb-mono:         'JetBrains Mono', 'DM Mono', monospace;
 
   /* Shadows */
-  --tb-shadow-sm:    0 1px 3px rgba(26, 67, 41, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --tb-shadow-md:    0 4px 12px rgba(26, 67, 41, 0.06);
-  --tb-shadow-lg:    0 10px 25px -5px rgba(16, 43, 25, 0.12);
+  --tb-shadow-sm:    0 1px 3px rgba(19, 42, 30, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --tb-shadow-md:    0 4px 14px rgba(19, 42, 30, 0.07);
+  --tb-shadow-lg:    0 10px 25px -5px rgba(0, 21, 10, 0.12);
 
   color-scheme: light;
   font-synthesis: none;
@@ -65,10 +72,10 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--tb-font);
+  font-family: var(--tb-serif);
   font-weight: 600;
-  color: var(--tb-text);
-  letter-spacing: -0.3px;
+  color: var(--tb-accent);
+  letter-spacing: -0.015em;
 }
 
 p { margin: 0; }
@@ -85,6 +92,12 @@ a:hover { text-decoration: underline; }
   to { transform: rotate(360deg); }
 }
 
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--tb-bg); }
@@ -92,5 +105,4 @@ a:hover { text-decoration: underline; }
 ::-webkit-scrollbar-thumb:hover { background: #bcc4b2; }
 
 /* Selection */
-::selection { background: rgba(26, 67, 41, 0.15); color: #1a4329; }
-
+::selection { background: rgba(197, 155, 39, 0.25); color: #132a1e; }

@@ -1,49 +1,52 @@
 /**
- * LandingRole.jsx — TABAR Demo & Role Access Hub (AgroTabaco Clean Edition)
+ * LandingRole.jsx — TABAR Role Hub (Stitch Agrarian Intelligence)
  *
- * Permite acceso demo directo en 1 clic para explorar todos los perfiles de la plataforma
- * sin fricciones de registro, sin validación obligatoria de correo ni CUITs.
+ * Selección y acceso demo en 1 clic con diseño institucional Stitch.
  */
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useRole, ROLE_HOME, ROLE_LABELS, ROLE_COLORS, DEMO_PROFILES } from "../modules/roles/RoleContext";
+import { useRole, ROLE_HOME, DEMO_PROFILES } from "../modules/roles/RoleContext";
 
 const ROLES_INFO = [
   {
     id: "producer",
     title: "Productor Tabacalero",
     badge: "Finca / Cultivo",
-    desc: "Certificación digital de fardos de tabaco, emisión de warrants, solicitud de adelantos y gestión de asociaciones.",
-    icon: "🌿",
-    color: "#2f6844",
-    bgLight: "#eef5f0",
+    desc: "Certificación digital de fardos, emisión de warrants, solicitud de adelantos y gestión de asociaciones en bloque.",
+    icon: "psychiatry",
+    tagCode: "PROD-AR-2026",
+    color: "#132a1e",
+    bgLight: "#edf6ef",
   },
   {
     id: "industry",
     title: "Acopiador / Industria",
-    badge: "Entidad / Acopio",
-    desc: "Emisión y endoso de warrants digitales, compras a granel de tabaco y solicitud de financiamiento de campaña.",
-    icon: "🏢",
+    badge: "Entidad / Silo",
+    desc: "Emisión y endoso de warrants digitales, compras a granel de tabaco Virginia/Criollo y financiamiento de campaña.",
+    icon: "warehouse",
+    tagCode: "ACOPIO-SAGYP",
     color: "#1a4329",
     bgLight: "#eef1e8",
   },
   {
     id: "dealer",
     title: "Dealer / Revendedor",
-    badge: "Mercado Secundario",
+    badge: "Mesa de Operaciones",
     desc: "Mesa de operaciones comerciales, financiamiento de warrants, arbitraje y provisión de liquidez al sector.",
-    icon: "💼",
-    color: "#8a5a2e",
-    bgLight: "#f9f4ed",
+    icon: "candlestick_chart",
+    tagCode: "DEALER-DESK",
+    color: "#775a00",
+    bgLight: "#fdf8eb",
   },
   {
     id: "admin",
     title: "Fideicomiso / Admin",
     badge: "Control Central",
     desc: "Gobernanza del protocolo TABAR, monitoreo de transacciones atómicas y administración general del sistema.",
-    icon: "🔑",
-    color: "#1b241d",
+    icon: "shield_lock",
+    tagCode: "TRUST-ADMIN",
+    color: "#00150a",
     bgLight: "#f1f2ed",
   },
 ];
@@ -73,121 +76,146 @@ export default function LandingRole() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#f7f7f2",
+      background: "var(--tb-bg)",
       fontFamily: "var(--tb-font)",
-      color: "#1b241d",
+      color: "var(--tb-text)",
       display: "flex",
       flexDirection: "column",
     }}>
+      {/* Top Telemetry Strip */}
+      <div style={{
+        background: "#102b19",
+        color: "#ffffff",
+        padding: "6px 20px",
+        fontFamily: "var(--tb-mono)",
+        fontSize: "11px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        borderBottom: "1px solid #1a4329"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fdc668", display: "inline-block" }} />
+          <span>ENTORNO DEMO & EVALUACIÓN · LEY 9.643</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#c1c8c0" }}>
+          <span>ACCESO DIRECTO 1-CLIC</span>
+          <span style={{ color: "#ffdeac" }}>SIN REGISTRO PREVIO</span>
+        </div>
+      </div>
+
       {/* Top Navbar */}
       <nav style={{
         background: "#ffffff",
-        borderBottom: "1px solid #e3e6dc",
+        borderBottom: "1px solid var(--tb-border)",
         padding: "14px 24px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        boxShadow: "0 1px 3px rgba(26, 67, 41, 0.03)"
+        boxShadow: "0 1px 3px rgba(19, 42, 30, 0.03)"
       }}>
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
           <div style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "#1a4329",
+            width: "34px",
+            height: "34px",
+            borderRadius: "6px",
+            background: "var(--tb-accent)",
             color: "#ffffff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontWeight: "bold"
+            fontWeight: "bold",
+            boxShadow: "0 2px 6px rgba(19,42,30,0.2)"
           }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#ffffff" />
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a4329", letterSpacing: "0.5px" }}>TABAR</div>
-            <div style={{ fontSize: "10px", color: "#5c6b5e", textTransform: "uppercase", fontWeight: "600" }}>AgroTabaco Labs</div>
+            <div style={{ fontFamily: "var(--tb-serif)", fontSize: "17px", fontWeight: "700", color: "var(--tb-accent)", lineHeight: 1.1 }}>TABAR Protocol</div>
+            <div style={{ fontSize: "10px", color: "var(--tb-text-2)", textTransform: "uppercase", fontWeight: "700", letterSpacing: "0.05em" }}>AgroTabaco Labs</div>
           </div>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link to="/" style={{ fontSize: "13px", color: "#5c6b5e", fontWeight: "600", textDecoration: "none" }}>
-            ← Volver a la Presentación
+          <Link to="/" style={{ fontSize: "13.5px", color: "var(--tb-text-2)", fontWeight: "600", textDecoration: "none" }}>
+            ← Volver al Portal
           </Link>
           <span style={{
-            background: "#eef1e8",
-            color: "#1a4329",
-            padding: "4px 10px",
-            borderRadius: "20px",
+            background: "#edf6ef",
+            color: "var(--tb-accent)",
+            padding: "4px 12px",
+            borderRadius: "4px",
             fontSize: "11px",
             fontWeight: "700",
-            border: "1px solid #ced3c5"
+            fontFamily: "var(--tb-mono)",
+            border: "1px solid #d8e5dc"
           }}>
-            🟢 Entorno Demo Libre
+            MODO SIMULACIÓN ACTIVO
           </span>
         </div>
       </nav>
 
-      {/* Hero Banner Ejecutivo */}
+      {/* Header Banner Ejecutivo */}
       <div style={{
-        background: "linear-gradient(135deg, #102b19 0%, #1a4329 55%, #2f6844 100%)",
+        background: "#132a1e",
         color: "#ffffff",
-        padding: "44px 24px",
+        padding: "48px 24px",
         textAlign: "center",
-        borderBottom: "1px solid #1a4329",
-        boxShadow: "0 4px 20px rgba(16, 43, 25, 0.15)"
+        borderBottom: "1px solid #00150a",
+        boxShadow: "0 4px 20px rgba(0, 21, 10, 0.15)"
       }}>
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "840px", margin: "0 auto" }}>
           <div style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            background: "rgba(255, 255, 255, 0.12)",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
+            background: "rgba(197, 155, 39, 0.15)",
+            border: "1px solid rgba(197, 155, 39, 0.3)",
+            color: "#ffdeac",
             padding: "4px 14px",
-            borderRadius: "20px",
-            fontSize: "12px",
-            fontWeight: "600",
+            borderRadius: "4px",
+            fontFamily: "var(--tb-mono)",
+            fontSize: "11px",
+            fontWeight: "700",
             marginBottom: "16px"
           }}>
-            ✨ Acceso Inmediato sin Registros ni Verificaciones
+            ✦ SELECCIÓN DE PERFIL OPERATIVO
           </div>
           <h1 style={{
-            fontSize: "32px",
-            fontWeight: "800",
-            margin: "0 0 12px",
-            letterSpacing: "-0.5px",
+            fontFamily: "var(--tb-serif)",
+            fontSize: "34px",
+            fontWeight: "700",
+            margin: "0 0 14px",
+            letterSpacing: "-0.015em",
             lineHeight: 1.2
           }}>
-            Seleccioná tu perfil para explorar TABAR
+            Ingresá a la plataforma con tu rol institucional
           </h1>
           <p style={{
             fontSize: "15px",
             color: "#d7e0d2",
-            margin: "0",
-            lineHeight: 1.6,
-            maxWidth: "640px",
-            marginLeft: "auto",
-            marginRight: "auto"
+            margin: "0 auto",
+            lineHeight: 1.65,
+            maxWidth: "680px"
           }}>
-            Hacé clic en cualquiera de los roles a continuación para ingresar al instante con datos de simulación reales precargados.
+            Elegí cualquiera de los perfiles disponibles para acceder instantáneamente con balances simulados, warrants activos y datos de mercado.
           </p>
         </div>
       </div>
 
       {/* Role Cards Grid */}
       <div style={{
-        maxWidth: "1080px",
+        maxWidth: "1140px",
         margin: "0 auto",
-        padding: "40px 20px",
+        padding: "44px 20px",
         width: "100%",
-        boxBox: "border-box"
+        boxSizing: "border-box"
       }}>
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
           gap: "20px",
-          marginBottom: "32px"
+          marginBottom: "36px"
         }}>
           {ROLES_INFO.map((r) => (
             <div
@@ -195,59 +223,60 @@ export default function LandingRole() {
               onClick={() => handleQuickAccess(r.id)}
               style={{
                 background: "#ffffff",
-                border: "1px solid #e3e6dc",
-                borderRadius: "14px",
-                padding: "24px",
+                border: "1px solid var(--tb-border)",
+                borderRadius: "8px",
+                padding: "26px 22px",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(26, 67, 41, 0.04)",
+                boxShadow: "var(--tb-shadow-sm)",
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
-                overflow: "hidden"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = r.color;
                 e.currentTarget.style.transform = "translateY(-3px)";
-                e.currentTarget.style.boxShadow = "0 8px 20px rgba(26, 67, 41, 0.12)";
+                e.currentTarget.style.boxShadow = "var(--tb-shadow-md)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#e3e6dc";
+                e.currentTarget.style.borderColor = "var(--tb-border)";
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(26, 67, 41, 0.04)";
+                e.currentTarget.style.boxShadow = "var(--tb-shadow-sm)";
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "6px",
                   background: r.bgLight,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "24px"
+                  color: r.color,
                 }}>
-                  {r.icon}
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>{r.icon}</span>
                 </div>
                 <span style={{
-                  fontSize: "11px",
+                  fontFamily: "var(--tb-mono)",
+                  fontSize: "10px",
                   fontWeight: "700",
                   textTransform: "uppercase",
-                  padding: "4px 8px",
-                  borderRadius: "6px",
+                  padding: "3px 8px",
+                  borderRadius: "4px",
                   background: r.bgLight,
                   color: r.color,
                   border: `1px solid ${r.color}30`
                 }}>
-                  {r.badge}
+                  {r.tagCode}
                 </span>
               </div>
 
               <h2 style={{
-                fontSize: "18px",
+                fontFamily: "var(--tb-serif)",
+                fontSize: "19px",
                 fontWeight: "700",
-                color: "#1b241d",
+                color: "var(--tb-accent)",
                 margin: "0 0 8px"
               }}>
                 {r.title}
@@ -255,9 +284,9 @@ export default function LandingRole() {
 
               <p style={{
                 fontSize: "13px",
-                color: "#5c6b5e",
-                lineHeight: 1.5,
-                margin: "0 0 20px",
+                color: "var(--tb-text-2)",
+                lineHeight: 1.55,
+                margin: "0 0 22px",
                 flex: 1
               }}>
                 {r.desc}
@@ -270,20 +299,20 @@ export default function LandingRole() {
                   background: r.color,
                   color: "#ffffff",
                   border: "none",
-                  padding: "10px 16px",
-                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  borderRadius: "6px",
                   fontSize: "13px",
-                  fontWeight: "700",
+                  fontWeight: "600",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
-                  transition: "filter 0.15s ease",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
                 }}
               >
-                Ingresar como {r.title.split(" ")[0]} →
+                <span>Ingresar como {r.title.split(" ")[0]}</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
               </button>
             </div>
           ))}
@@ -292,38 +321,38 @@ export default function LandingRole() {
         {/* Opción personalizada al pie */}
         <div style={{
           background: "#ffffff",
-          border: "1px solid #e3e6dc",
-          borderRadius: "12px",
-          padding: "20px 24px",
+          border: "1px solid var(--tb-border)",
+          borderRadius: "8px",
+          padding: "22px 26px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.03)"
+          boxShadow: "var(--tb-shadow-sm)"
         }}>
           <div>
-            <div style={{ fontSize: "14px", fontWeight: "700", color: "#1a4329", marginBottom: "2px" }}>
-              ¿Querés ingresar con tu nombre propio?
+            <div style={{ fontFamily: "var(--tb-serif)", fontSize: "16px", fontWeight: "700", color: "var(--tb-accent)", marginBottom: "2px" }}>
+              ¿Deseas personalizar tu nombre o entidad?
             </div>
-            <div style={{ fontSize: "13px", color: "#5c6b5e" }}>
-              Podés personalizar el nombre visible de tu usuario de prueba.
+            <div style={{ fontSize: "13px", color: "var(--tb-text-2)" }}>
+              Asigna un nombre customizado al perfil para presentaciones y demos ejecutivas.
             </div>
           </div>
           <button
             onClick={() => setShowCustomModal(!showCustomModal)}
             style={{
-              background: "#eef1e8",
-              border: "1px solid #ced3c5",
-              color: "#1a4329",
-              padding: "8px 16px",
-              borderRadius: "8px",
+              background: "var(--tb-surface-tint)",
+              border: "1px solid #d8e5dc",
+              color: "var(--tb-accent)",
+              padding: "9px 18px",
+              borderRadius: "6px",
               fontSize: "13px",
               fontWeight: "600",
               cursor: "pointer"
             }}
           >
-            {showCustomModal ? "Cerrar personalización" : "Personalizar acceso demo"}
+            {showCustomModal ? "Cerrar configuración" : "Personalizar acceso demo"}
           </button>
         </div>
 
@@ -332,17 +361,17 @@ export default function LandingRole() {
           <form onSubmit={handleCustomLogin} style={{
             marginTop: "16px",
             background: "#ffffff",
-            border: "1px solid #ced3c5",
-            borderRadius: "12px",
+            border: "1px solid #c2c8c2",
+            borderRadius: "8px",
             padding: "24px",
-            boxShadow: "0 4px 12px rgba(26,67,41,0.06)"
+            boxShadow: "var(--tb-shadow-md)"
           }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: "16px", color: "#1a4329" }}>
+            <h3 style={{ margin: "0 0 16px", fontFamily: "var(--tb-serif)", fontSize: "18px", color: "var(--tb-accent)" }}>
               Configurar Nombre y Rol Demo
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#5c6b5e", marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "var(--tb-text-2)", marginBottom: "6px" }}>
                   Tu Nombre o Razón Social
                 </label>
                 <input
@@ -354,7 +383,7 @@ export default function LandingRole() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#5c6b5e", marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "var(--tb-text-2)", marginBottom: "6px" }}>
                   Rol a Asignar
                 </label>
                 <select
@@ -383,14 +412,14 @@ export default function LandingRole() {
       {/* Footer */}
       <footer style={{
         marginTop: "auto",
-        borderTop: "1px solid #e3e6dc",
+        borderTop: "1px solid var(--tb-border)",
         background: "#ffffff",
-        padding: "20px",
+        padding: "24px",
         textAlign: "center",
         fontSize: "12px",
-        color: "#5c6b5e"
+        color: "var(--tb-text-2)"
       }}>
-        <span>TABAR Tech · Plataforma de Demostración y Evaluación · AgroTabaco 2026</span>
+        <span>TABAR Protocol · Plataforma de Demostración y Evaluación · AgroTabaco Labs 2026</span>
       </footer>
     </div>
   );

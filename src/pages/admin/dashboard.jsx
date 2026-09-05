@@ -2,70 +2,69 @@ import { useRole } from "../../modules/roles/RoleContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
-const C = { accent: "#E3B64F", dim: "rgba(227,182,79,0.10)" };
+const C = { accent: "#132a1e", dim: "#edf6ef", gold: "#c59b27" };
 
 export default function AdminDashboard() {
-  const { user, profile } = useRole();
+  const { user } = useRole();
 
   return (
     <div>
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
-          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>◈</div>
-          <h1>Panel de Administración — Fideicomiso</h1>
+          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>
+            <span className="material-symbols-outlined">shield_lock</span>
+          </div>
+          <h1>Panel de Fideicomiso & Gobernanza TABAR</h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Acceso completo al sistema. Las acciones tienen efecto directo en la plataforma.</p>
+        <p style={{ margin: 0, color: "var(--tb-text-2)", fontSize: "13.5px" }}>
+          Monitoreo integral del protocolo, autorización de entidades, emisión de warrants y control de custodia
+        </p>
       </div>
 
-      <div className="tabar-grid-4" style={{ marginBottom: "20px" }}>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-icon" style={{ background: C.dim, color: C.accent }}>◈</div>
-          <div className="tabar-metric-label">Conexión</div>
-          <div style={{ fontSize: "13px", color: "#3FB950" }}>Firebase Activo</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-icon" style={{ background: "rgba(63,185,80,0.10)", color: "#3FB950" }}>◉</div>
-          <div className="tabar-metric-label">Mi Cuenta</div>
-          <div style={{ fontSize: "12px", color: "#8B949E", fontFamily: "var(--tb-mono)", wordBreak: "break-all", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.email || "—"}</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-icon" style={{ background: "rgba(88,166,255,0.10)", color: "#58A6FF" }}>▣</div>
-          <div className="tabar-metric-label">Red</div>
-          <div style={{ fontSize: "13px", color: "#58A6FF" }}>Firestore</div>
-        </div>
-        <div className="tabar-metric-card">
-          <div className="tabar-metric-icon" style={{ background: "rgba(188,140,255,0.10)", color: "#BC8CFF" }}>△</div>
-          <div className="tabar-metric-label">Rol activo</div>
-          <div style={{ fontSize: "13px", color: C.accent }}>Fideicomiso / Admin</div>
-        </div>
+      <div className="tabar-grid-4" style={{ marginBottom: "28px" }}>
+        <MetricCard label="Servidor & Base de Datos" value="Operativo" unit="Firebase Cloud" glyph="cloud_done" />
+        <MetricCard label="Sesión de Fideicomiso" value={user?.email ? user.email.split("@")[0] : "Admin"} unit={user?.email || "fideicomiso@tabar.agro"} glyph="admin_panel_settings" />
+        <MetricCard label="Marco Regulatorio" value="Ley 9.643" unit="SAGyP Homologado" glyph="verified" />
+        <MetricCard label="Rol Activo" value="Fideicomiso / Admin" unit="Control Total" glyph="shield" />
       </div>
 
-      <div className="tabar-section">
+      <div style={{ marginBottom: "28px" }}>
         <CampaignStats />
       </div>
 
-      <div className="tabar-section">
-        <h3 className="tabar-section-label">Acciones administrativas</h3>
+      <div>
+        <h3 className="tabar-card-title" style={{ border: "none", marginBottom: "14px" }}>Acciones Administrativas</h3>
         <div className="tabar-grid-3">
-          <ActionCard to="/admin/control" glyph="▣" title="Control del sistema" desc="Deploy, gestión de wallets autorizadas, emisión de producción" color={C.accent} bg={C.dim} />
-          <ActionCard to="/campaign" glyph="◉" title="Estado de campaña" desc="Progreso del financiamiento, métricas y distribución" color={C.accent} bg={C.dim} />
-          <div className="tabar-action-card" style={{ opacity: 0.5, cursor: "default" }}>
-            <div className="tabar-action-icon" style={{ background: "rgba(255,255,255,0.04)", color: "#484F58" }}>◇</div>
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#484F58" }}>Auditoría</h4>
-            <p style={{ margin: 0, fontSize: "12px", color: "#484F58", lineHeight: 1.5 }}>Próximamente: historial de transacciones y logs del contrato</p>
-          </div>
+          <ActionCard to="/admin/control" icon="tune" title="Control del Sistema" desc="Deploy, gestión de participantes autorizados, emisión de warrants y balances" />
+          <ActionCard to="/campaign" icon="calendar_month" title="Estado de Campaña" desc="Progreso del financiamiento, métricas de acopio y distribución provincial" />
+          <ActionCard to="/market" icon="storefront" title="Mercado Tabacalero" desc="Supervisión de cotizaciones, precios de referencia y operaciones secundarias" />
         </div>
       </div>
     </div>
   );
 }
 
-function ActionCard({ to, glyph, title, desc, color, bg }) {
+function MetricCard({ label, value, unit, glyph }) {
+  return (
+    <div className="tabar-metric-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+        <span className="tabar-metric-label">{label}</span>
+        <span className="material-symbols-outlined" style={{ color: "var(--tb-secondary)", fontSize: "20px" }}>{glyph}</span>
+      </div>
+      <div className="tabar-metric-value" style={{ fontSize: "18px" }}>{value}</div>
+      <div className="tabar-metric-unit">{unit}</div>
+    </div>
+  );
+}
+
+function ActionCard({ to, icon, title, desc }) {
   return (
     <Link to={to} className="tabar-action-card">
-      <div className="tabar-action-icon" style={{ background: bg, color }}>{glyph}</div>
-      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#F0F6FC" }}>{title}</h4>
-      <p style={{ margin: 0, fontSize: "12px", color: "#484F58", lineHeight: 1.5 }}>{desc}</p>
+      <div className="tabar-action-icon" style={{ background: "#edf6ef", color: "var(--tb-accent)" }}>
+        <span className="material-symbols-outlined">{icon}</span>
+      </div>
+      <h4 style={{ margin: 0, fontSize: "15px", fontFamily: "var(--tb-serif)", fontWeight: 700, color: "var(--tb-accent)" }}>{title}</h4>
+      <p style={{ margin: 0, fontSize: "13px", color: "var(--tb-text-2)", lineHeight: 1.5 }}>{desc}</p>
     </Link>
   );
 }

@@ -7,37 +7,37 @@ import { useChat } from "../chat/ChatContext";
 import ChatDrawer from "../chat/ChatDrawer";
 
 const ROLE_PALETTE = {
-  admin: { color: "#1a4329", dim: "rgba(26,67,41,0.08)", border: "rgba(26,67,41,0.25)" },
-  industry: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
-  dealer: { color: "#8a5a2e", dim: "rgba(138,90,46,0.08)", border: "rgba(138,90,46,0.25)" },
-  producer: { color: "#2f6844", dim: "rgba(47,104,68,0.08)", border: "rgba(47,104,68,0.25)" },
+  admin: { color: "#132a1e", dim: "rgba(19,42,30,0.08)", border: "rgba(19,42,30,0.25)" },
+  industry: { color: "#1a4329", dim: "rgba(26,67,41,0.08)", border: "rgba(26,67,41,0.25)" },
+  dealer: { color: "#775a00", dim: "rgba(119,90,0,0.08)", border: "rgba(119,90,0,0.25)" },
+  producer: { color: "#132a1e", dim: "rgba(19,42,30,0.08)", border: "rgba(19,42,30,0.25)" },
 };
 
 const NAV_LINKS = {
   admin: [
-    { path: "/admin", label: "Panel Principal" },
-    { path: "/admin/control", label: "Control del Sistema" },
-    { path: "/campaign", label: "Campaña" },
-    { path: "/market", label: "Mercado Tabacalero" }
+    { path: "/admin", label: "Panel Principal", icon: "dashboard" },
+    { path: "/admin/control", label: "Control del Sistema", icon: "tune" },
+    { path: "/campaign", label: "Campaña Agrícola", icon: "calendar_month" },
+    { path: "/market", label: "Mercado Tabacalero", icon: "storefront" }
   ],
   industry: [
-    { path: "/industry", label: "Mi Dashboard" },
-    { path: "/industry/buy", label: "Orden de Compra" },
-    { path: "/industry/financing", label: "Solicitar Financiamiento" },
-    { path: "/warrants", label: "Warrants Digitales" },
-    { path: "/market", label: "Mercado Tabacalero" }
+    { path: "/industry", label: "Mi Dashboard", icon: "dashboard" },
+    { path: "/industry/buy", label: "Orden de Compra", icon: "shopping_cart" },
+    { path: "/industry/financing", label: "Solicitar Financiamiento", icon: "account_balance" },
+    { path: "/warrants", label: "Warrants Digitales", icon: "token" },
+    { path: "/market", label: "Mercado Tabacalero", icon: "storefront" }
   ],
   dealer: [
-    { path: "/dealer", label: "Mi Dashboard" },
-    { path: "/dealer/trade", label: "Operar" },
-    { path: "/market", label: "Mercado Tabacalero" }
+    { path: "/dealer", label: "Mi Dashboard", icon: "dashboard" },
+    { path: "/dealer/trade", label: "Operar Tabaco", icon: "candlestick_chart" },
+    { path: "/market", label: "Mercado Tabacalero", icon: "storefront" }
   ],
   producer: [
-    { path: "/producer", label: "Mi tabaco" },
-    { path: "/producer/tokenizar", label: "Certificar Tabaco" },
-    { path: "/producer/asociaciones", label: "Mis Asociaciones" },
-    { path: "/warrants", label: "Warrants Digitales" },
-    { path: "/market", label: "Mercado Tabacalero" }
+    { path: "/producer", label: "Mi Tabaco", icon: "psychiatry" },
+    { path: "/producer/tokenizar", label: "Certificar Tabaco", icon: "verified" },
+    { path: "/producer/asociaciones", label: "Mis Asociaciones", icon: "groups" },
+    { path: "/warrants", label: "Warrants Digitales", icon: "token" },
+    { path: "/market", label: "Mercado Tabacalero", icon: "storefront" }
   ],
 };
 
@@ -69,7 +69,6 @@ export default function AppLayout({ children }) {
       snapshot.forEach((doc) => {
         items.push({ id: doc.id, ...doc.data() });
       });
-      // Client-side sort by creadoEn desc
       items.sort((a, b) => {
         const timeA = a.creadoEn?.toDate ? a.creadoEn.toDate().getTime() : 0;
         const timeB = b.creadoEn?.toDate ? b.creadoEn.toDate().getTime() : 0;
@@ -122,27 +121,28 @@ export default function AppLayout({ children }) {
     <div className="tabar-shell">
       <aside className="tabar-sidebar">
         <div className="tabar-sidebar-top">
-          <div className="tabar-logo">
+          <NavLink to="/" className="tabar-logo" style={{ textDecoration: "none" }}>
             <div className="tabar-logo-mark">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M9 1L16 5.5V12.5L9 17L2 12.5V5.5L9 1Z" fill="#ffffff" />
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--tb-accent)", letterSpacing: "0.5px" }}>TABAR</div>
-              <div style={{ fontSize: "10px", color: "var(--tb-text-2)", letterSpacing: "0.5px", textTransform: "uppercase", fontWeight: 600 }}>AgroTabaco Labs</div>
+              <div style={{ fontFamily: "var(--tb-serif)", fontSize: "16px", fontWeight: 700, color: "var(--tb-accent)", letterSpacing: "-0.01em", lineHeight: 1.1 }}>TABAR Protocol</div>
+              <div style={{ fontSize: "10px", color: "var(--tb-text-2)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 700 }}>AgroTabaco Labs</div>
             </div>
-          </div>
+          </NavLink>
           <button className="tabar-hamburger" onClick={() => setNavOpen(!navOpen)}>
             {navOpen ? "✕" : "☰"}
           </button>
         </div>
 
-        <div className={`tabar-nav-wrap ${navOpen ? "open" : ""}`}>
+        <div className={`tabar-nav-wrap${navOpen ? " open" : ""}`}>
           <div className="tabar-role-badge" style={{
-            borderColor: palette.border,
             color: palette.color,
+            borderColor: palette.border,
             background: palette.dim,
+            fontFamily: "var(--tb-mono)"
           }}>
             {ROLE_LABELS[role] || "Sin rol"}
           </div>
@@ -163,78 +163,40 @@ export default function AppLayout({ children }) {
                     borderColor: isActive ? palette.border : undefined,
                   })}
                 >
-                  {link.label}
+                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{link.icon || "arrow_forward"}</span>
+                  <span>{link.label}</span>
                 </NavLink>
               );
             })}
           </nav>
 
           <div className="tabar-sidebar-bottom">
-            <NavLink to="/miPerfil" style={{
-              background: "#ffffff",
-              border: "1px solid var(--tb-border)",
-              borderRadius: "8px",
-              padding: "8px 10px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "8px",
-              textDecoration: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = palette.color;
-              e.currentTarget.style.boxShadow = `0 2px 8px ${palette.dim}`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--tb-border)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            <NavLink
+              to="/miPerfil"
+              onClick={handleNavClick}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                textDecoration: "none",
+                color: "var(--tb-text)",
+                padding: "8px 10px",
+                borderRadius: "6px",
+                background: "var(--tb-surface-2)",
+                border: "1px solid var(--tb-border)",
+                marginBottom: "8px",
+              }}
             >
-              {profile?.profilePicUrl ? (
-                <img 
-                  src={profile.profilePicUrl} 
-                  alt="Avatar" 
-                  style={{ 
-                    width: "26px", 
-                    height: "26px", 
-                    borderRadius: "50%", 
-                    objectFit: "cover", 
-                    border: `1.5px solid ${palette.color}`,
-                    flexShrink: 0
-                  }} 
-                />
-              ) : (
-                <div style={{ 
-                  width: "26px", 
-                  height: "26px", 
-                  borderRadius: "50%", 
-                  background: palette.dim, 
-                  border: `1.5px solid ${palette.border}`, 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  color: palette.color, 
-                  fontSize: "11px", 
-                  fontWeight: "bold",
-                  fontFamily: "var(--tb-mono)",
-                  flexShrink: 0
-                }}>
-                  {displayName.substring(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                <span style={{ 
-                  fontFamily: "var(--tb-font)", 
-                  fontSize: "12px", 
-                  fontWeight: 600,
-                  color: "var(--tb-text)", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis", 
-                  whiteSpace: "nowrap",
-                  lineHeight: "1.2"
-                }}>
+              <div style={{
+                width: "28px", height: "28px", borderRadius: "50%",
+                background: palette.color, color: "#ffffff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "12px", fontWeight: 700, flexShrink: 0,
+              }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ overflow: "hidden", flex: 1 }}>
+                <span style={{ display: "block", fontSize: "12px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {displayName}
                 </span>
                 <span style={{ fontSize: "10px", color: "var(--tb-text-2)", lineHeight: "1.1" }}>
@@ -242,13 +204,7 @@ export default function AppLayout({ children }) {
                 </span>
               </div>
             </NavLink>
-            <button onClick={handleLogout} style={{
-              width: "100%", background: "#ffffff",
-              border: "1px solid var(--tb-border)",
-              color: "var(--tb-text-2)", padding: "7px",
-              cursor: "pointer", fontFamily: "var(--tb-font)",
-              fontSize: "12px", borderRadius: "6px", fontWeight: 500,
-            }}>
+            <button onClick={handleLogout} className="tabar-btn tabar-btn-ghost tabar-btn-full" style={{ padding: "7px", fontSize: "12px" }}>
               Cerrar sesión
             </button>
           </div>
@@ -256,10 +212,26 @@ export default function AppLayout({ children }) {
       </aside>
 
       <div className="tabar-main">
+        {/* Ticker Live Telemetry Bar */}
+        <div className="tabar-telemetry-ribbon">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span><span className="tabar-telemetry-pulse" />AUDITORÍA EN VIVO:</span>
+            <span style={{ color: "#c1c8c0" }}>VALLE DE LERMA 99.4%</span>
+            <span>•</span>
+            <span style={{ color: "#c1c8c0" }}>PERICO HUB ACTIVO</span>
+            <span>•</span>
+            <span style={{ color: "#c0eec9" }}>LEY 9.643 SAGyP</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#ffdeac" }}>
+            <span>RED TABAR v1.2</span>
+          </div>
+        </div>
+
         {/* Banner de Acceso y Cambio de Rol Demo en Vivo */}
         <div className="tabar-demo-banner">
           <div className="tabar-demo-banner-title">
-            <span>🔬 AgroTabaco Demo Hub</span>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px", color: "var(--tb-secondary)" }}>swap_horiz</span>
+            <span>AgroTabaco Demo Hub</span>
             <span style={{ opacity: 0.8, fontSize: '11px', fontWeight: 400 }}>| Explorar roles:</span>
           </div>
           <div className="tabar-demo-banner-roles">
@@ -284,31 +256,34 @@ export default function AppLayout({ children }) {
         </div>
 
         <header className="tabar-header">
-          <div className="tabar-system-name" style={{ color: 'var(--tb-accent)', fontWeight: 600 }}>
+          <div className="tabar-system-name" style={{ color: 'var(--tb-accent)', fontFamily: 'var(--tb-serif)', fontWeight: 600, fontSize: '15px' }}>
             Mercado & Financiamiento Agroindustrial
           </div>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: "auto" }}>
-            {/* Chat Center */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
+            {/* Chat Assistant */}
             <button
               onClick={toggleDrawer}
               style={{
-                background: "#f1f2ed",
+                background: "var(--tb-surface-2)",
                 border: "1px solid var(--tb-border)",
                 color: "var(--tb-accent)",
-                fontSize: "16px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "6px 10px",
-                borderRadius: "8px",
+                padding: "6px 12px",
+                borderRadius: "6px",
                 transition: "all 0.2s ease",
-                outline: "none"
+                gap: "6px",
+                fontFamily: "var(--tb-font)",
+                fontSize: "12px",
+                fontWeight: 600
               }}
               title="Asistente IA de Mercado"
             >
-              💬 <span style={{ fontSize: '12px', fontWeight: 600, marginLeft: '4px' }}>Asistente</span>
+              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>forum</span>
+              <span>Asistente IA</span>
             </button>
 
             {/* Notification Center */}
@@ -316,152 +291,127 @@ export default function AppLayout({ children }) {
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 style={{
-                  background: "#f1f2ed",
+                  background: "var(--tb-surface-2)",
                   border: "1px solid var(--tb-border)",
                   color: unreadCount > 0 ? "var(--tb-accent)" : "var(--tb-text-2)",
-                  fontSize: "16px",
                   cursor: "pointer",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   padding: "6px 10px",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   transition: "all 0.2s ease",
-                  outline: "none"
                 }}
+                title="Centro de Notificaciones"
               >
-                🔔
+                <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>notifications</span>
                 {unreadCount > 0 && (
                   <span style={{
                     position: "absolute",
-                    top: "-3px",
-                    right: "-3px",
-                    background: "#a13f2e",
-                    color: "#FFFFFF",
-                    fontSize: "9px",
-                    fontWeight: "bold",
+                    top: "-4px",
+                    right: "-4px",
+                    background: "var(--tb-secondary)",
+                    color: "#132a1e",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    width: "16px",
+                    height: "16px",
                     borderRadius: "50%",
-                    minWidth: "15px",
-                    height: "15px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    padding: "2px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
                   }}>
-                    {unreadCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </button>
 
+              {/* Notification Popover Dropdown */}
               {showNotifications && (
                 <div className="tabar-notif-dropdown">
-                  {/* Dropdown Header */}
                   <div style={{
+                    padding: "12px 16px",
+                    borderBottom: "1px solid var(--tb-border)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "12px 16px",
-                    borderBottom: "1px solid var(--tb-border)",
-                    background: "#f7f7f2"
+                    background: "var(--tb-surface-2)"
                   }}>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--tb-accent)" }}>Notificaciones</span>
+                    <span style={{ fontFamily: "var(--tb-serif)", fontSize: "14px", fontWeight: 700, color: "var(--tb-accent)" }}>
+                      Notificaciones
+                    </span>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllAsRead}
                         style={{
-                          background: "transparent",
+                          background: "none",
                           border: "none",
                           color: "var(--tb-accent)",
                           fontSize: "11px",
+                          fontWeight: 600,
                           cursor: "pointer",
-                          fontWeight: "600",
-                          padding: "0"
+                          padding: 0
                         }}
                       >
-                        Limpiar todas
+                        Marcar todas leídas
                       </button>
                     )}
                   </div>
 
-                  {/* Dropdown List */}
-                  <div style={{
-                    overflowY: "auto",
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column"
-                  }}>
+                  <div style={{ flex: 1, overflowY: "auto" }}>
                     {notifications.length === 0 ? (
-                      <div style={{
-                        padding: "32px 16px",
-                        textAlign: "center",
-                        color: "var(--tb-text-2)",
-                        fontSize: "13px"
-                      }}>
-                        No tienes notificaciones
+                      <div style={{ padding: "30px 16px", textAlign: "center", color: "var(--tb-text-2)", fontSize: "12px" }}>
+                        <div style={{ fontSize: "24px", marginBottom: "8px" }}>📭</div>
+                        No tienes notificaciones pendientes
                       </div>
                     ) : (
-                      notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          onClick={() => handleMarkAsRead(notif.id)}
-                          style={{
-                            padding: "12px 16px",
-                            borderBottom: "1px solid #f1f2ed",
-                            background: notif.read ? "#ffffff" : "rgba(26, 67, 41, 0.04)",
-                            cursor: "pointer",
-                            transition: "background 0.2s ease",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px"
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
-                            <span style={{
-                              fontSize: "12px",
-                              color: "var(--tb-text)",
-                              fontWeight: notif.read ? "400" : "600",
-                              lineHeight: "1.4",
-                              flex: 1
-                            }}>
-                              {notif.message}
-                            </span>
-                            {!notif.read && (
-                              <span style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                background: "var(--tb-accent)",
-                                marginTop: "5px",
-                                flexShrink: 0
-                              }} />
-                            )}
+                      notifications.map((n) => {
+                        const dateStr = n.creadoEn?.toDate 
+                          ? n.creadoEn.toDate().toLocaleDateString("es-AR", { hour: "2-digit", minute: "2-digit" }) 
+                          : "";
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => handleMarkAsRead(n.id)}
+                            style={{
+                              padding: "12px 16px",
+                              borderBottom: "1px solid var(--tb-border)",
+                              background: n.read ? "#ffffff" : "var(--tb-surface-tint)",
+                              cursor: "pointer",
+                              transition: "background 0.15s ease"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                              <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--tb-accent)" }}>
+                                {n.titulo || "Aviso del Sistema"}
+                              </span>
+                              <span style={{ fontSize: "10px", color: "var(--tb-text-3)", fontFamily: "var(--tb-mono)" }}>
+                                {dateStr}
+                              </span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: "12px", color: "var(--tb-text-2)", lineHeight: "1.4" }}>
+                              {n.mensaje}
+                            </p>
                           </div>
-                          <span style={{ fontSize: "10px", color: "var(--tb-text-3)" }}>
-                            {notif.creadoEn?.toDate 
-                              ? new Date(notif.creadoEn.toDate()).toLocaleDateString("es-AR", { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) 
-                              : "Reciente"
-                            }
-                          </span>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
               )}
             </div>
-
-            <div className="tabar-connected-badge">
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--tb-green)", flexShrink: 0 }} />
-              En línea (Demo)
-            </div>
           </div>
         </header>
+
         <main className="tabar-content">
-          {children || <Outlet />}
-          <ChatDrawer />
+          <Outlet />
+          {children}
         </main>
       </div>
+
+      <ChatDrawer />
     </div>
   );
 }

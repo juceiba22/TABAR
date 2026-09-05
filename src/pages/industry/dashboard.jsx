@@ -5,19 +5,10 @@ import { useRole } from "../../modules/roles/RoleContext";
 import CampaignStats from "../../modules/dashboard/CampaignStats";
 import { Link } from "react-router-dom";
 
-const C = { accent: "#58A6FF", dim: "rgba(88,166,255,0.10)" };
+const C = { accent: "#1a4329", dim: "#edf6ef", gold: "#c59b27" };
 
-// Formateador de moneda en pesos.
 const fmtMoney = (n) => Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-// Lee el monto de una orden de compra.
-// buy.jsx lo guarda como `montoTotal` (string, por .toFixed(2)).
-// Se mantiene compatibilidad con `usdTotal` por si quedó algún documento viejo.
 const getMontoOrden = (d) => parseFloat(d?.montoTotal ?? d?.usdTotal ?? 0) || 0;
-
-// Lee el monto de una solicitud de financiamiento.
-// financing.jsx lo guarda como `montoFinanciamiento` (number).
-// Se mantiene compatibilidad con `montoSolicitado` por si quedó algún documento viejo.
 const getMontoFinanciamiento = (d) => Number(d?.montoFinanciamiento ?? d?.montoSolicitado ?? 0) || 0;
 
 export default function IndustryDashboard() {
@@ -54,7 +45,6 @@ export default function IndustryDashboard() {
           return new Date();
         };
 
-        // 1. Órdenes de compra
         const poRef = collection(db, "purchase_orders");
         const qPo = query(poRef, where("userId", "==", user.uid));
         const poSnap = await getDocs(qPo);
@@ -69,13 +59,12 @@ export default function IndustryDashboard() {
           interaccionesList.push({
             id: `po-${doc.id}`,
             date: parseDate(doc),
-            title: `Orden de compra`,
-            description: `Orden de compra emitida por ${(d.cantidadKgs || 0).toLocaleString("es-AR")} kgs y a un monto total de $${fmtMoney(monto)}`,
-            icon: "▣"
+            title: `Orden de compra de tabaco`,
+            description: `Orden emitida por ${(d.cantidadKgs || 0).toLocaleString("es-AR")} kgs y a un monto total de $${fmtMoney(monto)} USD.`,
+            icon: "shopping_cart"
           });
         });
 
-        // 2. Solicitudes de financiamiento
         const frRef = collection(db, "financing_requests");
         const qFr = query(frRef, where("userId", "==", user.uid));
         const frSnap = await getDocs(qFr);
@@ -95,8 +84,8 @@ export default function IndustryDashboard() {
             id: `fr-${doc.id}`,
             date: parseDate(doc),
             title: `Solicitud de financiamiento`,
-            description: `Solicitud de financiamiento para ${d.motivoFinanciamiento?.toLowerCase() || "fines generales"} por un monto total de $${fmtMoney(monto)}`,
-            icon: "◇"
+            description: `Financiamiento para ${d.motivoFinanciamiento?.toLowerCase() || "fines generales"} por $${fmtMoney(monto)} USD colateralizado.`,
+            icon: "account_balance"
           });
         });
 
@@ -129,119 +118,130 @@ export default function IndustryDashboard() {
     <div>
       <div className="tabar-page-header">
         <div className="tabar-page-header-row">
-          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>⬡</div>
-          <h1>Mi Dashboard — Acopiador</h1>
+          <div className="tabar-page-icon" style={{ background: C.dim, color: C.accent }}>
+            <span className="material-symbols-outlined">warehouse</span>
+          </div>
+          <h1>Mi Dashboard — Acopiador / Industria</h1>
         </div>
-        <p style={{ margin: 0, color: "#8B949E", fontSize: "13px" }}>Resumen financiero y comercial en la campaña TABAR</p>
+        <p style={{ margin: 0, color: "var(--tb-text-2)", fontSize: "13.5px" }}>
+          Resumen financiero, órdenes de compra y warrants colateralizados en la campaña
+        </p>
       </div>
 
       {!loading && (
-        <div style={{ background: "rgba(88,166,255,0.05)", border: "1px solid rgba(88,166,255,0.2)", borderRadius: "12px", padding: "24px", marginBottom: "32px", backdropFilter: "blur(10px)" }}>
-          <p style={{ margin: 0, color: "#C9D1D9", fontSize: "16px", lineHeight: 1.6 }}>
-            Usted ha emitido hasta el momento <strong style={{ color: C.accent }}>{stats.ordenesCount}</strong> de órdenes de compra por un monto total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.ordenesMontoTotal)}</strong>. Asimismo ha solicitado financiamiento <strong style={{ color: C.accent }}>{stats.financiamientoCount}</strong> veces por un total de <strong style={{ color: "#F0F6FC" }}>${fmtMoney(stats.financiamientoMontoTotal)}</strong>. El motivo del financiamiento han sido: <strong style={{ color: "#F0F6FC" }}>{motivosStr}</strong>.
+        <div style={{
+          background: "#edf6ef",
+          border: "1px solid #d8e5dc",
+          borderRadius: "8px",
+          padding: "20px 24px",
+          marginBottom: "28px",
+          boxShadow: "var(--tb-shadow-sm)"
+        }}>
+          <p style={{ margin: 0, color: "var(--tb-text)", fontSize: "15px", lineHeight: 1.6 }}>
+            Has emitido hasta el momento <strong style={{ color: "var(--tb-accent)" }}>{stats.ordenesCount}</strong> órdenes de compra por un monto acumulado de <strong style={{ color: "var(--tb-secondary)" }}>${fmtMoney(stats.ordenesMontoTotal)} USD</strong>. Has solicitado financiamiento en <strong style={{ color: "var(--tb-accent)" }}>{stats.financiamientoCount}</strong> ocasiones por un total de <strong style={{ color: "var(--tb-secondary)" }}>${fmtMoney(stats.financiamientoMontoTotal)} USD</strong> destinado a: <strong style={{ color: "var(--tb-accent)" }}>{motivosStr}</strong>.
           </p>
         </div>
       )}
 
-      <div className="tabar-grid-4">
-        <MetricCard
-          label="Financiamiento solicitado"
-          value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`}
-          unit="monto total"
-          color="#3FB950" bg="rgba(63,185,80,0.10)" glyph="$"
-        />
-        <MetricCard
-          label="Motivos"
-          value={stats.motivos.length > 0 ? stats.motivos.length : "0"}
-          unit="tipos de financiamiento"
-          color="#BC8CFF" bg="rgba(188,140,255,0.10)" glyph="◱"
-        />
-        <MetricCard
-          label="Órdenes de compra"
-          value={stats.ordenesCount}
-          unit="emitidas"
-          color={C.accent} bg={C.dim} glyph="▣"
-        />
-        <MetricCard
-          label="Monto de compras"
-          value={`$${(stats.ordenesMontoTotal / 1000).toFixed(1)}k`}
-          unit="total acumulado"
-          color="#E3B64F" bg="rgba(227,182,79,0.10)" glyph="◈"
-        />
+      <div className="tabar-grid-4" style={{ marginBottom: "28px" }}>
+        <MetricCard label="Financiamiento Solicitado" value={`$${(stats.financiamientoMontoTotal / 1000).toFixed(1)}k`} unit="USD colateralizado" glyph="account_balance" />
+        <MetricCard label="Destinos Operativos" value={stats.motivos.length > 0 ? stats.motivos.length : "1"} unit="tipos de financiamiento" glyph="category" />
+        <MetricCard label="Órdenes de Compra" value={stats.ordenesCount} unit="emitidas a productores" glyph="shopping_cart" />
+        <MetricCard label="Monto Acumulado" value={`$${(stats.ordenesMontoTotal / 1000).toFixed(1)}k`} unit="USD en tabaco" glyph="payments" />
       </div>
 
-      <div className="tabar-section">
-        <h3 className="tabar-section-label">Listado de interacciones</h3>
-        <div style={{ background: "rgba(22, 27, 34, 0.5)", border: "1px solid #30363D", borderRadius: "12px", overflow: "hidden" }}>
-          {loading ? (
-            <div style={{ padding: "30px", textAlign: "center", color: "#8B949E" }}>Cargando historial...</div>
-          ) : stats.interacciones.length === 0 ? (
-            <div style={{ padding: "30px", textAlign: "center", color: "#8B949E" }}>No hay interacciones registradas aún.</div>
-          ) : (
-            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-              {stats.interacciones.map((item, index) => (
-                <li key={item.id} style={{
-                  padding: "20px",
-                  borderBottom: index !== stats.interacciones.length - 1 ? "1px solid #30363D" : "none",
-                  display: "flex",
-                  gap: "16px",
-                  alignItems: "center"
-                }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.dim, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <h4 style={{ margin: "0 0 4px 0", color: "#F0F6FC", fontSize: "15px", fontWeight: 500 }}>
-                      {item.title}
-                    </h4>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                      <span style={{ color: "#8B949E", fontSize: "12px" }}>
-                        {item.date.toLocaleDateString("es-AR", { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                      <span style={{ color: "#484F58", fontSize: "12px" }}>•</span>
-                      <span style={{ color: "#C9D1D9", fontSize: "13px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", marginBottom: "28px" }}>
+        <div className="tabar-card">
+          <div className="tabar-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Historial de Órdenes & Financiamiento</span>
+            <span className="tabar-badge tabar-badge-gold">AUDITORÍA ON-CHAIN</span>
+          </div>
+          <div>
+            {loading ? (
+              <div style={{ padding: "30px", textAlign: "center", color: "var(--tb-text-2)" }}>Cargando historial...</div>
+            ) : stats.interacciones.length === 0 ? (
+              <div style={{ padding: "30px", textAlign: "center", color: "var(--tb-text-2)" }}>No hay interacciones registradas aún.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {stats.interacciones.map((item, index) => (
+                  <div key={item.id} style={{
+                    padding: "16px 0",
+                    borderBottom: index !== stats.interacciones.length - 1 ? "1px solid var(--tb-border)" : "none",
+                    display: "flex",
+                    gap: "16px",
+                    alignItems: "center"
+                  }}>
+                    <div style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "6px",
+                      background: "#edf6ef",
+                      color: "var(--tb-accent)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>{item.icon}</span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                        <h4 style={{ margin: 0, color: "var(--tb-accent)", fontSize: "14.5px", fontWeight: 600 }}>
+                          {item.title}
+                        </h4>
+                        <span style={{ color: "var(--tb-text-3)", fontSize: "11px", fontFamily: "var(--tb-mono)" }}>
+                          {item.date.toLocaleDateString("es-AR", { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, color: "var(--tb-text-2)", fontSize: "13px" }}>
                         {item.description}
-                      </span>
+                      </p>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="tabar-section">
+      <div style={{ marginBottom: "28px" }}>
         <CampaignStats />
       </div>
 
-      <div className="tabar-section">
-        <h3 className="tabar-section-label">Acciones rápidas</h3>
+      <div>
+        <h3 className="tabar-card-title" style={{ border: "none", marginBottom: "14px" }}>Acciones Rápidas</h3>
         <div className="tabar-grid-3">
-          <ActionCard to="/industry/buy" glyph="▣" title="Comprar producción anticipada" desc="Adquirí fardos digitales TABAR con descuento sobre precio de mercado" color={C.accent} bg={C.dim} />
+          <ActionCard to="/industry/buy" icon="shopping_cart" title="Orden de Compra" desc="Adquirí fardos y lotes de tabaco de productores certificados con liquidación asegurada" />
+          <ActionCard to="/industry/financing" icon="account_balance" title="Solicitar Financiamiento" desc="Obtené liquidez de campaña y adelantos contra warrants de tabaco en custodia" />
+          <ActionCard to="/warrants" icon="token" title="Warrants Digitales" desc="Emisión, consulta y endoso de certificados de depósito y warrants de acopio" />
         </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, unit, color, bg, glyph }) {
+function MetricCard({ label, value, unit, glyph }) {
   return (
     <div className="tabar-metric-card">
-      <div className="tabar-metric-icon" style={{ background: bg, color }}>{glyph}</div>
-      <div className="tabar-metric-label">{label}</div>
-      <div className="tabar-metric-value" style={{ color }}>{value}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+        <span className="tabar-metric-label">{label}</span>
+        <span className="material-symbols-outlined" style={{ color: "var(--tb-secondary)", fontSize: "20px" }}>{glyph}</span>
+      </div>
+      <div className="tabar-metric-value">{value}</div>
       <div className="tabar-metric-unit">{unit}</div>
     </div>
   );
 }
 
-function ActionCard({ to, glyph, title, desc, color, bg }) {
+function ActionCard({ to, icon, title, desc }) {
   return (
     <Link to={to} className="tabar-action-card">
-      <div className="tabar-action-icon" style={{ background: bg, color }}>{glyph}</div>
-      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#F0F6FC" }}>{title}</h4>
-      <p style={{ margin: 0, fontSize: "12px", color: "#484F58", lineHeight: 1.5 }}>{desc}</p>
+      <div className="tabar-action-icon" style={{ background: "#edf6ef", color: "var(--tb-accent)" }}>
+        <span className="material-symbols-outlined">{icon}</span>
+      </div>
+      <h4 style={{ margin: 0, fontSize: "15px", fontFamily: "var(--tb-serif)", fontWeight: 700, color: "var(--tb-accent)" }}>{title}</h4>
+      <p style={{ margin: 0, fontSize: "13px", color: "var(--tb-text-2)", lineHeight: 1.5 }}>{desc}</p>
     </Link>
   );
 }
